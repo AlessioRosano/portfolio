@@ -37,7 +37,9 @@ let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, PROJECT_IDS
 async function loadContent() {
   const res = await fetch("api/data.php", { cache: "no-store" });
   if (!res.ok) throw new Error(`Inhalte nicht geladen (${res.status})`);
-  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL = [], ABOUT = {} } = await res.json());
+  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT } = await res.json());
+  SOCIAL ??= [];
+  ABOUT ??= {};
   PROJECT_IDS = projectIds(PROJECTS);
 }
 const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;

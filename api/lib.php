@@ -81,8 +81,10 @@ function migrateContent(): void
     $d = readJson($file, null);
     if (!is_array($d) || isset($d['ABOUT'])) return;   // ein paralleler Aufruf war schneller
 
-    copy($file, STORAGE . '/backups/data-vor-umstellung-' . date('Ymd-His') . '.json');
+    // Während eines Deploys kann setup/ noch alt sein — dann erst beim nächsten Aufruf umstellen
     $setup = readJson(ROOT . '/setup/data.json');
+    if (!is_array($setup['ABOUT'] ?? null)) return;
+    copy($file, STORAGE . '/backups/data-vor-umstellung-' . date('Ymd-His') . '.json');
 
     $d['CATS'] = $setup['CATS'];
     $old = array_column($d['DISCIPLINES'] ?? [], null, 'cat');
