@@ -479,7 +479,10 @@ function initScroll() {
   // Über-mich-Text: Wort für Wort beim Scrollen
   const st = $("[data-words]");
   if (st) {
-    st.innerHTML = st.textContent.trim().split(/\s+/).map((w) => `<span class="w">${w}</span>`).join(" ");
+    // Leerzeile im CMS = neuer Absatz; jedes Wort einzeln, damit es beim Scrollen aufleuchten kann
+    st.innerHTML = st.textContent.trim().split(/\n\s*\n/).map((para) =>
+      para.trim().split(/\s+/).map((w) => `<span class="w">${esc(w)}</span>`).join(" ")
+    ).join(`<span class="para-break"></span>`);
     const words = $$(".w", st);
     ScrollTrigger.create({
       trigger: st,
@@ -567,7 +570,7 @@ function initForm() {
       f.classList.toggle("is-invalid", !valid);
       if (!valid) ok = false;
     });
-    if (!ok) { status.textContent = "Bitte Name, E-Mail und Projekt ausfüllen."; return; }
+    if (!ok) { status.textContent = "Da fehlt noch etwas: Name, E-Mail und ein paar Worte zum Projekt."; return; }
 
     const d = new FormData(form);
     const body = [
@@ -577,7 +580,7 @@ function initForm() {
       d.get("message"),
     ].join("\n");
     location.href = `mailto:${encodeURIComponent(CONTACT_EMAIL).replace("%40", "@")}?subject=${encodeURIComponent(`Projektanfrage — ${d.get("name")}`)}&body=${encodeURIComponent(body)}`;
-    status.textContent = "Mail-Programm wird geöffnet …";
+    status.textContent = "Dein Mail-Programm geht gleich auf …";
   });
   form.addEventListener("input", (e) => e.target.classList.remove("is-invalid"));
 }

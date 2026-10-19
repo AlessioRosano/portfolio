@@ -266,7 +266,7 @@ function renderAbout() {
       <div class="form">
         <label class="field"><span class="mono">Text</span>
           <textarea data-a="statement" rows="5">${esc(a.statement)}</textarea>
-          <small>Erscheint gross und wird beim Scrollen Wort für Wort sichtbar.</small></label>
+          <small>Erscheint gross und wird beim Scrollen Wort für Wort sichtbar. Leerzeile = neuer Absatz.</small></label>
       </div>
     </div>
     <div class="card">

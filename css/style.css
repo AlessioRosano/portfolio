@@ -296,13 +296,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .about { border-top: 1.5px solid var(--bx-15); }
 .about__statement {
   margin: 0 0 clamp(56px, 7vw, 120px);
-  font-size: clamp(26px, 3.4vw, 64px);
-  line-height: 1.06;
-  letter-spacing: -0.035em;
+  font-size: clamp(24px, 2.7vw, 50px);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   font-weight: 600;
-  max-width: 24ch;
+  max-width: 30ch;
 }
 .about__statement .w { opacity: 0.14; transition: opacity 0.2s linear; }
+.about__statement .para-break { display: block; height: 0.6em; }
 .about__grid { display: grid; grid-template-columns: 4fr 8fr; gap: clamp(24px, 5vw, 96px); align-items: end; }
 .about__portrait { margin: 0; }
 .about__portrait .media { aspect-ratio: 4 / 5; border-radius: var(--radius); }

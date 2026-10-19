@@ -125,6 +125,7 @@ function cleanData(array $d): array
     return [
         'CONTACT_EMAIL' => $email, 'NAME' => $text($d['NAME'] ?? '', 120), 'CATS' => $cats,
         'DISCIPLINES' => $disciplines, 'PROJECTS' => $projects, 'SOCIAL' => $social, 'ABOUT' => $about,
+        'VERSION' => (int) ($d['VERSION'] ?? 0),   // Stand der automatischen Umstellungen
     ];
 }
 

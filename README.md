@@ -24,14 +24,15 @@ In diesem README beschreibe ich, wie das Projekt entstanden ist, wie es technisc
 4. [Das CMS](#das-cms)
 5. [Download-Galerien](#download-galerien)
 6. [Bilder und Performance (Proxies)](#bilder-und-performance-proxies)
-7. [Sicherheit](#sicherheit)
-8. [Deploy: von Git zu Infomaniak](#deploy-von-git-zu-infomaniak)
-9. [Lokal arbeiten](#lokal-arbeiten)
-10. [Backups](#backups)
-11. [Arbeitsweise](#arbeitsweise)
-12. [Schwierigkeiten](#schwierigkeiten)
-13. [Learnings](#learnings)
-14. [Ressourcen](#ressourcen)
+7. [Suchmaschinen (SEO)](#suchmaschinen-seo)
+8. [Sicherheit](#sicherheit)
+9. [Deploy: von Git zu Infomaniak](#deploy-von-git-zu-infomaniak)
+10. [Lokal arbeiten](#lokal-arbeiten)
+11. [Backups](#backups)
+12. [Arbeitsweise](#arbeitsweise)
+13. [Schwierigkeiten](#schwierigkeiten)
+14. [Learnings](#learnings)
+15. [Ressourcen](#ressourcen)
 
 ---
 
@@ -96,6 +97,22 @@ Weil die Inhalte auf dem Server liegen, habe ich dafür eine **automatische Date
 ### 7. Bild-Proxies für mehr Tempo
 
 Zum Schluss habe ich die Ladezeit optimiert: automatische Bildvarianten mit `srcset` und WebP fürs Portfolio, dazu Vorschauen und Video-Standbilder in den Galerien. Die Startseite lädt seither **rund 68 % weniger Bilddaten** (Details unter [Bilder und Performance](#bilder-und-performance-proxies)).
+
+### 8. Bei Google gefunden werden
+
+Damit die Seite in der Google-Suche auftaucht, habe ich sie für Suchmaschinen vorbereitet:
+
+- **Sitemap:** Unter `/sitemap.xml` liegt eine Liste aller Seiten. Sie wird aus den CMS-Inhalten erzeugt, neue Projekte sind also automatisch drin.
+- **`robots.txt`:** Sie sagt Google, was es lesen darf und was nicht (CMS, API, Kunden-Galerien).
+- **Eine einzige Adresse:** `www.` und `http://` leiten jetzt auf `https://alessiorosano.ch` um, dazu kommt ein Canonical-Link auf jeder Seite. Sonst sähe Google dieselbe Seite unter mehreren Adressen.
+- **Titel und Beschreibung** für jede Disziplin und jedes Projekt
+- **Vorschaubild für geteilte Links** (LinkedIn, WhatsApp usw.): Ich habe es mit PHP und meinen Schriften als `img/og.jpg` erzeugt.
+- **Strukturierte Daten** (schema.org): Google erkennt mich als Person (mit Ort, Fachgebieten und Social-Links) und meine Projekte als Werke.
+- **Google Search Console:** Ich habe die Domain per DNS-Eintrag bei Infomaniak bestätigt, die Sitemap eingereicht und die Indexierung beantragt.
+
+### 9. Eine eigene Tonalität
+
+Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem Augenzwinkern und nah an den Menschen. Diesen Ton habe ich auf die ganze Website übertragen, von den Titeln („Das hier mache ich richtig gut.“, „Zusammen wird’s besser.“) über die Disziplin-Texte bis zu den Meldungen im Kontaktformular und in den Galerien. Lange Gedankenstriche habe ich dabei konsequent durch Punkte und Doppelpunkte ersetzt. Die Texte im CMS hat wieder eine automatische Umstellung angepasst, die nur ersetzt, was noch dem alten Stand entsprach.
 
 ---
 
@@ -234,7 +251,8 @@ Ein Test-Foto mit 19 MB ergibt in der Übersicht 0,2 MB und in der Grossansicht 
 - **Vorschau beim Teilen** (Open Graph): eigenes Vorschaubild `img/og.jpg` mit 1200 × 630 px
 - **Strukturierte Daten** (schema.org): `Person` auf der Startseite (mit Social-Links aus dem CMS) und `CreativeWork` für Projekte
 - **Name als Text:** Der grosse animierte Name besteht aus einzelnen Buchstaben. Google liest ihn trotzdem korrekt als „Alessio Rosano“.
-- Angemeldet ist die Seite in der Google Search Console, mit eingereichter Sitemap.
+- **Google Search Console:** Die Domain ist per TXT-Eintrag in der DNS-Zone bei Infomaniak bestätigt (Domain-Property, deckt `www` und `http` mit ab). Die Sitemap ist eingereicht, die Indexierung der Startseite beantragt. Dort sehe ich auch, wie oft und wofür die Seite in der Suche erscheint.
+- **Wichtig:** Die Inhalte kommen per JavaScript aus `api/data.php`. Google führt dieses JavaScript aus, darum ist die API in der `robots.txt` ausdrücklich erlaubt. Ohne diese Ausnahme sähe Google nur leere Seiten.
 
 ## Sicherheit
 
@@ -355,7 +373,9 @@ Für jeden grösseren Schritt gibt es einen eigenen Commit mit Beschreibung.
 
 **Grenzen von normalem Webhosting.** Ich kenne die Upload-Limits des Servers nicht genau, darum meldet der Server sie dem CMS, und das CMS passt die Stückgrösse an. Kleinere Videoversionen würden `ffmpeg` brauchen, und das gibt es dort nicht. Die Video-Standbilder erzeugt deshalb der Browser beim Upload. Bei manchen iPhone-Formaten (HEVC) klappt das in Chrome nicht.
 
-**Repository für den Dozenten freigeben.** Zuerst dachte ich, ich lade ihn einfach als Collaborator ins private Repository ein. Bei persönlichen GitHub-Konten bekommen Collaborators aber automatisch Schreibrechte. Damit könnten sie einen Deploy auslösen und über einen geänderten Workflow sogar die Secrets auslesen. Ein öffentliches Repository ist für reines Anschauen die sicherere Lösung.
+**Google und JavaScript.** Weil die Inhalte erst per JavaScript geladen werden, muss Google die Daten-API lesen dürfen. Eine zu strenge `robots.txt` („alles unter `/api/` sperren“) hätte die Seite für Google leer gemacht. Ausserdem müssen die Projekt-Adressen in der Sitemap (PHP) exakt gleich berechnet werden wie auf der Website (JavaScript), auch bei Umlauten und Akzenten. Das habe ich mit Grenzfällen wie „Café Côte — Grösse & Ñandú“ in beiden Sprachen getestet.
+
+**Repository für den Dozenten freigeben.** Zuerst dachte ich, ich lade ihn einfach als Collaborator ins private Repository ein. Bei persönlichen GitHub-Konten bekommen Collaborators aber automatisch Schreibrechte. Damit könnten sie einen Deploy auslösen und über einen geänderten Workflow sogar die Secrets auslesen. Ein öffentliches Repository ist für reines Anschauen die sicherere Lösung. Beim Hochladen hat GitHub dann einen Push blockiert, weil meine private E-Mail-Adresse in den Commits stand. Seither verwende ich die anonyme GitHub-Adresse (`…@users.noreply.github.com`).
 
 ---
 
@@ -365,6 +385,8 @@ Für jeden grösseren Schritt gibt es einen eigenen Commit mit Beschreibung.
 - **Statisch hat Grenzen.** Sobald Dateien wirklich geschützt sein sollen, braucht es Server-Code. Ein Passwort in JavaScript wäre nur Fassade.
 - **Sicherheit muss man testen, nicht annehmen.** Erst das Nachstellen echter Angriffe hat die SVG-Lücke gezeigt. Wichtig sind mehrere Schutzschichten statt einer: Prüfung beim Upload, sichere Auslieferung, CSP.
 - **Geheimnisse gehören nie in Git.** Zugangsdaten liegen als Secrets bei GitHub, auf dem Server nur ein Passwort-Hash. Deshalb kann das Repository öffentlich sein.
+- **Gefunden werden ist Handarbeit.** Eine schöne Seite allein reicht nicht. Google braucht eine Sitemap, eine eindeutige Adresse pro Seite, gute Titel und Beschreibungen, und vor allem Links von anderen Orten wie LinkedIn, Instagram oder GitHub.
+- **Ton ist Gestaltung.** Ein einheitlicher Ton in allen Texten (inklusive Fehlermeldungen) macht die Seite genauso stimmig wie Farben und Schrift.
 - **Performance hängt vor allem an den Bildern.** Bildvarianten mit `srcset` haben mehr gebracht als jede Code-Optimierung. Wichtig ist, für jede Stelle anzugeben, wie gross ein Bild wirklich angezeigt wird.
 - **Weniger Code ist besser wartbar.** Eine Vorlage statt vier Seiten und Farben über CSS-Variablen statt Umrechnung: Das hat Fehler beseitigt und spätere Änderungen erleichtert.
 - **Live prüfen, nicht nur lokal.** Lokal lief alles. Fehler wie der falsche Zielordner oder die zu frühe Daten-Umstellung zeigten sich erst online. Nach jedem Deploy prüfe ich deshalb von aussen nach.
@@ -393,6 +415,14 @@ Für jeden grösseren Schritt gibt es einen eigenen Commit mit Beschreibung.
 - MDN, Content Security Policy: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 - OWASP Cheat Sheets: https://cheatsheetseries.owasp.org/
   - File Upload, Cross-Site Request Forgery Prevention, Session Management, Cross-Site Scripting Prevention
+
+**Suchmaschinen**
+- Google Search Central, SEO-Grundlagen: https://developers.google.com/search/docs
+- Google Search Console: https://search.google.com/search-console
+- Sitemaps-Protokoll: https://www.sitemaps.org/
+- schema.org (strukturierte Daten): https://schema.org/Person
+- Open Graph Protocol (Vorschau beim Teilen): https://ogp.me/
+- LinkedIn Post Inspector (Vorschau testen): https://www.linkedin.com/post-inspector/
 
 **Git und Deploy**
 - GitHub Actions, Dokumentation: https://docs.github.com/actions

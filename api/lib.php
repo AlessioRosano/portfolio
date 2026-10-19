@@ -66,6 +66,31 @@ function ensureStorage(): void
         foreach (glob(ROOT . '/setup/img/*') ?: [] as $file) copy($file, CONTENT . '/img/' . basename($file));
     }
     migrateContent();
+    migrateTexts();
+}
+
+// Umstellung v3: Texte in neuer Tonalität (setup/texte-v3.json: alter Text → neuer Text).
+// Ersetzt nur Texte, die noch exakt dem alten Stand entsprechen — selbst Geändertes bleibt.
+function migrateTexts(): void
+{
+    $file = CONTENT . '/data.json';
+    $d = readJson($file, null);
+    if (!is_array($d) || ($d['VERSION'] ?? 0) >= 3) return;
+    if ((readJson(ROOT . '/setup/data.json')['VERSION'] ?? 0) < 3) return;   // Deploy noch nicht fertig
+    $map = readJson(ROOT . '/setup/texte-v3.json', null);
+    if (!is_array($map)) return;
+
+    $lock = fopen(STORAGE . '/migrate.lock', 'c');
+    flock($lock, LOCK_EX);
+    $d = readJson($file, null);
+    if (!is_array($d) || ($d['VERSION'] ?? 0) >= 3) return;
+    copy($file, STORAGE . '/backups/data-vor-texten-' . date('Ymd-His') . '.json');
+    array_walk_recursive($d, function (&$value) use ($map) {
+        if (is_string($value) && isset($map[$value])) $value = $map[$value];
+    });
+    $d['VERSION'] = 3;
+    writeJson($file, $d);
+    flock($lock, LOCK_UN);
 }
 
 // Einmalige Umstellung älterer Inhalte (erkennbar am fehlenden «Wer»-Bereich):

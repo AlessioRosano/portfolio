@@ -148,21 +148,21 @@ header('Referrer-Policy: same-origin');
   <main>
 <?php if ($state === 'missing'): ?>
     <section class="gate">
-      <h1>Nicht gefunden</h1>
-      <p>Diese Galerie gibt es nicht (mehr). Prüfe den Link oder melde dich bei mir.</p>
+      <h1>Hier ist nichts</h1>
+      <p>Entweder hat sich im Link ein Fehler eingeschlichen oder die Galerie ist schon weg. Schreib mir kurz, dann finden wir sie.</p>
     </section>
 
 <?php elseif ($state === 'expired'): ?>
     <section class="gate">
       <h1>Abgelaufen</h1>
-      <p>Diese Galerie ist nicht mehr verfügbar. Brauchst du die Dateien noch? Melde dich bei mir.</p>
+      <p>Die Dateien sind nicht mehr online. Brauchst du sie trotzdem? Schreib mir, das lässt sich lösen.</p>
     </section>
 
 <?php elseif ($state === 'locked'): ?>
     <section class="gate">
       <p class="mono"><?= $h($dateText) ?></p>
       <h1><?= $h($gallery['title']) ?></h1>
-      <p>Gib das Passwort ein, das du von mir erhalten hast.</p>
+      <p>Gib das Passwort ein, das du von mir bekommen hast. Dann geht’s los.</p>
       <form method="post">
         <input type="hidden" name="csrf" value="<?= $h(csrfToken()) ?>" />
         <input type="password" name="password" placeholder="Passwort" required autofocus autocomplete="current-password" aria-label="Passwort" />
@@ -179,7 +179,7 @@ header('Referrer-Policy: same-origin');
     </div>
 
     <?php if (!$files): ?>
-      <p>Hier sind noch keine Dateien — schau später nochmals vorbei.</p>
+      <p>Noch leer. Die Dateien kommen bald, versprochen.</p>
     <?php endif; ?>
 
     <div class="grid">
