@@ -32,12 +32,12 @@ function media(p, W, H) {
 }
 
 // Inhalte aus dem CMS — werden beim Start geladen (siehe Boot)
-let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, PROJECT_IDS;
+let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, PROJECT_IDS;
 
 async function loadContent() {
   const res = await fetch("api/data.php", { cache: "no-store" });
   if (!res.ok) throw new Error(`Inhalte nicht geladen (${res.status})`);
-  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL = [] } = await res.json());
+  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL = [], ABOUT = {} } = await res.json());
   PROJECT_IDS = projectIds(PROJECTS);
 }
 const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
@@ -187,6 +187,22 @@ function initSlider() {
   });
 }
 
+/* ── Wer (Startseite, gepflegt im CMS unter «Wer») ─────────────── */
+function buildAbout() {
+  const statement = $("[data-about-statement]");
+  if (!statement) return;
+  statement.textContent = ABOUT.statement || "";
+
+  const portrait = $("[data-about-portrait]");
+  portrait.hidden = !ABOUT.portrait;
+  $(".media", portrait).innerHTML = ABOUT.portrait ? `<img src="${esc(ABOUT.portrait)}" alt="Portrait von ${esc(NAME)}" loading="lazy" />` : "";
+  $("figcaption", portrait).textContent = ABOUT.caption || "";
+
+  const rows = (ABOUT.specs || []).filter(([k, v]) => k || v).map(([k, v]) => [esc(k), esc(v)]);
+  if (ABOUT.status) rows.push(["Status", `<span class="dot"></span> ${esc(ABOUT.status)}`]);
+  $("[data-about-specs]").innerHTML = rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+}
+
 /* ── Social-Links im Footer (gepflegt im CMS unter «Allgemein») ── */
 function buildSocial() {
   const links = SOCIAL.filter((s) => s.label && s.url);
@@ -227,7 +243,7 @@ function buildDisciplines() {
 function buildSub() {
   if (PAGE !== "discipline") return;
   const i = DISCIPLINES.findIndex((d) => d.cat === SUB);
-  if (i < 0) { location.replace("index.html#disziplinen"); return; }
+  if (i < 0) { location.replace("index.html#was"); return; }
   const d = DISCIPLINES[i];
   const name = CATS[SUB];
   const ps = PROJECTS.filter((p) => p.cat === SUB);
@@ -284,7 +300,7 @@ function buildProject() {
   if (PAGE !== "project") return;
   const id = new URLSearchParams(location.search).get("p");
   const i = PROJECT_IDS.indexOf(id);
-  if (i < 0) { location.replace("index.html#disziplinen"); return; }
+  if (i < 0) { location.replace("index.html#was"); return; }
   const p = PROJECTS[i];
   const siblings = PROJECTS.filter((x) => x.cat === p.cat);
   const k = siblings.indexOf(p);
@@ -636,6 +652,7 @@ Promise.all([loadContent(), document.fonts.ready]).then(() => {
   buildNames();
   buildSlider();
   buildDisciplines();
+  buildAbout();
   buildSocial();
   fitNames();
   sizeSlider();

@@ -205,8 +205,9 @@
     <span class="bar__logo">AR</span><span class="mono muted">CMS</span>
     <nav class="tabs" data-tabs>
       <button class="is-active" data-tab="projects">Projekte</button>
-      <button data-tab="galleries">Galerien</button>
       <button data-tab="disciplines">Disziplinen</button>
+      <button data-tab="about">Wer</button>
+      <button data-tab="galleries">Galerien</button>
       <button data-tab="general">Allgemein</button>
     </nav>
     <div class="bar__right">
@@ -254,6 +255,11 @@
     <div class="editor" data-gallery-editor></div>
   </section>
 
+  <!-- Wer -->
+  <section class="view" id="view-about">
+    <div class="pane" data-about></div>
+  </section>
+
   <!-- Disziplinen -->
   <section class="view" id="view-disciplines">
     <div class="pane" data-disciplines></div>
@@ -265,6 +271,7 @@
   </section>
 
   <input type="file" accept="image/*" multiple hidden data-file />
+  <input type="file" accept="image/*" hidden data-about-file />
   <input type="file" accept="image/*,video/*,.heic,.mov" multiple hidden data-gallery-file />
   <div class="toast" data-toast></div>
 

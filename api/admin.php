@@ -111,7 +111,21 @@ function cleanData(array $d): array
         if ($label !== '' || $url !== '') $social[] = ['label' => $label, 'url' => $url];
     }
 
-    return ['CONTACT_EMAIL' => $email, 'NAME' => $text($d['NAME'] ?? '', 120), 'CATS' => $cats, 'DISCIPLINES' => $disciplines, 'PROJECTS' => $projects, 'SOCIAL' => $social];
+    $a = is_array($d['ABOUT'] ?? null) ? $d['ABOUT'] : [];
+    $portrait = $text($a['portrait'] ?? '', 200);
+    if ($portrait !== '' && !preg_match('#^content/img/[a-z0-9-]+\.(jpg|png|webp|gif)$#', $portrait)) fail('Ungültiger Bildpfad beim Portrait');
+    $about = [
+        'statement' => $text($a['statement'] ?? '', 2000),
+        'portrait' => $portrait,
+        'caption' => $text($a['caption'] ?? '', 80),
+        'specs' => array_map(fn ($row) => [$text($row[0] ?? '', 40), $text($row[1] ?? '', 200)], array_slice(array_values((array) ($a['specs'] ?? [])), 0, 12)),
+        'status' => $text($a['status'] ?? '', 80),
+    ];
+
+    return [
+        'CONTACT_EMAIL' => $email, 'NAME' => $text($d['NAME'] ?? '', 120), 'CATS' => $cats,
+        'DISCIPLINES' => $disciplines, 'PROJECTS' => $projects, 'SOCIAL' => $social, 'ABOUT' => $about,
+    ];
 }
 
 switch ($action) {

@@ -31,6 +31,7 @@ async function api(action, body) {
 
 function normalize(d) {
   d.SOCIAL ??= [];
+  d.ABOUT = { statement: "", portrait: "", caption: "", specs: [], status: "", ...d.ABOUT };
   d.PROJECTS = d.PROJECTS.map((p) => ({
     title: "", cat: "branding", year: new Date().getFullYear(), role: "", tools: "", desc: "",
     link: "", art: 0, images: [], ...p,
@@ -255,15 +256,121 @@ function renderEditor() {
     </div>`;
 }
 
+/* ── UI: Wer ─────────────────────────────────────────────────── */
+function renderAbout() {
+  const a = state.ABOUT;
+  $("[data-about]").innerHTML = `
+    <h1>Wer</h1>
+    <p class="muted">Der Bereich «Wer» auf der Startseite: Text, Portrait und Steckbrief.</p>
+    <div class="card">
+      <div class="form">
+        <label class="field"><span class="mono">Text</span>
+          <textarea data-a="statement" rows="5">${esc(a.statement)}</textarea>
+          <small>Erscheint gross und wird beim Scrollen Wort für Wort sichtbar.</small></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Portrait</h2>
+      <div class="form">
+        <div class="field field--2">
+          ${a.portrait ? `<div class="img"><img src="${esc(a.portrait)}" alt="" />
+            <div class="img__tools" style="opacity:1"><span></span><span><button data-about-remove title="Portrait entfernen">✕</button></span></div></div>` : ""}
+          <div class="drop" data-about-drop tabindex="0" role="button" style="${a.portrait ? "margin-top:12px" : ""}">
+            <strong>${a.portrait ? "Portrait ersetzen" : "Portrait hierher ziehen oder klicken"}</strong>
+            <span class="mono muted">Hochformat 4:5, z. B. 1600 × 2000 px</span>
+          </div>
+        </div>
+        <label class="field field--4"><span class="mono">Bildunterschrift</span>
+          <input type="text" data-a="caption" value="${esc(a.caption)}" placeholder="z. B. PORTRAIT_01.JPG — 4:5" /></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Steckbrief</h2>
+      <div class="form">
+        ${a.specs.map(([k, v], i) => `
+          <label class="field field--2"><span class="mono">Bezeichnung</span>
+            <input type="text" data-spec="${i}" data-sp="0" value="${esc(k)}" placeholder="z. B. Basis" /></label>
+          <label class="field field--4"><span class="mono">Inhalt</span>
+            <div class="pw">
+              <input type="text" data-spec="${i}" data-sp="1" value="${esc(v)}" placeholder="z. B. St.Gallen, Schweiz" />
+              <button class="btn btn--sm" type="button" data-spec-move="${i}" title="Nach oben">▲</button>
+              <button class="btn btn--sm btn--danger" type="button" data-spec-del="${i}" title="Zeile entfernen">✕</button>
+            </div></label>`).join("")}
+        <div class="field"><div><button class="btn btn--sm" type="button" data-spec-add>+ Zeile hinzufügen</button></div></div>
+        <label class="field field--4"><span class="mono">Status</span>
+          <input type="text" data-a="status" value="${esc(a.status)}" placeholder="z. B. Offen für Projekte" />
+          <small>Letzte Zeile mit pulsierendem Punkt. Leer lassen, um sie auszublenden.</small></label>
+      </div>
+    </div>`;
+}
+
+async function setPortrait(files) {
+  const file = [...files].find((f) => f.type.startsWith("image/"));
+  if (!file) return;
+  const drop = $("[data-about-drop] strong");
+  if (drop) drop.textContent = "Wird hochgeladen …";
+  try {
+    const form = new FormData();
+    form.append("file", await prepareImage(file));
+    form.append("title", "portrait");
+    state.ABOUT.portrait = (await api("upload", form)).path;
+    markDirty();
+    toast("Portrait hochgeladen — Speichern nicht vergessen");
+  } catch (e) {
+    toast(e.message);
+  }
+  renderAbout();
+}
+
+const aboutView = $("[data-about]");
+aboutView.addEventListener("input", (e) => {
+  const { a, spec, sp } = e.target.dataset;
+  if (a) state.ABOUT[a] = e.target.value;
+  else if (spec !== undefined) state.ABOUT.specs[+spec][+sp] = e.target.value;
+  else return;
+  markDirty();
+});
+aboutView.addEventListener("click", (e) => {
+  const S = state.ABOUT.specs;
+  const del = e.target.closest("[data-spec-del]");
+  const move = e.target.closest("[data-spec-move]");
+  if (e.target.closest("[data-about-drop]")) return $("[data-about-file]").click();
+  if (del) S.splice(+del.dataset.specDel, 1);
+  else if (move) { const i = +move.dataset.specMove; if (i > 0) [S[i - 1], S[i]] = [S[i], S[i - 1]]; }
+  else if (e.target.closest("[data-spec-add]")) S.push(["", ""]);
+  else if (e.target.closest("[data-about-remove]")) state.ABOUT.portrait = "";
+  else return;
+  markDirty();
+  renderAbout();
+});
+aboutView.addEventListener("keydown", (e) => {
+  if (e.target.matches("[data-about-drop]") && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $("[data-about-file]").click(); }
+});
+aboutView.addEventListener("dragover", (e) => {
+  const d = e.target.closest("[data-about-drop]");
+  if (!d) return;
+  e.preventDefault();
+  d.classList.add("is-over");
+});
+aboutView.addEventListener("dragleave", (e) => e.target.closest("[data-about-drop]")?.classList.remove("is-over"));
+aboutView.addEventListener("drop", (e) => {
+  if (!e.target.closest("[data-about-drop]")) return;
+  e.preventDefault();
+  setPortrait(e.dataTransfer.files);
+});
+
 /* ── UI: Disziplinen & Allgemein ─────────────────────────────── */
 function renderDisciplines() {
   $("[data-disciplines]").innerHTML = `
     <h1>Disziplinen</h1>
-    <p class="muted">Texte für die vier Disziplinen — erscheinen beim Hover auf der Startseite und auf der jeweiligen Unterseite.</p>
+    <p class="muted">Texte für die vier Disziplinen («Was» auf der Startseite) — erscheinen beim Hover und auf der jeweiligen Unterseite.</p>
     ${state.DISCIPLINES.map((d, i) => `
       <div class="card">
-        <h2>${pad(i + 1)} — ${esc(state.CATS[d.cat])}</h2>
+        <h2>${pad(i + 1)} — <span data-cat-title="${esc(d.cat)}">${esc(state.CATS[d.cat])}</span></h2>
         <div class="form">
+          <label class="field field--3"><span class="mono">Name</span>
+            <input type="text" data-cat-label="${esc(d.cat)}" value="${esc(state.CATS[d.cat])}" />
+            <small>Adresse der Seite bleibt gleich: disziplin.html?d=${esc(d.cat)}</small></label>
           <label class="field"><span class="mono">Einleitung</span>
             <textarea data-di="${i}" data-dk="lead" rows="3">${esc(d.lead)}</textarea></label>
           <label class="field field--3"><span class="mono">Stichworte</span>
@@ -328,6 +435,7 @@ function renderAll() {
   renderList();
   renderEditor();
   renderDisciplines();
+  renderAbout();
   renderGeneral();
   updateStatus();
 }
@@ -459,6 +567,10 @@ editor.addEventListener("drop", (e) => {
 addEventListener("dragover", (e) => e.preventDefault());
 addEventListener("drop", (e) => e.preventDefault());
 
+$("[data-about-file]").addEventListener("change", (e) => {
+  setPortrait(e.target.files);
+  e.target.value = "";
+});
 $("[data-file]").addEventListener("change", (e) => {
   addImages(e.target.files);
   e.target.value = "";
@@ -466,6 +578,14 @@ $("[data-file]").addEventListener("change", (e) => {
 
 $("[data-disciplines]").addEventListener("input", (e) => {
   const t = e.target;
+  const cat = t.dataset.catLabel;
+  if (cat) {
+    state.CATS[cat] = t.value.trim();
+    $(`[data-cat-title="${cat}"]`).textContent = state.CATS[cat];
+    renderList();
+    markDirty();
+    return;
+  }
   if (t.dataset.di === undefined) return;
   const d = state.DISCIPLINES[+t.dataset.di];
   if (t.dataset.ds !== undefined) d.steps[+t.dataset.ds][+t.dataset.dp] = t.value;

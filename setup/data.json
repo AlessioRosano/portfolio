@@ -2,39 +2,12 @@
   "CONTACT_EMAIL": "workwithalessio@gmail.com",
   "NAME": "Alessio Rosano",
   "CATS": {
-    "branding": "Branding",
     "video": "Video",
-    "gestaltung": "Gestaltung",
+    "branding": "Branding/Web",
+    "kampagnen": "Kampagnen",
     "architektur": "Architektur"
   },
   "DISCIPLINES": [
-    {
-      "cat": "branding",
-      "lead": "Identitäten, die man wiedererkennt — von der Strategie über das Logo bis zum konsistenten Auftritt auf allen Kanälen.",
-      "tags": [
-        "Markenstrategie",
-        "Logo & Wortmarke",
-        "Corporate Design",
-        "Typografie",
-        "Farbsysteme",
-        "Brand Guidelines"
-      ],
-      "tools": "Illustrator, Figma, InDesign",
-      "steps": [
-        [
-          "Analyse",
-          "Wer ist die Marke, wen spricht sie an und wo steht sie im Vergleich zu anderen?"
-        ],
-        [
-          "Konzept",
-          "Aus der Haltung entsteht eine Idee — und aus der Idee Zeichen, Schrift und Farbe."
-        ],
-        [
-          "System",
-          "Guidelines und Vorlagen sorgen dafür, dass die Marke überall gleich klingt."
-        ]
-      ]
-    },
     {
       "cat": "video",
       "lead": "Bewegtbild mit Rhythmus: Konzept, Dreh, Schnitt und Color Grading für Imagefilme, Social Media und Dokumentationen.",
@@ -63,29 +36,56 @@
       ]
     },
     {
-      "cat": "gestaltung",
-      "lead": "Visuelle Kommunikation für Print und Screen — klar strukturiert, typografisch sauber und mit eigenem Charakter.",
+      "cat": "branding",
+      "lead": "Identitäten, die man wiedererkennt — von der Strategie über das Logo bis zum konsistenten Auftritt auf allen Kanälen.",
       "tags": [
-        "Editorial",
-        "Plakat",
-        "Layout",
-        "Illustration",
-        "Web & UI",
-        "Präsentationen"
+        "Markenstrategie",
+        "Logo & Wortmarke",
+        "Corporate Design",
+        "Typografie",
+        "Farbsysteme",
+        "Brand Guidelines"
       ],
-      "tools": "InDesign, Illustrator, Photoshop, Figma",
+      "tools": "Illustrator, Figma, InDesign",
       "steps": [
         [
-          "Struktur",
-          "Raster, Hierarchie und Lesefluss als Fundament jeder Seite."
+          "Analyse",
+          "Wer ist die Marke, wen spricht sie an und wo steht sie im Vergleich zu anderen?"
         ],
         [
-          "Typografie",
-          "Schrift ist Stimme — ausgewählt und gesetzt mit Sorgfalt."
+          "Konzept",
+          "Aus der Haltung entsteht eine Idee — und aus der Idee Zeichen, Schrift und Farbe."
         ],
         [
-          "Produktion",
-          "Druckdaten, Screens und Präsentationen, sauber aufbereitet."
+          "System",
+          "Guidelines und Vorlagen sorgen dafür, dass die Marke überall gleich klingt."
+        ]
+      ]
+    },
+    {
+      "cat": "kampagnen",
+      "lead": "Kampagnen, die hängen bleiben: von der Idee über Key Visual und Claim bis zu Plakat, Social Media und Kampagnenfilm.",
+      "tags": [
+        "Kampagnenidee",
+        "Key Visual",
+        "Claim & Text",
+        "Plakat",
+        "Social Media",
+        "Kampagnenfilm"
+      ],
+      "tools": "Photoshop, Illustrator, InDesign, After Effects",
+      "steps": [
+        [
+          "Idee",
+          "Eine klare Botschaft und ein Bild, das sie trägt."
+        ],
+        [
+          "Ausarbeitung",
+          "Key Visual, Claim und Varianten für jedes Format."
+        ],
+        [
+          "Ausspielung",
+          "Plakat, Social, Web und Film — abgestimmt auf Kanal und Zielgruppe."
         ]
       ]
     },
@@ -155,7 +155,7 @@
     },
     {
       "title": "Resonanz",
-      "cat": "gestaltung",
+      "cat": "kampagnen",
       "year": 2026,
       "role": "Plakatserie, Typografie",
       "tools": "InDesign, Illustrator",
@@ -199,7 +199,7 @@
     },
     {
       "title": "Editorial 03",
-      "cat": "gestaltung",
+      "cat": "kampagnen",
       "year": 2025,
       "role": "Layout, Typografie",
       "tools": "InDesign",
@@ -208,5 +208,38 @@
       "art": 1,
       "images": []
     }
-  ]
+  ],
+  "SOCIAL": [],
+  "ABOUT": {
+    "statement": "Ich bin Alessio Rosano und arbeite an der Schnittstelle von Marke, Bewegtbild und Raum. Ob Logo, Film oder Grundriss — mich interessiert die Struktur hinter dem Bild: präzise, reduziert und mit einem Auge für das Detail, das den Unterschied macht.",
+    "portrait": "content/img/alessio-rosano.jpg",
+    "caption": "PORTRAIT_01.JPG — 4:5",
+    "specs": [
+      [
+        "Name",
+        "Alessio Rosano"
+      ],
+      [
+        "Basis",
+        "St.Gallen, Schweiz"
+      ],
+      [
+        "Studium",
+        "FH Graubünden"
+      ],
+      [
+        "Fokus",
+        "Video / Branding/Web / Kampagnen / Architektur"
+      ],
+      [
+        "Tools",
+        "Figma, Adobe CC, DaVinci Resolve, Rhino, Blender"
+      ],
+      [
+        "Sprachen",
+        "Deutsch, Italienisch, Englisch"
+      ]
+    ],
+    "status": "Offen für Projekte"
+  }
 }

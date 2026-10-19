@@ -8,8 +8,8 @@ Läuft auf Infomaniak (PHP). Code kommt per Git, Inhalte entstehen auf dem Serve
 | Ordner / Datei | Inhalt | In Git? |
 |---|---|---|
 | `index.html`, `disziplin.html`, `projekt.html` | Website | ja |
-| `css/`, `js/`, `img/` | Gestaltung, Animationen, feste Bilder | ja |
-| `admin/` | CMS (Login, Projekte, Galerien, Disziplinen) | ja |
+| `css/`, `js/` | Gestaltung, Animationen (`js/vendor/`: GSAP, Lenis) | ja |
+| `admin/` | CMS (Login, Projekte, Disziplinen, Wer, Galerien, Allgemein) | ja |
 | `galerie.php` | Galerie-Seite für Kund:innen | ja |
 | `api/` | PHP: Login, Speichern, Uploads, Downloads | ja |
 | `setup/` | Startinhalte — werden beim ersten Aufruf nach `content/` kopiert | ja |

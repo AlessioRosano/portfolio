@@ -208,7 +208,7 @@ function artTimeline(W, H, seed = 7) {
     <text x="${ph + 8}" y="${pv + 12}" font-size="10" fill="${ART_C.ink}" ${MONO}>00:02:13:08</text>`);
 }
 
-/* ── Gestaltung ──────────────────────────────────────────────── */
+/* ── Kampagnen (früher Gestaltung) ──────────────────────────────────────────────── */
 function artPoster(W, H, title = "Form") {
   const word = title.split(/[\s&]+/)[0].toUpperCase();
   const fs = Math.min((W * 0.92) / (word.length * 0.74), H * 0.32);
@@ -257,6 +257,7 @@ function makeArt(type, variant = 0, W = 400, H = 500, title = "") {
     case "architektur": return v ? artSection(W, H) : artPlan(W, H);
     case "branding": return v ? artPalette(W, H, title || "Atelier") : artMark(W, H, title || "Nordwand");
     case "video": return v ? artTimeline(W, H, variant + 7) : artFrame(W, H, variant + 3);
+    case "kampagnen":
     case "gestaltung": return v ? artSwiss(W, H, variant + 3) : artPoster(W, H, title || "Form");
     default: return artPortrait(W, H);
   }

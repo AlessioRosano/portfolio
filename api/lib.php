@@ -65,6 +65,42 @@ function ensureStorage(): void
         copy(ROOT . '/setup/data.json', CONTENT . '/data.json');
         foreach (glob(ROOT . '/setup/img/*') ?: [] as $file) copy($file, CONTENT . '/img/' . basename($file));
     }
+    migrateContent();
+}
+
+// Einmalige Umstellung älterer Inhalte (erkennbar am fehlenden «Wer»-Bereich):
+// neue Disziplinen Video, Branding/Web, Kampagnen, Architektur und der Wer-Bereich fürs CMS.
+// Vorher wird ein Backup in storage/backups/ abgelegt.
+function migrateContent(): void
+{
+    $file = CONTENT . '/data.json';
+    $d = readJson($file, null);
+    if (!is_array($d) || isset($d['ABOUT'])) return;
+    $lock = fopen(STORAGE . '/migrate.lock', 'c');
+    flock($lock, LOCK_EX);
+    $d = readJson($file, null);
+    if (!is_array($d) || isset($d['ABOUT'])) return;   // ein paralleler Aufruf war schneller
+
+    copy($file, STORAGE . '/backups/data-vor-umstellung-' . date('Ymd-His') . '.json');
+    $setup = readJson(ROOT . '/setup/data.json');
+
+    $d['CATS'] = $setup['CATS'];
+    $old = array_column($d['DISCIPLINES'] ?? [], null, 'cat');
+    $new = array_column($setup['DISCIPLINES'], null, 'cat');
+    // Bestehende Texte behalten; Branding heisst neu Branding/Web, Kampagnen ersetzt Gestaltung
+    $d['DISCIPLINES'] = array_map(fn ($cat) => $old[$cat] ?? $new[$cat], array_keys($d['CATS']));
+    foreach ($d['PROJECTS'] as &$p) {
+        if (($p['cat'] ?? '') === 'gestaltung' || !isset($d['CATS'][$p['cat'] ?? ''])) $p['cat'] = 'kampagnen';
+    }
+    unset($p);
+
+    $d['ABOUT'] = $setup['ABOUT'];
+    foreach (glob(ROOT . '/setup/img/*') ?: [] as $img) {
+        if (!is_file(CONTENT . '/img/' . basename($img))) copy($img, CONTENT . '/img/' . basename($img));
+    }
+    $d['SOCIAL'] ??= [];
+    writeJson($file, $d);
+    flock($lock, LOCK_UN);
 }
 
 /* ── JSON-Dateien und Antworten ─────────────────────────────── */
