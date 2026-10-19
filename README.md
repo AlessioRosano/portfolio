@@ -49,7 +49,7 @@ Lokal angelegte Inhalte bleiben lokal — die echten Inhalte pflegst du online i
 - `.htaccess`: strenge Content-Security-Policy (nur eigene Scripts), interne Dateien und `storage/` gesperrt.
 - Alle Scripts liegen im Projekt (`js/vendor/`), keine fremden Script-Server.
 - Das CMS warnt rot, falls `storage/` je öffentlich erreichbar wäre.
-- **Im Infomaniak Manager einschalten:** SSL-Zertifikat, «HTTPS erzwingen» und HSTS.
+- HTTPS wird per `.htaccess` erzwungen (http:// → https://); SSL-Zertifikat und HSTS kommen von Infomaniak.
 
 ## Backups
 
