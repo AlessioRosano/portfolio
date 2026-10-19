@@ -65,8 +65,8 @@ function buildNames() {
     const inner = document.createElement("span");
     inner.className = "name-inner";
     inner.innerHTML = text.split(" ").map((w) =>
-      `<span class="word">${[...w].map((ch) => `<span class="m"><span class="c">${ch}</span></span>`).join("")}</span>`
-    ).join("");
+      `<span class="word">${[...w].map((ch) => `<span class="m"><span class="c">${esc(ch)}</span></span>`).join("")}</span>`
+    ).join(" ");   // Leerzeichen zwischen den Wörtern: Google und Screenreader lesen «Alessio Rosano»
     el.appendChild(inner);
   });
 }
@@ -215,6 +215,44 @@ function buildAbout() {
   $("[data-about-specs]").innerHTML = rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
 }
 
+/* ── Suchmaschinen: Titel, Beschreibung, Canonical, strukturierte Daten ── */
+const absoluteUrl = (path) => new URL(path, `${location.origin}/`).href;
+
+// Für Unterseiten, deren Inhalt erst per JS feststeht (Google führt das JavaScript aus)
+function setMeta(title, description) {
+  const text = String(description).replace(/\s+/g, " ").trim();
+  const short = text.length > 155 ? `${text.slice(0, 152).replace(/\s\S*$/, "")} …` : text;
+  document.title = title;
+  $('meta[name="description"]').content = short;
+  $('meta[property="og:title"]')?.setAttribute("content", title);
+  $('meta[property="og:description"]')?.setAttribute("content", short);
+  const canonical = $('link[rel="canonical"]') || document.head.appendChild(Object.assign(document.createElement("link"), { rel: "canonical" }));
+  canonical.href = location.href.split("#")[0];
+}
+
+// schema.org als JSON-LD — wird nicht ausgeführt, darum mit der Content-Security-Policy vereinbar
+function structuredData(data) {
+  const el = document.createElement("script");
+  el.type = "application/ld+json";
+  el.textContent = JSON.stringify({ "@context": "https://schema.org", ...data });
+  document.head.appendChild(el);
+}
+
+function buildPersonData() {
+  if (!$("[data-about-statement]")) return;   // nur Startseite
+  structuredData({
+    "@type": "Person",
+    name: NAME,
+    url: absoluteUrl(""),
+    image: ABOUT.portrait ? absoluteUrl(ABOUT.portrait) : undefined,
+    description: ABOUT.statement,
+    email: `mailto:${CONTACT_EMAIL}`,
+    address: { "@type": "PostalAddress", addressLocality: "St.Gallen", addressCountry: "CH" },
+    knowsAbout: Object.values(CATS),
+    sameAs: SOCIAL.filter((s) => s.url).map((s) => s.url),
+  });
+}
+
 /* ── Social-Links im Footer (gepflegt im CMS unter «Allgemein») ── */
 function buildSocial() {
   const links = SOCIAL.filter((s) => s.label && s.url);
@@ -261,8 +299,7 @@ function buildSub() {
   const ps = PROJECTS.filter((p) => p.cat === SUB);
   const years = ps.map((p) => p.year).filter(Boolean);
 
-  document.title = `${name} — ${NAME}`;
-  $('meta[name="description"]').content = `${name}: Projekte und Arbeitsweise von ${NAME}.`;
+  setMeta(`${name} — ${NAME}`, d.lead);
   $$("[data-name]").forEach((el) => { if (!el.closest(".footer")) el.dataset.name = name; });
   $("h1.hero__name").setAttribute("aria-label", name);
   $("[data-d-loader]").textContent = `AR / ${name.toUpperCase()}`;
@@ -317,7 +354,17 @@ function buildProject() {
   const siblings = PROJECTS.filter((x) => x.cat === p.cat);
   const k = siblings.indexOf(p);
 
-  document.title = `${p.title} — ${NAME}`;
+  setMeta(`${p.title} — ${NAME}`, p.desc || `${p.title}: ${CATS[p.cat]}-Projekt von ${NAME}, ${p.year}.`);
+  structuredData({
+    "@type": "CreativeWork",
+    name: p.title,
+    description: p.desc,
+    genre: CATS[p.cat],
+    dateCreated: String(p.year || ""),
+    image: p.images?.[0] ? absoluteUrl(p.images[0]) : undefined,
+    url: location.href,
+    creator: { "@type": "Person", name: NAME, url: absoluteUrl("") },
+  });
   $$("[data-name]").forEach((el) => { if (!el.closest(".footer")) el.dataset.name = p.title; });
   $("h1.hero__name").setAttribute("aria-label", p.title);
 
@@ -666,6 +713,7 @@ Promise.all([loadContent(), document.fonts.ready]).then(() => {
   buildDisciplines();
   buildAbout();
   buildSocial();
+  buildPersonData();
   fitNames();
   sizeSlider();
 

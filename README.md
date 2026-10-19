@@ -225,6 +225,17 @@ Ein Test-Foto mit 19 MB ergibt in der Übersicht 0,2 MB und in der Grossansicht 
 
 ---
 
+## Suchmaschinen (SEO)
+
+- **Sitemap** unter `/sitemap.xml`: Sie wird aus den CMS-Inhalten erzeugt (`sitemap.php`), neue Projekte sind also automatisch drin.
+- **`robots.txt`:** Die Website ist erlaubt, CMS, API und Kunden-Galerien sind gesperrt. Ausnahme ist `api/data.php`, damit Google die Inhalte laden kann.
+- **Eine Adresse:** `www.` und `http://` leiten mit einer einzigen Weiterleitung auf `https://alessiorosano.ch` um. Jede Seite hat einen Canonical-Link.
+- **Titel und Beschreibung** passend zu jeder Disziplin und jedem Projekt (gesetzt per JavaScript, das Google ausführt)
+- **Vorschau beim Teilen** (Open Graph): eigenes Vorschaubild `img/og.jpg` mit 1200 × 630 px
+- **Strukturierte Daten** (schema.org): `Person` auf der Startseite (mit Social-Links aus dem CMS) und `CreativeWork` für Projekte
+- **Name als Text:** Der grosse animierte Name besteht aus einzelnen Buchstaben. Google liest ihn trotzdem korrekt als „Alessio Rosano“.
+- Angemeldet ist die Seite in der Google Search Console, mit eingereichter Sitemap.
+
 ## Sicherheit
 
 Die Sicherheit beruht nicht darauf, dass der Code geheim ist. Darum kann dieses Repository öffentlich sein.

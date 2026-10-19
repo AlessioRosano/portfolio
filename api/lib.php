@@ -243,6 +243,22 @@ function uniqueName(string $dir, string $base, string $ext): string
     return $name;
 }
 
+// Projekt-Adressen wie in js/utils.js (projectIds) — muss exakt gleich rechnen, sonst stimmen die Links nicht
+function projectSlugs(array $projects): array
+{
+    $seen = [];
+    return array_map(function ($p) use (&$seen) {
+        $s = strtr(mb_strtolower((string) ($p['title'] ?? '') ?: 'projekt'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']);
+        $s = class_exists('Normalizer') ? (string) preg_replace('/[\x{0300}-\x{036f}]/u', '', Normalizer::normalize($s, Normalizer::FORM_D))
+            : strtr($s, ['à' => 'a', 'á' => 'a', 'â' => 'a', 'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ç' => 'c', 'ñ' => 'n']);
+        $base = substr(trim((string) preg_replace('/[^a-z0-9]+/', '-', $s), '-'), 0, 40) ?: 'projekt';
+        $id = $base;
+        for ($n = 2; isset($seen[$id]); $n++) $id = "$base-$n";
+        $seen[$id] = true;
+        return $id;
+    }, $projects);
+}
+
 /* ── Galerien ───────────────────────────────────────────────── */
 function galleries(): array
 {

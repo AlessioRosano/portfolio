@@ -1,11 +1,19 @@
 # Sicherheit für den ganzen Webauftritt (Apache bei Infomaniak)
 
-# Immer verschlüsselt: http:// → https:// (auch hinter einem Proxy, ohne Endlosschleife)
 <IfModule mod_rewrite.c>
   RewriteEngine On
+
+  # Eine Adresse für Google: www.alessiorosano.ch → alessiorosano.ch (direkt auf https, eine Weiterleitung)
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+  # Immer verschlüsselt: http:// → https:// (auch hinter einem Proxy, ohne Endlosschleife)
   RewriteCond %{HTTPS} off
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Sitemap für Suchmaschinen wird aus den CMS-Inhalten erzeugt
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
 </IfModule>
 
 # Interne Dateien sind nie von aussen abrufbar: .htaccess, .user.ini, README, Workflow-Dateien
