@@ -127,7 +127,7 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 **Disziplin-Seite (`disziplin.html?d=video`)**: Einleitung, Stichworte, Projekte, Arbeitsweise in drei Schritten, Link zur nächsten Disziplin
 
-**Projektseite (`projekt.html?p=…`)**: grosses Titelbild mit Zoom beim Scrollen, Beschreibung, Steckbrief, Bildgalerie, Link zum nächsten Projekt
+**Projektseite (`projekt.html?p=…`)**: grosses Titelbild mit Zoom beim Scrollen, Beschreibung, Steckbrief, Bildgalerie, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 
 **Überall**: Farbschalter Orange/Pink (wird gespeichert), Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**, Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen
 
@@ -181,7 +181,7 @@ Erreichbar unter `/admin`, geschützt mit einem Passwort.
 
 | Tab | Was ich dort pflege |
 |---|---|
-| **Projekte** | Titel, Jahr, Disziplin, Rolle, Tools, Beschreibung, Link, Bilder (Drag & Drop, Reihenfolge, Titelbild), Platzhalter-Grafik, Reihenfolge der Projekte |
+| **Projekte** | Titel, Jahr, Disziplin, Rolle, Tools, Beschreibung, Link, Bilder (Drag & Drop, Reihenfolge, Titelbild, pro Bild «Nicht beschneiden»), Platzhalter-Grafik, Reihenfolge der Projekte |
 | **Disziplinen** | Name, Einleitung, Stichworte, Tools, drei Arbeitsschritte |
 | **Wer** | Text, Portrait, Bildunterschrift, Steckbrief-Zeilen, Status |
 | **Galerien** | Galerien für Kund:innen anlegen, Dateien hochladen, Link und Passwort weitergeben |

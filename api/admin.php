@@ -99,6 +99,8 @@ function cleanData(array $d): array
             'link' => $link,
             'art' => (int) ($p['art'] ?? 0) % 2,
             'images' => $images,
+            // Bilder, die nicht beschnitten werden dürfen (nur solche, die auch im Projekt sind)
+            'full' => array_values(array_intersect($images, array_filter((array) ($p['full'] ?? []), 'is_string'))),
         ];
     }, array_values($d['PROJECTS']));
 

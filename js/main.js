@@ -379,6 +379,9 @@ function buildProject() {
   // Titelbild über die ganze Breite (Mobile hochkant)
   const cover = $("[data-p-cover]");
   const [W, H] = SLIDER_MQ.matches ? [800, 1000] : [1600, 900];
+  // Bilder, die im CMS auf «Nicht beschneiden» stehen, erscheinen vollständig (Plakate, Bilder mit Text)
+  const full = new Set(p.full || []);
+  cover.classList.toggle("is-full", full.has(p.images?.[0]));
   cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true })}</div>`;
 
   $("[data-p-desc]").textContent = p.desc;
@@ -388,7 +391,7 @@ function buildProject() {
 
   // Galerie: abwechselnd ein grosses Bild und zwei nebeneinander
   $("[data-p-gallery]").innerHTML = (p.images || []).slice(1).map((src, n) =>
-    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}"><div class="media${mediaClass(p)}">${img(src, `${p.title} — Bild ${n + 2}`, n % 3 === 0 ? "100vw" : "(max-width: 760px) 100vw, 50vw")}</div></figure>`).join("");
+    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${img(src, `${p.title} — Bild ${n + 2}`, n % 3 === 0 ? "100vw" : "(max-width: 760px) 100vw, 50vw")}</div></figure>`).join("");
 
   // Nächstes Projekt: innerhalb der Disziplin, sonst das nächste insgesamt
   const next = siblings.length > 1 ? siblings[(k + 1) % siblings.length] : PROJECTS[(i + 1) % PROJECTS.length];
@@ -467,8 +470,8 @@ function initScroll() {
   fadeIn($$(".pgallery__item"), 60);
   fadeIn($$(".services__list > *, .about__grid > *, .form > *, .process__grid > *, .process__specs > *, .pinfo__grid > *, .contact__inner--cta .btn"));
 
-  // Projektseite: Titelbild zoomt beim Scrollen leicht heraus
-  const coverMedia = $(".pcover .media > *");
+  // Projektseite: Titelbild zoomt beim Scrollen leicht heraus, ausser es ist im CMS auf «Nicht beschneiden» gestellt
+  const coverMedia = $(".pcover:not(.is-full) .media > *");
   if (coverMedia) {
     gsap.fromTo(coverMedia, { scale: 1.12 }, {
       scale: 1, ease: "none",

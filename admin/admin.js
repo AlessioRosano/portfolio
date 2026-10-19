@@ -34,7 +34,7 @@ function normalize(d) {
   d.ABOUT = { statement: "", portrait: "", caption: "", specs: [], status: "", ...d.ABOUT };
   d.PROJECTS = d.PROJECTS.map((p) => ({
     title: "", cat: "branding", year: new Date().getFullYear(), role: "", tools: "", desc: "",
-    link: "", art: 0, images: [], ...p,
+    link: "", art: 0, images: [], full: [], ...p,
   }));
   return d;
 }
@@ -227,7 +227,8 @@ function renderEditor() {
           <span class="mono muted">JPG, PNG, WebP, GIF — grosse Bilder werden automatisch verkleinert</span>
         </div>
         ${p.images.length ? `<div class="images">${p.images.map((src, k) => `
-          <div class="img">
+          <div class="img-wrap">
+          <div class="img${p.full.includes(src) ? " is-full" : ""}">
             <img src="${esc(src)}" alt="" />
             ${k === 0 ? `<span class="img__badge mono">Titelbild</span>` : ""}
             <div class="img__tools">
@@ -240,8 +241,11 @@ function renderEditor() {
                 <button data-img="del" data-k="${k}" title="Entfernen">✕</button>
               </span>
             </div>
+          </div>
+          <label class="check img__full mono"><input type="checkbox" data-full="${esc(src)}"${p.full.includes(src) ? " checked" : ""} /> Nicht beschneiden</label>
           </div>`).join("")}</div>
-          <small class="muted" style="margin-top:6px">Das erste Bild ist das Titelbild (gross auf der Projektseite und im Slider). Die übrigen erscheinen als Galerie darunter.</small>` : ""}
+          <small class="muted" style="margin-top:6px">Das erste Bild ist das Titelbild (gross auf der Projektseite und im Slider). Die übrigen erscheinen als Galerie darunter.
+          «Nicht beschneiden» für Plakate oder Bilder mit Text: Auf der Projektseite erscheint das Bild dann vollständig, ohne Zuschnitt und Zoom.</small>` : ""}
       </div>
 
       ${p.images.length ? `
@@ -484,7 +488,7 @@ $("[data-items]").addEventListener("click", (e) => {
 $("[data-new]").addEventListener("click", () => {
   state.PROJECTS.unshift({
     title: "Neues Projekt", cat: filter || "branding", year: new Date().getFullYear(),
-    role: "", tools: "", desc: "", link: "", art: 0, images: [],
+    role: "", tools: "", desc: "", link: "", art: 0, images: [], full: [],
   });
   current = 0;
   markDirty();
@@ -508,6 +512,13 @@ editor.addEventListener("input", (e) => {
 editor.addEventListener("change", (e) => {
   const f = e.target.dataset.f;
   const p = state.PROJECTS[current];
+  const fullSrc = e.target.dataset.full;
+  if (fullSrc) {
+    p.full = e.target.checked ? [...new Set([...p.full, fullSrc])] : p.full.filter((s) => s !== fullSrc);
+    markDirty();
+    renderEditor();
+    return;
+  }
   if (f !== "cat") return;
   p.cat = e.target.value;
   markDirty();
@@ -528,7 +539,7 @@ editor.addEventListener("click", async (e) => {
     if (act === "left" && k > 0) [A[k - 1], A[k]] = [A[k], A[k - 1]];
     if (act === "right" && k < A.length - 1) [A[k + 1], A[k]] = [A[k], A[k + 1]];
     if (act === "cover") A.unshift(A.splice(k, 1)[0]);
-    if (act === "del") A.splice(k, 1);   // Datei bleibt auf dem Server liegen (sicher)
+    if (act === "del") p.full = p.full.filter((s) => s !== A.splice(k, 1)[0]);   // Datei bleibt auf dem Server liegen (sicher)
     markDirty();
     renderEditor();
     renderList();
