@@ -1,0 +1,212 @@
+{
+  "CONTACT_EMAIL": "workwithalessio@gmail.com",
+  "NAME": "Alessio Rosano",
+  "CATS": {
+    "branding": "Branding",
+    "video": "Video",
+    "gestaltung": "Gestaltung",
+    "architektur": "Architektur"
+  },
+  "DISCIPLINES": [
+    {
+      "cat": "branding",
+      "lead": "Identitäten, die man wiedererkennt — von der Strategie über das Logo bis zum konsistenten Auftritt auf allen Kanälen.",
+      "tags": [
+        "Markenstrategie",
+        "Logo & Wortmarke",
+        "Corporate Design",
+        "Typografie",
+        "Farbsysteme",
+        "Brand Guidelines"
+      ],
+      "tools": "Illustrator, Figma, InDesign",
+      "steps": [
+        [
+          "Analyse",
+          "Wer ist die Marke, wen spricht sie an und wo steht sie im Vergleich zu anderen?"
+        ],
+        [
+          "Konzept",
+          "Aus der Haltung entsteht eine Idee — und aus der Idee Zeichen, Schrift und Farbe."
+        ],
+        [
+          "System",
+          "Guidelines und Vorlagen sorgen dafür, dass die Marke überall gleich klingt."
+        ]
+      ]
+    },
+    {
+      "cat": "video",
+      "lead": "Bewegtbild mit Rhythmus: Konzept, Dreh, Schnitt und Color Grading für Imagefilme, Social Media und Dokumentationen.",
+      "tags": [
+        "Konzept & Storyboard",
+        "Kamera",
+        "Schnitt",
+        "Color Grading",
+        "Motion Design",
+        "Social Cuts"
+      ],
+      "tools": "Sony FX3, DaVinci Resolve, Premiere Pro, After Effects",
+      "steps": [
+        [
+          "Konzept",
+          "Storyboard, Shotlist und Drehplan — bevor die Kamera läuft, steht der Film im Kopf."
+        ],
+        [
+          "Dreh",
+          "Licht, Bild und Ton mit kleinem Team und wendigem Setup."
+        ],
+        [
+          "Post",
+          "Schnitt, Color Grading und Sounddesign — plus Formate für jeden Kanal."
+        ]
+      ]
+    },
+    {
+      "cat": "gestaltung",
+      "lead": "Visuelle Kommunikation für Print und Screen — klar strukturiert, typografisch sauber und mit eigenem Charakter.",
+      "tags": [
+        "Editorial",
+        "Plakat",
+        "Layout",
+        "Illustration",
+        "Web & UI",
+        "Präsentationen"
+      ],
+      "tools": "InDesign, Illustrator, Photoshop, Figma",
+      "steps": [
+        [
+          "Struktur",
+          "Raster, Hierarchie und Lesefluss als Fundament jeder Seite."
+        ],
+        [
+          "Typografie",
+          "Schrift ist Stimme — ausgewählt und gesetzt mit Sorgfalt."
+        ],
+        [
+          "Produktion",
+          "Druckdaten, Screens und Präsentationen, sauber aufbereitet."
+        ]
+      ]
+    },
+    {
+      "cat": "architektur",
+      "lead": "Räume denken und darstellen: Entwürfe, Pläne, Visualisierungen und Modelle vom ersten Strich bis zur Präsentation.",
+      "tags": [
+        "Entwurf",
+        "Planung (CAD)",
+        "3D-Visualisierung",
+        "Modellbau",
+        "Raumkonzepte",
+        "Präsentationspläne"
+      ],
+      "tools": "Rhino, Archicad, AutoCAD, Blender",
+      "steps": [
+        [
+          "Ort",
+          "Topografie, Licht und Kontext bestimmen den ersten Strich."
+        ],
+        [
+          "Entwurf",
+          "Skizzen, Varianten und Modelle, bis Raum und Idee zusammenpassen."
+        ],
+        [
+          "Darstellung",
+          "Pläne, Schnitte und Visualisierungen, die den Entwurf erklären."
+        ]
+      ]
+    }
+  ],
+  "PROJECTS": [
+    {
+      "title": "ja mudda",
+      "cat": "branding",
+      "year": 2026,
+      "role": "Identität, Logo, Guidelines",
+      "tools": "Illustrator, Figma",
+      "desc": "Visuelle Identität für ein Bergsport-Label: ein geometrisches Zeichen, das auf Etiketten ebenso funktioniert wie auf der Fahne am Gipfel.",
+      "link": "",
+      "art": 0,
+      "images": [
+        "content/img/ja-mudda-muegurq41xi.jpg"
+      ]
+    },
+    {
+      "title": "Haus am Hang",
+      "cat": "architektur",
+      "year": 2025,
+      "role": "Entwurf, Pläne, Visualisierung",
+      "tools": "Rhino, Archicad",
+      "desc": "Entwurf eines Einfamilienhauses im steilen Gelände — ein kompakter Grundriss, der sich zum Tal hin öffnet.",
+      "link": "",
+      "art": 0,
+      "images": []
+    },
+    {
+      "title": "Stille Stadt",
+      "cat": "video",
+      "year": 2025,
+      "role": "Regie, Kamera, Schnitt",
+      "tools": "Sony FX3, DaVinci Resolve",
+      "desc": "Kurzdokumentation über eine Stadt in den frühen Morgenstunden. Vier Minuten ohne Dialog, getragen von Bild und Ton.",
+      "link": "",
+      "art": 0,
+      "images": []
+    },
+    {
+      "title": "Resonanz",
+      "cat": "gestaltung",
+      "year": 2026,
+      "role": "Plakatserie, Typografie",
+      "tools": "InDesign, Illustrator",
+      "desc": "Plakatserie für eine Konzertreihe — ein strenges Raster, das von Ausgabe zu Ausgabe rhythmisch aufgebrochen wird.",
+      "link": "",
+      "art": 0,
+      "images": []
+    },
+    {
+      "title": "Atelier Holzzzz",
+      "cat": "branding",
+      "year": 2024,
+      "role": "Wortmarke, Farbsystem, Packaging",
+      "tools": "Illustrator, Photoshop",
+      "desc": "Rebranding einer kleinen Schreinerei: eine ruhige Wortmarke und ein Farbsystem, das mit dem Material arbeitet statt dagegen.",
+      "link": "",
+      "art": 1,
+      "images": []
+    },
+    {
+      "title": "Schnitt A—A",
+      "cat": "architektur",
+      "year": 2024,
+      "role": "Studie, Modell, Schnitte",
+      "tools": "AutoCAD, Blender",
+      "desc": "Semesterstudie zu Licht und Schwelle: wie ein einziger Schnitt die Wirkung eines ganzen Hauses erklären kann.",
+      "link": "",
+      "art": 1,
+      "images": []
+    },
+    {
+      "title": "Frames / 24",
+      "cat": "video",
+      "year": 2026,
+      "role": "Imagefilm, Social Cuts",
+      "tools": "Premiere Pro, After Effects",
+      "desc": "Imagefilm mit Ableitungen für Social Media — ein Schnittsystem, das in 60, 15 und 6 Sekunden funktioniert.",
+      "link": "",
+      "art": 1,
+      "images": []
+    },
+    {
+      "title": "Editorial 03",
+      "cat": "gestaltung",
+      "year": 2025,
+      "role": "Layout, Typografie",
+      "tools": "InDesign",
+      "desc": "Magazin-Layout für ein studentisches Heft: Schweizer Raster, grosse Zahlen und viel Weissraum.",
+      "link": "",
+      "art": 1,
+      "images": []
+    }
+  ]
+}

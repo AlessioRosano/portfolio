@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Projekt — Alessio Rosano</title>
+  <meta name="description" content="Projekt von Alessio Rosano." />
+  <meta name="theme-color" content="#ff6600" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6600'/%3E%3Ctext x='16' y='21.5' text-anchor='middle' font-family='Arial' font-weight='700' font-size='14' fill='%23fff'%3EAR%3C/text%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script>try { if (localStorage.getItem("ar-theme") === "pink") document.documentElement.dataset.theme = "pink"; } catch (e) {}</script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="is-loading page-sub page-project" data-page="project">
+
+  <!-- ───────────── LOADER ───────────── -->
+  <div class="loader" aria-hidden="true">
+    <div class="loader__row mono">
+      <span>AR / PROJEKT</span>
+      <span class="hide-sm" data-p-crumb-loader></span>
+      <span>©2026</span>
+    </div>
+
+    <div class="loader__name name-line" data-name="Projekt" data-max="0.34"></div>
+
+    <div class="loader__bottom">
+      <ul class="loader__log mono">
+        <li>&gt; load projekt ....... <b>ok</b></li>
+        <li>&gt; load bilder ........ <b>ok</b></li>
+      </ul>
+      <div class="loader__count"><span data-count>000</span><small>%</small></div>
+    </div>
+    <div class="loader__bar"><span></span></div>
+  </div>
+
+  <div class="cover" aria-hidden="true"></div>
+
+  <!-- ───────────── CURSOR / GRID ───────────── -->
+  <div class="cursor" aria-hidden="true"><span class="cursor__label mono">Ansehen</span></div>
+  <div class="grid-overlay" aria-hidden="true"><div class="wrap"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+
+  <!-- ───────────── NAV ───────────── -->
+  <header class="nav">
+    <a href="index.html" class="nav__logo">Alessio Rosano</a>
+    <nav class="nav__links">
+      <a href="index.html#disziplinen"><span class="mono">01</span>Disziplinen</a>
+      <a href="index.html#ueber"><span class="mono">02</span>Über</a>
+      <a href="index.html#kontakt"><span class="mono">03</span>Kontakt</a>
+    </nav>
+    <div class="nav__meta mono">
+      <button class="theme-toggle mono" type="button" data-theme-toggle aria-pressed="false" aria-label="Farbe zwischen Orange und Pink wechseln">
+        <span class="theme-toggle__track" aria-hidden="true"><span class="theme-toggle__knob"></span></span>
+        <span class="theme-toggle__label" data-theme-label>Orange</span>
+      </button>
+      <span class="hide-sm">CHUR <span data-clock>--:--:--</span></span>
+      <span data-progress>000%</span>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ───────────── HERO ───────────── -->
+    <section class="hero hero--sub hero--project">
+      <div class="hero__crumb mono">
+        <div class="mask"><a class="reveal-up" data-p-back href="index.html#disziplinen">← Index</a></div>
+        <div class="mask"><span class="reveal-up" data-p-count></span></div>
+      </div>
+
+      <h1 class="hero__name name-line" data-name="Projekt" data-max="0.34"></h1>
+
+      <div class="hero__meta hero__meta--sub">
+        <div class="mask"><p class="reveal-up" data-p-role></p></div>
+        <div class="mask hero__star-wrap"><span class="hero__star reveal-up" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><path d="M20 0v40M0 20h40M5.86 5.86l28.28 28.28M34.14 5.86 5.86 34.14" stroke="currentColor" stroke-width="3"/></svg>
+        </span></div>
+        <div class="mask"><p class="reveal-up serif" data-p-meta></p></div>
+      </div>
+    </section>
+
+    <!-- ───────────── TITELBILD (vollflächig) ───────────── -->
+    <figure class="pcover" data-p-cover></figure>
+
+    <!-- ───────────── INFO ───────────── -->
+    <section class="section pinfo">
+      <p class="mono label">(01) — Über das Projekt</p>
+      <div class="pinfo__grid">
+        <p class="pinfo__desc" data-p-desc></p>
+        <dl class="specs mono" data-p-specs></dl>
+      </div>
+    </section>
+
+    <!-- ───────────── GALERIE ───────────── -->
+    <section class="pgallery" data-p-gallery></section>
+
+    <!-- ───────────── NÄCHSTES PROJEKT ───────────── -->
+    <a class="next" data-p-next href="#" data-cursor="Weiter">
+      <span class="mono next__label" data-p-next-label></span>
+      <span class="next__title"><span data-p-next-title></span><i aria-hidden="true">→</i></span>
+    </a>
+
+    <!-- ───────────── CTA / FOOTER ───────────── -->
+    <section class="contact" id="kontakt">
+      <div class="contact__inner contact__inner--cta">
+        <p class="mono label">Kontakt</p>
+        <h2 class="contact__title split">Lass uns etwas <em class="serif">bauen.</em></h2>
+        <a class="btn" href="index.html#kontakt"><span>Projekt anfragen</span><i>→</i></a>
+      </div>
+
+      <footer class="footer">
+        <div class="footer__cols mono">
+          <div><p class="muted">Standort</p><p>Chur, CH</p><p>46.8508° N, 9.5320° E</p></div>
+          <div><p class="muted">Lokalzeit</p><p data-clock>--:--:--</p></div>
+          <div><p class="muted">Social</p><a href="#" target="_blank" rel="noopener">Instagram ↗</a><a href="#" target="_blank" rel="noopener">LinkedIn ↗</a><a href="#" target="_blank" rel="noopener">Vimeo ↗</a><a href="#" target="_blank" rel="noopener">Behance ↗</a></div>
+          <div><p class="muted">System</p><p>Taste [G] — Raster</p><a href="#top">Nach oben ↑</a></div>
+        </div>
+        <div class="footer__name name-line" data-name aria-hidden="true"></div>
+        <div class="footer__legal mono"><span>© 2026 Alessio Rosano</span><span>Alle Rechte vorbehalten</span></div>
+      </footer>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

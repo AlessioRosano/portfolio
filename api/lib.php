@@ -1,0 +1,299 @@
+<?php
+/* ==========================================================================
+   Gemeinsame Basis für CMS, Inhalte und Galerien.
+
+   Code (dieser Ordner, HTML, CSS, JS) kommt per Git auf den Server.
+   Inhalte entstehen nur auf dem Server und werden von Git nie angefasst:
+     content/   öffentlich — data.json und Projektbilder
+     storage/   gesperrt   — Galerien, Backups, Login-Sperren
+   ========================================================================== */
+
+declare(strict_types=1);
+
+const ROOT = __DIR__ . '/..';
+const CONTENT = ROOT . '/content';
+const STORAGE = ROOT . '/storage';
+const GALLERIES = STORAGE . '/galleries';
+
+const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+const GALLERY_TYPES = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'mp4', 'mov', 'm4v', 'webm'];
+const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+const MAX_GALLERY_BYTES = 8 * 1024 * 1024 * 1024;
+const SESSION_IDLE = 8 * 3600;
+
+// Grösstes Upload-Stück, das der Server annimmt (php.ini: upload_max_filesize / post_max_size)
+function uploadLimit(): int
+{
+    $bytes = function (string $v): int {
+        $n = (int) $v;
+        return match (strtolower(substr(trim($v), -1))) { 'g' => $n << 30, 'm' => $n << 20, 'k' => $n << 10, default => $n };
+    };
+    return min($bytes((string) ini_get('upload_max_filesize')), $bytes((string) ini_get('post_max_size')));
+}
+
+function config(): array
+{
+    static $config = null;
+    $file = __DIR__ . '/config.local.php';
+    return $config ??= is_file($file) ? (array) require $file : [];
+}
+
+/* ── Ordner beim ersten Aufruf anlegen ──────────────────────── */
+function ensureStorage(): void
+{
+    foreach ([CONTENT . '/img', GALLERIES, STORAGE . '/tmp', STORAGE . '/backups'] as $dir) {
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+    }
+    if (!is_file(STORAGE . '/.htaccess')) file_put_contents(STORAGE . '/.htaccess', "Require all denied\n");
+    // Hochgeladene Dateien dürfen nie als Script laufen
+    if (!is_file(CONTENT . '/.htaccess')) {
+        file_put_contents(CONTENT . '/.htaccess', "<FilesMatch \"\\.(php\\d?|phtml|phar|pl|py|cgi|sh|htaccess)$\">\n  Require all denied\n</FilesMatch>\n");
+    }
+    // Erster Start: Inhalte aus setup/ übernehmen
+    if (!is_file(CONTENT . '/data.json')) {
+        copy(ROOT . '/setup/data.json', CONTENT . '/data.json');
+        foreach (glob(ROOT . '/setup/img/*') ?: [] as $file) copy($file, CONTENT . '/img/' . basename($file));
+    }
+}
+
+/* ── JSON-Dateien und Antworten ─────────────────────────────── */
+function readJson(string $file, mixed $default = []): mixed
+{
+    if (!is_file($file)) return $default;
+    return json_decode((string) file_get_contents($file), true) ?? $default;
+}
+
+// Erst in eine Temp-Datei, dann umbenennen — so ist eine Datei nie halb geschrieben
+function writeJson(string $file, mixed $data): void
+{
+    $tmp = $file . '.' . bin2hex(random_bytes(4)) . '.tmp';
+    file_put_contents($tmp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    rename($tmp, $file);
+}
+
+function respond(mixed $data, int $status = 200): never
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+function fail(string $message, int $status = 400): never
+{
+    respond(['error' => $message], $status);
+}
+
+function jsonBody(): array
+{
+    $data = json_decode((string) file_get_contents('php://input'), true);
+    return is_array($data) ? $data : [];
+}
+
+/* ── Session, CSRF, Login ───────────────────────────────────── */
+function startSession(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) return;
+    session_name('ar_session');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => ($_SERVER['HTTPS'] ?? 'off') !== 'off',
+    ]);
+    session_start();
+    $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
+}
+
+function csrfToken(): string
+{
+    startSession();
+    return $_SESSION['csrf'];
+}
+
+function checkCsrf(?string $token = null): void
+{
+    $token ??= $_SERVER['HTTP_X_CSRF'] ?? '';
+    if (!hash_equals(csrfToken(), (string) $token)) fail('Sitzung abgelaufen — bitte Seite neu laden.', 403);
+}
+
+function isAdmin(): bool
+{
+    startSession();
+    if (empty($_SESSION['admin']) || time() - ($_SESSION['seen'] ?? 0) > SESSION_IDLE) return false;
+    $_SESSION['seen'] = time();
+    return true;
+}
+
+function requireAdmin(): void
+{
+    if (!isAdmin()) fail('Nicht angemeldet', 401);
+}
+
+/* ── Sperre nach zu vielen Fehlversuchen ────────────────────── */
+const MAX_ATTEMPTS = 5;
+const ATTEMPT_WINDOW = 15 * 60;
+
+// Zählt Fehlversuche pro Zweck und IP im Zeitfenster; mit $add wird einer dazugezählt
+function failedAttempts(string $scope, bool $add = false): int
+{
+    $file = STORAGE . '/attempts.json';
+    $key = hash('sha256', $scope . '|' . ($_SERVER['REMOTE_ADDR'] ?? ''));
+    $all = readJson($file);
+    $since = time() - ATTEMPT_WINDOW;
+    foreach ($all as $k => $times) $all[$k] = array_values(array_filter($times, fn ($t) => $t > $since));
+    if ($add) $all[$key][] = time();
+    writeJson($file, array_filter($all));
+    return count($all[$key] ?? []);
+}
+
+function guardAttempts(string $scope): void
+{
+    if (failedAttempts($scope) >= MAX_ATTEMPTS) fail('Zu viele Fehlversuche — bitte in 15 Minuten erneut versuchen.', 429);
+}
+
+function clearAttempts(string $scope): void
+{
+    $file = STORAGE . '/attempts.json';
+    $all = readJson($file);
+    unset($all[hash('sha256', $scope . '|' . ($_SERVER['REMOTE_ADDR'] ?? ''))]);
+    writeJson($file, $all);
+}
+
+/* ── Dateien ────────────────────────────────────────────────── */
+function slugify(string $s, int $max = 40): string
+{
+    $s = strtr(mb_strtolower($s), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss', 'é' => 'e', 'è' => 'e', 'à' => 'a']);
+    $s = trim(substr((string) preg_replace('/[^a-z0-9]+/', '-', $s), 0, $max), '-');
+    return $s !== '' ? $s : 'datei';
+}
+
+function extensionOf(string $name): string
+{
+    return strtolower(pathinfo($name, PATHINFO_EXTENSION));
+}
+
+// Prüft den echten Inhalt, nicht nur die Endung
+function detectedKind(string $path): string
+{
+    $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($path);
+    return explode('/', $mime)[0];
+}
+
+function uniqueName(string $dir, string $base, string $ext): string
+{
+    $name = "$base.$ext";
+    for ($n = 2; is_file("$dir/$name"); $n++) $name = "$base-$n.$ext";
+    return $name;
+}
+
+/* ── Galerien ───────────────────────────────────────────────── */
+function galleries(): array
+{
+    return readJson(STORAGE . '/galleries.json');
+}
+
+function saveGalleries(array $all): void
+{
+    writeJson(STORAGE . '/galleries.json', $all);
+}
+
+function validSlug(string $slug): bool
+{
+    return (bool) preg_match('/^[a-z0-9-]{1,60}$/', $slug);
+}
+
+function galleryDir(string $slug): string
+{
+    return GALLERIES . '/' . $slug;
+}
+
+function galleryExpired(array $g): bool
+{
+    return !empty($g['expires']) && strtotime($g['expires'] . ' 23:59:59') < time();
+}
+
+// Wer darf eine Galerie sehen? Wer das Passwort eingegeben hat — und du im CMS
+function canViewGallery(string $slug): bool
+{
+    startSession();
+    return isAdmin() || !empty($_SESSION['galleries'][$slug]);
+}
+
+function galleryFiles(string $slug): array
+{
+    $dir = galleryDir($slug);
+    $files = [];
+    foreach (glob("$dir/*") ?: [] as $path) {
+        if (!is_file($path)) continue;
+        $name = basename($path);
+        $files[] = [
+            'name' => $name,
+            'size' => filesize($path),
+            'kind' => in_array(extensionOf($name), ['mp4', 'mov', 'm4v', 'webm'], true) ? 'video' : 'image',
+            'thumb' => is_file("$dir/thumbs/$name.jpg"),
+        ];
+    }
+    usort($files, fn ($a, $b) => strnatcasecmp($a['name'], $b['name']));
+    return $files;
+}
+
+// Vorschaubild (max. 800 px) für schnelle Übersichten — braucht die GD-Erweiterung
+function makeThumb(string $path): void
+{
+    if (!function_exists('imagecreatefromstring') || filesize($path) > 60 * 1024 * 1024) return;
+    $img = @imagecreatefromstring((string) file_get_contents($path));
+    if (!$img) return;
+    $w = imagesx($img);
+    $h = imagesy($img);
+    $scale = min(1, 800 / max($w, $h));
+    $thumb = imagescale($img, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale)));
+    $dir = dirname($path) . '/thumbs';
+    if (!is_dir($dir)) mkdir($dir, 0755);
+    imagejpeg($thumb, "$dir/" . basename($path) . '.jpg', 80);
+}
+
+/* ── Dateien ausliefern (mit Range für Video-Spulen) ────────── */
+function sendFile(string $path, string $downloadName, bool $attachment): never
+{
+    set_time_limit(0);
+    session_write_close();   // lange Downloads blockieren sonst die Sitzung
+    while (ob_get_level()) ob_end_clean();
+
+    $size = filesize($path);
+    $start = 0;
+    $end = $size - 1;
+    header('Accept-Ranges: bytes');
+    if (preg_match('/bytes=(\d*)-(\d*)/', $_SERVER['HTTP_RANGE'] ?? '', $m)) {
+        if ($m[1] === '') {
+            $start = max(0, $size - (int) $m[2]);
+        } else {
+            $start = (int) $m[1];
+            if ($m[2] !== '') $end = min((int) $m[2], $size - 1);
+        }
+        if ($start > $end) {
+            http_response_code(416);
+            header("Content-Range: bytes */$size");
+            exit;
+        }
+        http_response_code(206);
+        header("Content-Range: bytes $start-$end/$size");
+    }
+    header('Content-Type: ' . ((new finfo(FILEINFO_MIME_TYPE))->file($path) ?: 'application/octet-stream'));
+    header('Content-Length: ' . ($end - $start + 1));
+    header('Content-Disposition: ' . ($attachment ? 'attachment' : 'inline') . "; filename*=UTF-8''" . rawurlencode($downloadName));
+    header('Cache-Control: private, max-age=3600');
+    header('X-Content-Type-Options: nosniff');
+
+    $fp = fopen($path, 'rb');
+    fseek($fp, $start);
+    for ($left = $end - $start + 1; $left > 0 && !feof($fp) && !connection_aborted(); $left -= strlen($chunk)) {
+        $chunk = (string) fread($fp, min(1 << 20, $left));
+        echo $chunk;
+        flush();
+    }
+    fclose($fp);
+    exit;
+}

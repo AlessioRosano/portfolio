@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <!-- Alle Pfade (Bilder, api/, Website-Links) gelten ab dem Hauptordner -->
+  <base href="../" />
+  <title>CMS — Alessio Rosano</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6600'/%3E%3Ctext x='16' y='21.5' text-anchor='middle' font-family='Arial' font-weight='700' font-size='14' fill='%23fff'%3EAR%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bx: #000000;
+      --bx-60: color-mix(in srgb, var(--bx) 60%, white);
+      --bx-35: color-mix(in srgb, var(--bx) 35%, white);
+      --bx-15: color-mix(in srgb, var(--bx) 15%, white);
+      --bx-08: color-mix(in srgb, var(--bx) 8%, white);
+      --bx-04: color-mix(in srgb, var(--bx) 4%, white);
+      --white: #fff;
+      --sans: "Inter Tight", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --radius: 10px;
+    }
+    /* Platzhalter-Grafiken (js/art.js) in der Akzentfarbe der Website */
+    svg.art {
+      --bx: #ff6600;
+      --bx-deep: color-mix(in srgb, var(--bx) 82%, black);
+      --bx-night: color-mix(in srgb, var(--bx) 43%, black);
+      --bx-80: color-mix(in srgb, var(--bx) 80%, white);
+      --bx-60: color-mix(in srgb, var(--bx) 60%, white);
+      --bx-35: color-mix(in srgb, var(--bx) 35%, white);
+      --bx-15: color-mix(in srgb, var(--bx) 15%, white);
+      --bx-08: color-mix(in srgb, var(--bx) 8%, white);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--white); color: var(--bx);
+      font-family: var(--sans); font-weight: 500; font-size: 15px; line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      display: grid; grid-template-rows: auto 1fr;
+    }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; padding: 0; }
+    a { color: inherit; }
+    .mono { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 400; }
+    .muted { opacity: 0.55; }
+
+    /* Kopfzeile */
+    .bar {
+      display: flex; align-items: center; gap: 20px;
+      padding: 12px 20px; border-bottom: 1.5px solid var(--bx);
+      position: sticky; top: 0; background: var(--white); z-index: 5;
+    }
+    .bar__logo { font-weight: 800; letter-spacing: -0.03em; font-size: 18px; }
+    .tabs { display: flex; gap: 4px; margin-left: 12px; }
+    .tabs button { padding: 8px 14px; border-radius: 999px; }
+    .tabs button:hover { background: var(--bx-08); }
+    .tabs button.is-active { background: var(--bx); color: var(--white); }
+    .bar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    .status { white-space: nowrap; }
+    .status.is-dirty::before { content: "● "; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 999px; border: 1.5px solid var(--bx);
+      font-weight: 600; white-space: nowrap; transition: background .2s, color .2s;
+    }
+    .btn:hover { background: var(--bx-08); }
+    .btn--fill { background: var(--bx); color: var(--white); }
+    .btn--fill:hover { background: color-mix(in srgb, var(--bx) 85%, black); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn--danger { border-color: var(--bx-35); }
+    .btn--sm { padding: 6px 12px; font-size: 13px; }
+
+    /* Login */
+    .login { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--white); padding: 20px; }
+    .login[hidden] { display: none; }
+    .login form { width: min(380px, 100%); display: grid; gap: 14px; }
+    .login h1 { margin: 0 0 8px; font-size: 44px; letter-spacing: -0.045em; line-height: 0.95; font-weight: 800; }
+    .login input { padding: 12px 14px; }
+    .login .btn { justify-content: center; }
+    .login__error { min-height: 1.4em; margin: 0; }
+
+    /* Layout */
+    .view { display: none; min-height: 0; }
+    .view.is-active { display: grid; }
+    #view-projects, #view-galleries { grid-template-columns: 340px 1fr; }
+    .list { border-right: 1.5px solid var(--bx-15); overflow-y: auto; display: flex; flex-direction: column; }
+    .list__top { padding: 16px; display: grid; gap: 12px; border-bottom: 1.5px solid var(--bx-15); position: sticky; top: 0; background: var(--white); z-index: 1; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--bx-35); }
+    .chips button.is-active { background: var(--bx); border-color: var(--bx); color: var(--white); }
+    .items { list-style: none; margin: 0; padding: 8px; display: grid; gap: 2px; }
+    .item {
+      display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center;
+      padding: 8px; border-radius: var(--radius); cursor: pointer;
+    }
+    .item:hover { background: var(--bx-04); }
+    .item.is-active { background: var(--bx-08); }
+    .item__thumb { width: 44px; aspect-ratio: 4 / 5; border-radius: 5px; overflow: hidden; background: var(--bx-08); }
+    .item__thumb img, .item__thumb svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .item__title { font-weight: 700; letter-spacing: -0.01em; }
+    .item__move { display: flex; flex-direction: column; opacity: 0; }
+    .item:hover .item__move, .item.is-active .item__move { opacity: 1; }
+    .item__move button { padding: 0 6px; font-size: 12px; line-height: 1.4; border-radius: 4px; }
+    .item__move button:hover { background: var(--bx-15); }
+    .empty { padding: 24px 16px; }
+
+    /* Editor */
+    .editor { overflow-y: auto; padding: 28px clamp(20px, 3vw, 48px) 80px; }
+    .editor__head { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 28px; }
+    .editor__head h1 { margin: 0; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.045em; line-height: 0.95; font-weight: 800; }
+    .editor__head .actions { margin-left: auto; display: flex; gap: 8px; }
+    .form { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px 20px; max-width: 1100px; }
+    .field { display: grid; gap: 6px; grid-column: span 6; }
+    .field--2 { grid-column: span 2; } .field--3 { grid-column: span 3; } .field--4 { grid-column: span 4; }
+    .field > span.mono { opacity: 0.7; }
+    .field small { opacity: 0.55; font-size: 12px; }
+    input[type="text"], input[type="number"], input[type="url"], input[type="email"], input[type="password"], input[type="date"], textarea, select {
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1.5px solid var(--bx-15); background: var(--white); outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--bx); }
+    textarea { resize: vertical; min-height: 110px; line-height: 1.45; }
+    .check { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--bx); }
+
+    /* Bilder */
+    .drop {
+      display: grid; place-items: center; gap: 4px; text-align: center;
+      padding: 26px; border: 1.5px dashed var(--bx-35); border-radius: var(--radius);
+      cursor: pointer; transition: background .2s, border-color .2s;
+    }
+    .drop:hover, .drop.is-over { background: var(--bx-04); border-color: var(--bx); }
+    .drop strong { font-size: 17px; }
+    .drop.is-busy { pointer-events: none; opacity: 0.6; }
+    .images { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+    .img { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--bx-08); aspect-ratio: 4 / 5; }
+    .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img__badge { position: absolute; left: 8px; top: 8px; background: var(--bx); color: var(--white); padding: 3px 7px; border-radius: 999px; }
+    .img__tools {
+      position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between;
+      padding: 6px; background: linear-gradient(transparent, rgba(40, 5, 13, .75)); opacity: 0; transition: opacity .2s;
+    }
+    .img:hover .img__tools { opacity: 1; }
+    .img__tools button { color: var(--white); padding: 4px 8px; border-radius: 6px; }
+    .img__tools button:hover { background: rgba(255,255,255,.2); }
+    .img__missing { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 10px; }
+    .placeholder { display: flex; gap: 16px; align-items: center; }
+    .placeholder .preview { width: 110px; aspect-ratio: 4 / 5; border-radius: 8px; overflow: hidden; }
+    .placeholder .preview svg { width: 100%; height: 100%; display: block; }
+    .seg { display: inline-flex; border: 1.5px solid var(--bx-35); border-radius: 999px; overflow: hidden; }
+    .seg button { padding: 6px 14px; }
+    .seg button.is-active { background: var(--bx); color: var(--white); }
+
+    /* Disziplinen / Allgemein */
+    .pane { overflow-y: auto; padding: 28px clamp(20px, 3vw, 48px) 80px; }
+    .pane h1 { margin: 0 0 6px; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.045em; line-height: 0.95; font-weight: 800; }
+    .pane > p { margin: 0 0 28px; max-width: 60ch; }
+    .card { border-top: 1.5px solid var(--bx); padding: 20px 0 36px; max-width: 1100px; }
+    .card h2 { margin: 0 0 16px; font-size: 28px; letter-spacing: -0.03em; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; grid-column: span 6; }
+    .steps textarea { min-height: 80px; margin-top: 6px; }
+
+    /* Galerien */
+    .share { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 14px; border-radius: var(--radius); background: var(--bx-04); }
+    .share code { font-family: var(--mono); font-size: 13px; word-break: break-all; flex: 1 1 260px; }
+    .pw { display: flex; gap: 8px; }
+    .files { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 14px; }
+    .file { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--bx-08); aspect-ratio: 1; }
+    .file img, .file video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .file__name { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; color: var(--white); background: linear-gradient(transparent, rgba(0,0,0,.65)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file__del { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; background: var(--white); opacity: 0; transition: opacity .2s; }
+    .file:hover .file__del { opacity: 1; }
+    .uploads { display: grid; gap: 6px; margin-top: 12px; }
+    .upload { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; }
+    .upload progress { grid-column: 1 / -1; width: 100%; height: 4px; accent-color: var(--bx); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--bx); color: var(--white); }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0;
+      background: var(--bx); color: var(--white); padding: 12px 18px; border-radius: 999px;
+      transition: opacity .3s, transform .3s; pointer-events: none; z-index: 20;
+    }
+    .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 900px) {
+      #view-projects { grid-template-columns: 1fr; }
+      .list { max-height: 40vh; border-right: 0; border-bottom: 1.5px solid var(--bx-15); }
+      .field--2, .field--3, .field--4 { grid-column: span 6; }
+      .steps { grid-template-columns: 1fr; }
+      .bar { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <span class="bar__logo">AR</span><span class="mono muted">CMS</span>
+    <nav class="tabs" data-tabs>
+      <button class="is-active" data-tab="projects">Projekte</button>
+      <button data-tab="galleries">Galerien</button>
+      <button data-tab="disciplines">Disziplinen</button>
+      <button data-tab="general">Allgemein</button>
+    </nav>
+    <div class="bar__right">
+      <span class="mono status muted" data-status>Gespeichert</span>
+      <a class="btn" href="index.html" target="_blank" rel="noopener">Website ↗</a>
+      <button class="btn btn--fill" data-save disabled>Speichern <span class="mono" style="opacity:.6">⌘S</span></button>
+      <button class="btn btn--sm" data-logout>Abmelden</button>
+    </div>
+  </header>
+
+  <div class="login" data-login hidden>
+    <form data-login-form>
+      <h1>CMS</h1>
+      <input type="password" name="password" placeholder="Passwort" required autocomplete="current-password" aria-label="Passwort" />
+      <button class="btn btn--fill" type="submit">Anmelden</button>
+      <p class="mono login__error" data-login-error role="alert"></p>
+    </form>
+  </div>
+
+  <!-- Projekte -->
+  <section class="view is-active" id="view-projects">
+    <aside class="list">
+      <div class="list__top">
+        <button class="btn btn--fill" data-new>+ Neues Projekt</button>
+        <div class="chips mono" data-filter></div>
+      </div>
+      <ul class="items" data-items></ul>
+    </aside>
+    <div class="editor" data-editor></div>
+  </section>
+
+  <!-- Galerien -->
+  <section class="view" id="view-galleries">
+    <aside class="list">
+      <div class="list__top">
+        <button class="btn btn--fill" data-gallery-new>+ Neue Galerie</button>
+      </div>
+      <ul class="items" data-galleries></ul>
+    </aside>
+    <div class="editor" data-gallery-editor></div>
+  </section>
+
+  <!-- Disziplinen -->
+  <section class="view" id="view-disciplines">
+    <div class="pane" data-disciplines></div>
+  </section>
+
+  <!-- Allgemein -->
+  <section class="view" id="view-general">
+    <div class="pane" data-general></div>
+  </section>
+
+  <input type="file" accept="image/*" multiple hidden data-file />
+  <input type="file" accept="image/*,video/*,.heic,.mov" multiple hidden data-gallery-file />
+  <div class="toast" data-toast></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/art.js"></script>
+  <script src="admin/admin.js"></script>
+</body>
+</html>

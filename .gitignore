@@ -1,0 +1,8 @@
+# Inhalte leben nur auf dem Server (CMS) — nie in Git
+content/
+storage/
+
+# Passwort-Hash: lokal von Hand, auf dem Server vom Deploy erzeugt
+api/config.local.php
+
+.DS_Store
