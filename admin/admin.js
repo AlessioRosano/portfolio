@@ -152,7 +152,7 @@ function renderFilter() {
   const count = (c) => state.PROJECTS.filter((p) => !c || p.cat === c).length;
   $("[data-filter]").innerHTML =
     `<button data-f="" class="${filter ? "" : "is-active"}">Alle ${pad(count())}</button>` +
-    Object.entries(state.CATS).map(([k, v]) => `<button data-f="${k}" class="${filter === k ? "is-active" : ""}">${esc(v)} ${pad(count(k))}</button>`).join("");
+    Object.entries(state.CATS).map(([k, v]) => `<button data-f="${esc(k)}" class="${filter === k ? "is-active" : ""}">${esc(v)} ${pad(count(k))}</button>`).join("");
 }
 
 function visible() {
@@ -184,7 +184,7 @@ function renderEditor() {
     ed.innerHTML = `<div class="editor__head"><h1>Keine Projekte</h1></div><p>Lege mit «+ Neues Projekt» dein erstes Projekt an.</p>`;
     return;
   }
-  const catOpts = Object.entries(state.CATS).map(([k, v]) => `<option value="${k}"${p.cat === k ? " selected" : ""}>${esc(v)}</option>`).join("");
+  const catOpts = Object.entries(state.CATS).map(([k, v]) => `<option value="${esc(k)}"${p.cat === k ? " selected" : ""}>${esc(v)}</option>`).join("");
   ed.innerHTML = `
     <div class="editor__head">
       <div>
@@ -555,7 +555,7 @@ function renderGalleryEditor() {
           <input type="text" data-gf="password" value="${esc(g.password)}" autocomplete="off" spellcheck="false" />
           <button class="btn btn--sm" data-g-newpw type="button">Neu erzeugen</button>
         </div>
-        <small>Mindestens 6 Zeichen. Wird geprüft, bevor jemand die Galerie sieht.</small></div>
+        <small>Mindestens 8 Zeichen. Wird geprüft, bevor jemand die Galerie sieht.</small></div>
       <label class="field field--2"><span class="mono">Verfügbar bis (optional)</span>
         <input type="date" data-gf="expires" value="${esc(g.expires)}" />
         <small>Danach ist die Galerie für Kund:innen gesperrt.</small></label>
@@ -730,6 +730,16 @@ async function start() {
   current = 0;
   renderAll();
   loadGalleries();
+  checkStorageLocked();
+}
+
+// Selbstkontrolle: Der gesperrte Speicher (Galerien, Backups) darf von aussen nie erreichbar sein
+async function checkStorageLocked() {
+  if (["localhost", "127.0.0.1"].includes(location.hostname)) return;   // lokal gibt es keine Sperre
+  const res = await fetch("storage/index.html", { cache: "no-store" }).catch(() => null);
+  if (res?.ok) {
+    $("[data-alarm]").hidden = false;
+  }
 }
 
 api("session")

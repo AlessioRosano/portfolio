@@ -40,6 +40,17 @@ Dann http://localhost:8000 (Website) und http://localhost:8000/admin (CMS).
 Das lokale CMS-Passwort steht als Kommentar in `api/config.local.php` (nicht in Git).
 Lokal angelegte Inhalte bleiben lokal — die echten Inhalte pflegst du online im CMS.
 
+## Sicherheit
+
+- Keine Zugangsdaten im Code: FTP-Daten und CMS-Passwort sind nur GitHub-Secrets; auf dem Server liegt nur der Passwort-Hash.
+- CMS: Login mit Sperre nach 5 Fehlversuchen, CSRF-Schutz, Sitzung läuft nach 8 h Inaktivität ab.
+- Uploads: nur Bilder/Videos, geprüft am echten Inhalt (kein SVG/HTML); Auslieferung mit fester Dateiart und Sandbox.
+- Inhalte werden beim Speichern serverseitig geprüft (nur `https://`-Links, nur eigene Bildpfade).
+- `.htaccess`: strenge Content-Security-Policy (nur eigene Scripts), interne Dateien und `storage/` gesperrt.
+- Alle Scripts liegen im Projekt (`js/vendor/`), keine fremden Script-Server.
+- Das CMS warnt rot, falls `storage/` je öffentlich erreichbar wäre.
+- **Im Infomaniak Manager einschalten:** SSL-Zertifikat, «HTTPS erzwingen» und HSTS.
+
 ## Backups
 
 - Bei jedem Speichern hebt der Server die letzten 30 Stände von `data.json` in `storage/backups/` auf.

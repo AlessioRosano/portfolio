@@ -15,8 +15,17 @@ const CONTENT = ROOT . '/content';
 const STORAGE = ROOT . '/storage';
 const GALLERIES = STORAGE . '/galleries';
 
-const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-const GALLERY_TYPES = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'mp4', 'mov', 'm4v', 'webm'];
+// Erlaubte Dateien: Endung → Content-Type, mit dem sie ausgeliefert werden.
+// Der echte Inhalt muss ebenfalls passen (MIME_OK) — sonst wird die Datei abgelehnt.
+// Bewusst kein SVG/HTML: die könnten Script enthalten.
+const IMAGE_TYPES = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'];
+const GALLERY_TYPES = IMAGE_TYPES + [
+    'heic' => 'image/heic', 'mp4' => 'video/mp4', 'mov' => 'video/quicktime', 'm4v' => 'video/x-m4v', 'webm' => 'video/webm',
+];
+const MIME_OK = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
+    'video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm', 'video/x-matroska', 'application/mp4',
+];
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 const MAX_GALLERY_BYTES = 8 * 1024 * 1024 * 1024;
 const SESSION_IDLE = 8 * 3600;
@@ -45,6 +54,8 @@ function ensureStorage(): void
         if (!is_dir($dir)) mkdir($dir, 0755, true);
     }
     if (!is_file(STORAGE . '/.htaccess')) file_put_contents(STORAGE . '/.htaccess', "Require all denied\n");
+    // Keine Ordner-Listen, auch falls der Server sie erlauben würde
+    foreach ([CONTENT, CONTENT . '/img', STORAGE] as $dir) if (!is_file("$dir/index.html")) touch("$dir/index.html");
     // Hochgeladene Dateien dürfen nie als Script laufen
     if (!is_file(CONTENT . '/.htaccess')) {
         file_put_contents(CONTENT . '/.htaccess', "<FilesMatch \"\\.(php\\d?|phtml|phar|pl|py|cgi|sh|htaccess)$\">\n  Require all denied\n</FilesMatch>\n");
@@ -101,10 +112,16 @@ function startSession(): void
         'path' => '/',
         'httponly' => true,
         'samesite' => 'Lax',
-        'secure' => ($_SERVER['HTTPS'] ?? 'off') !== 'off',
+        'secure' => isHttps(),
     ]);
+    ini_set('session.use_strict_mode', '1');   // keine vom Angreifer vorgegebenen Sitzungs-IDs
     session_start();
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
+}
+
+function isHttps(): bool
+{
+    return ($_SERVER['HTTPS'] ?? 'off') !== 'off' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 }
 
 function csrfToken(): string
@@ -172,14 +189,13 @@ function slugify(string $s, int $max = 40): string
 
 function extensionOf(string $name): string
 {
-    return strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    return str_replace('jpeg', 'jpg', strtolower(pathinfo($name, PATHINFO_EXTENSION)));
 }
 
 // Prüft den echten Inhalt, nicht nur die Endung
-function detectedKind(string $path): string
+function contentAllowed(string $path): bool
 {
-    $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($path);
-    return explode('/', $mime)[0];
+    return in_array((string) (new finfo(FILEINFO_MIME_TYPE))->file($path), MIME_OK, true);
 }
 
 function uniqueName(string $dir, string $base, string $ext): string
@@ -232,7 +248,7 @@ function galleryFiles(string $slug): array
         $files[] = [
             'name' => $name,
             'size' => filesize($path),
-            'kind' => in_array(extensionOf($name), ['mp4', 'mov', 'm4v', 'webm'], true) ? 'video' : 'image',
+            'kind' => str_starts_with(GALLERY_TYPES[extensionOf($name)] ?? '', 'video/') ? 'video' : 'image',
             'thumb' => is_file("$dir/thumbs/$name.jpg"),
         ];
     }
@@ -256,7 +272,7 @@ function makeThumb(string $path): void
 }
 
 /* ── Dateien ausliefern (mit Range für Video-Spulen) ────────── */
-function sendFile(string $path, string $downloadName, bool $attachment): never
+function sendFile(string $path, string $downloadName, bool $attachment, ?string $type = null): never
 {
     set_time_limit(0);
     session_write_close();   // lange Downloads blockieren sonst die Sitzung
@@ -281,7 +297,9 @@ function sendFile(string $path, string $downloadName, bool $attachment): never
         http_response_code(206);
         header("Content-Range: bytes $start-$end/$size");
     }
-    header('Content-Type: ' . ((new finfo(FILEINFO_MIME_TYPE))->file($path) ?: 'application/octet-stream'));
+    // Typ kommt aus der Endungsliste, nie aus dem Dateiinhalt; die Sandbox verhindert jedes Script
+    header('Content-Type: ' . ($type ?? GALLERY_TYPES[extensionOf($path)] ?? 'application/octet-stream'));
+    header("Content-Security-Policy: default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox");
     header('Content-Length: ' . ($end - $start + 1));
     header('Content-Disposition: ' . ($attachment ? 'attachment' : 'inline') . "; filename*=UTF-8''" . rawurlencode($downloadName));
     header('Cache-Control: private, max-age=3600');

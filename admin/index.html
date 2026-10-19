@@ -75,6 +75,9 @@
     .btn--danger { border-color: var(--bx-35); }
     .btn--sm { padding: 6px 12px; font-size: 13px; }
 
+    .alarm { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 16px 20px; background: #d00; color: #fff; }
+    .alarm[hidden] { display: none; }
+
     /* Login */
     .login { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--white); padding: 20px; }
     .login[hidden] { display: none; }
@@ -213,6 +216,11 @@
       <button class="btn btn--sm" data-logout>Abmelden</button>
     </div>
   </header>
+
+  <div class="alarm" data-alarm hidden role="alert">
+    <b>Achtung:</b> Der Ordner <code>storage/</code> ist öffentlich erreichbar — Galerien sind nicht geschützt.
+    Der Server beachtet die <code>.htaccess</code>-Sperre nicht. Bitte keine Galerien hochladen und mir Bescheid geben.
+  </div>
 
   <div class="login" data-login hidden>
     <form data-login-form>

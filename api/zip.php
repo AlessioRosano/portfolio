@@ -35,4 +35,4 @@ if (!is_file($zipPath)) {
     rename($tmp, $zipPath);
 }
 
-sendFile($zipPath, slugify($gallery['title'], 60) . '.zip', true);
+sendFile($zipPath, slugify($gallery['title'], 60) . '.zip', true, 'application/zip');

@@ -1,0 +1,19 @@
+# Sicherheit für den ganzen Webauftritt (Apache bei Infomaniak)
+
+# Interne Dateien sind nie von aussen abrufbar: .htaccess, .user.ini, README, Workflow-Dateien
+<FilesMatch "^(\.|README\.md$|.*\.ya?ml$)">
+  Require all denied
+</FilesMatch>
+
+# Interne Ordner: Startinhalte, gesperrter Speicher, Git- und Editor-Ordner
+RedirectMatch 404 /(setup|storage|\.git|\.github|\.vscode)(/|$)
+
+<IfModule mod_headers.c>
+  # Nur eigene Scripts erlaubt — fremder oder eingeschleuster Code läuft nicht
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+</IfModule>

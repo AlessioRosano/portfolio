@@ -41,7 +41,7 @@ async function loadContent() {
   PROJECT_IDS = projectIds(PROJECTS);
 }
 const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
-const disciplineUrl = (cat) => `disziplin.html?d=${cat}`;
+const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 
 // Fotos: in der Übersicht schwarz-weiss, auf der Projektseite farbig (siehe CSS)
 const mediaClass = (p) => (p.images?.length ? " is-photo" : "");
@@ -197,7 +197,7 @@ function buildDisciplines() {
       <a class="svc" href="${disciplineUrl(d.cat)}" data-cursor="Öffnen">
         <div class="svc__head">
           <span class="mono">${pad(i + 1)}</span>
-          <h3>${CATS[d.cat]}</h3>
+          <h3>${esc(CATS[d.cat])}</h3>
           <span class="mono svc__count">${pad(ps.length)} Projekte</span>
           <span class="svc__arrow" aria-hidden="true">→</span>
         </div>
@@ -238,8 +238,8 @@ function buildSub() {
   $("[data-d-steps]").innerHTML = d.steps.map(([t, x], n) => `
     <div class="step"><span class="mono">Schritt ${pad(n + 1)}</span><h3>${esc(t)}</h3><p>${esc(x)}</p></div>`).join("");
   $("[data-d-specs]").innerHTML = [
-    ["Disziplin", name], ["Tools", esc(d.tools)], ["Projekte", pad(ps.length)],
-    ["Kontakt", `<a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL} ↗</a>`],
+    ["Disziplin", esc(name)], ["Tools", esc(d.tools)], ["Projekte", pad(ps.length)],
+    ["Kontakt", `<a href="mailto:${esc(CONTACT_EMAIL)}">${esc(CONTACT_EMAIL)} ↗</a>`],
   ].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
 
   const ni = (i + 1) % DISCIPLINES.length;
@@ -491,7 +491,7 @@ function initForm() {
       "",
       d.get("message"),
     ].join("\n");
-    location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Projektanfrage — ${d.get("name")}`)}&body=${encodeURIComponent(body)}`;
+    location.href = `mailto:${encodeURIComponent(CONTACT_EMAIL).replace("%40", "@")}?subject=${encodeURIComponent(`Projektanfrage — ${d.get("name")}`)}&body=${encodeURIComponent(body)}`;
     status.textContent = "Mail-Programm wird geöffnet …";
   });
   form.addEventListener("input", (e) => e.target.classList.remove("is-invalid"));

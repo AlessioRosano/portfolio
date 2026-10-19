@@ -47,6 +47,64 @@ switch ($action) {
 
 requireAdmin();
 
+// Prüft und bereinigt alles, was das CMS speichern will. Was nicht ins Schema passt, wird abgelehnt —
+// so können nie Script-Links, fremde Bildpfade oder kaputte Daten auf die Website gelangen.
+function cleanData(array $d): array
+{
+    $text = function (mixed $v, int $max = 5000): string {
+        if (!is_string($v) && !is_int($v)) fail('Ungültige Daten: Text erwartet');
+        $v = trim((string) $v);
+        if (mb_strlen($v) > $max) fail('Ein Text ist zu lang');
+        return $v;
+    };
+    if (!is_array($d['CATS'] ?? null) || !is_array($d['DISCIPLINES'] ?? null) || !is_array($d['PROJECTS'] ?? null)) fail('Ungültige Daten');
+
+    $email = $text($d['CONTACT_EMAIL'] ?? '', 200);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('Kontakt-E-Mail ist ungültig');
+
+    $cats = [];
+    foreach ($d['CATS'] as $key => $label) {
+        if (!preg_match('/^[a-z]{1,30}$/', (string) $key)) fail('Ungültige Disziplin');
+        $cats[$key] = $text($label, 60);
+    }
+
+    $disciplines = array_map(function ($x) use ($text, $cats) {
+        if (!is_array($x) || !isset($cats[$x['cat'] ?? ''])) fail('Ungültige Disziplin');
+        return [
+            'cat' => $x['cat'],
+            'lead' => $text($x['lead'] ?? ''),
+            'tags' => array_map(fn ($t) => $text($t, 60), array_values((array) ($x['tags'] ?? []))),
+            'tools' => $text($x['tools'] ?? '', 300),
+            'steps' => array_map(fn ($s) => [$text($s[0] ?? '', 100), $text($s[1] ?? '', 1000)], array_values((array) ($x['steps'] ?? []))),
+        ];
+    }, array_values($d['DISCIPLINES']));
+
+    $projects = array_map(function ($p) use ($text, $cats) {
+        if (!is_array($p) || !isset($cats[$p['cat'] ?? ''])) fail('Projekt hat eine ungültige Disziplin');
+        $link = $text($p['link'] ?? '', 500);
+        if ($link !== '' && !preg_match('#^https?://[^\s"<>]+$#i', $link)) fail('Links müssen mit https:// beginnen');
+        $images = array_values((array) ($p['images'] ?? []));
+        foreach ($images as $img) {
+            if (!is_string($img) || !preg_match('#^content/img/[a-z0-9-]+\.(jpg|png|webp|gif)$#', $img)) fail('Ungültiger Bildpfad');
+        }
+        $year = $p['year'] ?? '';
+        if ($year !== '' && (!is_int($year) || $year < 1900 || $year > 2100)) fail('Ungültiges Jahr');
+        return [
+            'title' => $text($p['title'] ?? '', 120),
+            'cat' => $p['cat'],
+            'year' => $year,
+            'role' => $text($p['role'] ?? '', 200),
+            'tools' => $text($p['tools'] ?? '', 300),
+            'desc' => $text($p['desc'] ?? ''),
+            'link' => $link,
+            'art' => (int) ($p['art'] ?? 0) % 2,
+            'images' => $images,
+        ];
+    }, array_values($d['PROJECTS']));
+
+    return ['CONTACT_EMAIL' => $email, 'NAME' => $text($d['NAME'] ?? '', 120), 'CATS' => $cats, 'DISCIPLINES' => $disciplines, 'PROJECTS' => $projects];
+}
+
 switch ($action) {
     /* ── Inhalte ─────────────────────────────────────────────── */
     case 'data':
@@ -54,23 +112,21 @@ switch ($action) {
 
     case 'save':
         if (!$isPost) fail('POST erwartet', 405);
-        $data = jsonBody();
-        foreach (['CONTACT_EMAIL' => 'is_string', 'NAME' => 'is_string', 'CATS' => 'is_array', 'DISCIPLINES' => 'is_array', 'PROJECTS' => 'is_array'] as $key => $check) {
-            if (!isset($data[$key]) || !$check($data[$key])) fail("Ungültige Daten: $key fehlt");
-        }
+        $data = cleanData(jsonBody());
         // Vorherigen Stand aufheben (die letzten 30)
         copy(CONTENT . '/data.json', STORAGE . '/backups/data-' . date('Ymd-His') . '.json');
         $backups = glob(STORAGE . '/backups/data-*.json') ?: [];
         foreach (array_slice($backups, 0, max(0, count($backups) - 30)) as $old) unlink($old);
-        writeJson(CONTENT . '/data.json', array_intersect_key($data, array_flip(['CONTACT_EMAIL', 'NAME', 'CATS', 'DISCIPLINES', 'PROJECTS'])));
+        writeJson(CONTENT . '/data.json', $data);
         respond(['ok' => true]);
 
     case 'upload':
         if (!$isPost) fail('POST erwartet', 405);
         $file = $_FILES['file'] ?? null;
         if (!$file || $file['error'] !== UPLOAD_ERR_OK) fail('Upload fehlgeschlagen');
-        $ext = str_replace('jpeg', 'jpg', extensionOf($file['name']));
-        if (!in_array($ext, IMAGE_TYPES, true) || detectedKind($file['tmp_name']) !== 'image') fail('Nur Bilder (JPG, PNG, WebP, GIF) erlaubt');
+        $ext = extensionOf($file['name']);
+        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        if (!isset(IMAGE_TYPES[$ext]) || !in_array($mime, IMAGE_TYPES, true)) fail('Nur Bilder (JPG, PNG, WebP, GIF) erlaubt');
         if ($file['size'] > MAX_IMAGE_BYTES) fail('Bild ist zu gross (max. 25 MB)');
         $dir = CONTENT . '/img';
         $name = uniqueName($dir, slugify((string) ($_POST['title'] ?? 'bild')) . '-' . bin2hex(random_bytes(3)), $ext);
@@ -87,7 +143,7 @@ switch ($action) {
         foreach (glob(CONTENT . '/img/*') ?: [] as $img) $zip->addFile($img, 'content/img/' . basename($img));
         $zip->close();
         register_shutdown_function(fn () => @unlink($zipPath));
-        sendFile($zipPath, 'portfolio-backup-' . date('Y-m-d') . '.zip', true);
+        sendFile($zipPath, 'portfolio-backup-' . date('Y-m-d') . '.zip', true, 'application/zip');
 
     /* ── Galerien ────────────────────────────────────────────── */
     case 'galleries':
@@ -113,7 +169,7 @@ switch ($action) {
             fail('Galerie nicht gefunden', 404);
         }
         $password = trim((string) ($in['password'] ?? ''));
-        if (strlen($password) < 6) fail('Passwort muss mindestens 6 Zeichen haben');
+        if (strlen($password) < 8) fail('Passwort muss mindestens 8 Zeichen haben');
         $expires = (string) ($in['expires'] ?? '');
         if ($expires !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $expires)) fail('Ungültiges Ablaufdatum');
         $date = (string) ($in['date'] ?? '');
@@ -160,7 +216,7 @@ switch ($action) {
         if (!preg_match('/^[a-z0-9]{12,40}$/', $id) || $index < 0 || $index >= $total) fail('Ungültiger Upload');
         if (!$chunk || $chunk['error'] !== UPLOAD_ERR_OK) fail('Upload-Teil fehlgeschlagen');
         $ext = extensionOf($name);
-        if (!in_array($ext, GALLERY_TYPES, true)) fail('Dateityp nicht erlaubt (Bilder: JPG, PNG, WebP, GIF, HEIC — Videos: MP4, MOV, M4V, WebM)');
+        if (!isset(GALLERY_TYPES[$ext])) fail('Dateityp nicht erlaubt (Bilder: JPG, PNG, WebP, GIF, HEIC — Videos: MP4, MOV, M4V, WebM)');
 
         $part = STORAGE . "/tmp/$id.part";
         if ($index === 0) @unlink($part);
@@ -172,14 +228,14 @@ switch ($action) {
         }
         if ($index < $total - 1) respond(['ok' => true]);
 
-        if (!in_array(detectedKind($part), ['image', 'video'], true)) {
+        if (!contentAllowed($part)) {
             unlink($part);
             fail('Datei ist kein Bild oder Video');
         }
         $dir = galleryDir($slug);
         $final = uniqueName($dir, slugify(pathinfo($name, PATHINFO_FILENAME), 80), $ext);
         rename($part, "$dir/$final");
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) makeThumb("$dir/$final");
+        if (isset(IMAGE_TYPES[$ext])) makeThumb("$dir/$final");
         // Liegengebliebene Teile von abgebrochenen Uploads aufräumen
         foreach (glob(STORAGE . '/tmp/*') ?: [] as $old) if (filemtime($old) < time() - 86400) @unlink($old);
         respond(['ok' => true, 'name' => $final]);
