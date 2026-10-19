@@ -30,6 +30,7 @@ async function api(action, body) {
 }
 
 function normalize(d) {
+  d.SOCIAL ??= [];
   d.PROJECTS = d.PROJECTS.map((p) => ({
     title: "", cat: "branding", year: new Date().getFullYear(), role: "", tools: "", desc: "",
     link: "", art: 0, images: [], ...p,
@@ -291,6 +292,21 @@ function renderGeneral() {
       </div>
     </div>
     <div class="card">
+      <h2>Social-Links</h2>
+      <p style="max-width:60ch;margin:0 0 16px">Erscheinen im Footer jeder Seite. Leere Zeilen werden nicht angezeigt; ohne Links verschwindet die Spalte.</p>
+      <div class="form" data-social-list>
+        ${state.SOCIAL.map((s, i) => `
+          <label class="field field--2"><span class="mono">Name</span>
+            <input type="text" data-si="${i}" data-sk="label" value="${esc(s.label)}" placeholder="z. B. Instagram" /></label>
+          <label class="field field--4"><span class="mono">Link</span>
+            <div class="pw">
+              <input type="url" data-si="${i}" data-sk="url" value="${esc(s.url)}" placeholder="https://instagram.com/…" />
+              <button class="btn btn--sm btn--danger" type="button" data-social-del="${i}" title="Link entfernen">✕</button>
+            </div></label>`).join("")}
+        <div class="field"><div><button class="btn btn--sm" type="button" data-social-add>+ Link hinzufügen</button></div></div>
+      </div>
+    </div>
+    <div class="card">
       <h2>Backup</h2>
       <p style="max-width:60ch;margin:0 0 16px">
         Lädt alle Texte, Projektbilder und Galerie-Einstellungen als ZIP herunter (ohne die Galerie-Dateien selbst).
@@ -459,10 +475,20 @@ $("[data-disciplines]").addEventListener("input", (e) => {
 });
 
 $("[data-general]").addEventListener("input", (e) => {
-  const k = e.target.dataset.g;
-  if (!k) return;
-  state[k] = e.target.value.trim();
+  const { g, si, sk } = e.target.dataset;
+  if (g) state[g] = e.target.value.trim();
+  else if (si !== undefined) state.SOCIAL[+si][sk] = e.target.value.trim();
+  else return;
   markDirty();
+});
+$("[data-general]").addEventListener("click", (e) => {
+  const del = e.target.closest("[data-social-del]");
+  if (del) state.SOCIAL.splice(+del.dataset.socialDel, 1);
+  else if (e.target.closest("[data-social-add]")) state.SOCIAL.push({ label: "", url: "" });
+  else return;
+  markDirty();
+  renderGeneral();
+  if (!del) $$("[data-sk='label']").at(-1)?.focus();
 });
 
 addEventListener("keydown", (e) => {

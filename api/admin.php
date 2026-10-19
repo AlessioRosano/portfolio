@@ -102,7 +102,16 @@ function cleanData(array $d): array
         ];
     }, array_values($d['PROJECTS']));
 
-    return ['CONTACT_EMAIL' => $email, 'NAME' => $text($d['NAME'] ?? '', 120), 'CATS' => $cats, 'DISCIPLINES' => $disciplines, 'PROJECTS' => $projects];
+    $social = [];
+    foreach (array_slice(array_values((array) ($d['SOCIAL'] ?? [])), 0, 12) as $s) {
+        if (!is_array($s)) fail('Ungültiger Social-Link');
+        $label = $text($s['label'] ?? '', 40);
+        $url = $text($s['url'] ?? '', 500);
+        if ($url !== '' && !preg_match('#^https://[^\s"<>]+$#i', $url)) fail("Social-Link «{$label}» muss mit https:// beginnen");
+        if ($label !== '' || $url !== '') $social[] = ['label' => $label, 'url' => $url];
+    }
+
+    return ['CONTACT_EMAIL' => $email, 'NAME' => $text($d['NAME'] ?? '', 120), 'CATS' => $cats, 'DISCIPLINES' => $disciplines, 'PROJECTS' => $projects, 'SOCIAL' => $social];
 }
 
 switch ($action) {

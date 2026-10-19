@@ -32,12 +32,12 @@ function media(p, W, H) {
 }
 
 // Inhalte aus dem CMS — werden beim Start geladen (siehe Boot)
-let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, PROJECT_IDS;
+let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, PROJECT_IDS;
 
 async function loadContent() {
   const res = await fetch("api/data.php", { cache: "no-store" });
   if (!res.ok) throw new Error(`Inhalte nicht geladen (${res.status})`);
-  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS } = await res.json());
+  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL = [] } = await res.json());
   PROJECT_IDS = projectIds(PROJECTS);
 }
 const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
@@ -184,6 +184,16 @@ function initSlider() {
     if (x <= -half) x += half;
     if (x > 0) x -= half;
     track.style.transform = `translate3d(${x}px,0,0)`;
+  });
+}
+
+/* ── Social-Links im Footer (gepflegt im CMS unter «Allgemein») ── */
+function buildSocial() {
+  const links = SOCIAL.filter((s) => s.label && s.url);
+  $$("[data-social]").forEach((el) => {
+    el.insertAdjacentHTML("beforeend", links.map((s) =>
+      `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.label)} ↗</a>`).join(""));
+    el.hidden = !links.length;
   });
 }
 
@@ -626,6 +636,7 @@ Promise.all([loadContent(), document.fonts.ready]).then(() => {
   buildNames();
   buildSlider();
   buildDisciplines();
+  buildSocial();
   fitNames();
   sizeSlider();
 
