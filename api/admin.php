@@ -82,10 +82,15 @@ function cleanData(array $d): array
     $projects = array_map(function ($p) use ($text, $cats) {
         if (!is_array($p) || !isset($cats[$p['cat'] ?? ''])) fail('Projekt hat eine ungültige Disziplin');
         $link = $text($p['link'] ?? '', 500);
+        // Film auf YouTube oder Vimeo (wird auf der Projektseite erst nach Klick geladen)
+        $video = $text($p['video'] ?? '', 300);
+        if ($video !== '' && !preg_match('#^https://((www\.|m\.)?youtube\.com/(watch\?v=|shorts/|embed/)|youtu\.be/)[A-Za-z0-9_-]{11}([?&\#][^\s"<>]*)?$|^https://(www\.|player\.)?vimeo\.com/(video/)?\d+(/[a-f0-9]+)?([?\#][^\s"<>]*)?$#', $video)) {
+            fail('Video-Link: bitte einen YouTube- oder Vimeo-Link (https://…)');
+        }
         if ($link !== '' && !preg_match('#^https?://[^\s"<>]+$#i', $link)) fail('Links müssen mit https:// beginnen');
         $images = array_values((array) ($p['images'] ?? []));
         foreach ($images as $img) {
-            if (!is_string($img) || !preg_match('#^content/img/[a-z0-9-]+\.(jpg|png|webp|gif)$#', $img)) fail('Ungültiger Bildpfad');
+            if (!is_string($img) || !preg_match(MEDIA_PATH, $img)) fail('Ungültiger Bild- oder Videopfad');
         }
         $year = $p['year'] ?? '';
         if ($year !== '' && (!is_int($year) || $year < 1900 || $year > 2100)) fail('Ungültiges Jahr');
@@ -97,6 +102,7 @@ function cleanData(array $d): array
             'tools' => $text($p['tools'] ?? '', 300),
             'desc' => $text($p['desc'] ?? ''),
             'link' => $link,
+            'video' => $video,
             'art' => (int) ($p['art'] ?? 0) % 2,
             'images' => $images,
             // Bilder, die nicht beschnitten werden dürfen (nur solche, die auch im Projekt sind)
@@ -250,26 +256,12 @@ switch ($action) {
     case 'chunk':
         if (!$isPost) fail('POST erwartet', 405);
         $slug = (string) ($_POST['slug'] ?? '');
-        $id = (string) ($_POST['upload'] ?? '');
-        $index = (int) ($_POST['index'] ?? -1);
-        $total = (int) ($_POST['total'] ?? 0);
         $name = (string) ($_POST['name'] ?? '');
-        $chunk = $_FILES['chunk'] ?? null;
         if (!validSlug($slug) || !isset(galleries()[$slug])) fail('Galerie nicht gefunden', 404);
-        if (!preg_match('/^[a-z0-9]{12,40}$/', $id) || $index < 0 || $index >= $total) fail('Ungültiger Upload');
-        if (!$chunk || $chunk['error'] !== UPLOAD_ERR_OK) fail('Upload-Teil fehlgeschlagen');
         $ext = extensionOf($name);
         if (!isset(GALLERY_TYPES[$ext])) fail('Dateityp nicht erlaubt (Bilder: JPG, PNG, WebP, GIF, HEIC — Videos: MP4, MOV, M4V, WebM)');
-
-        $part = STORAGE . "/tmp/$id.part";
-        if ($index === 0) @unlink($part);
-        if ($index > 0 && !is_file($part)) fail('Upload unterbrochen — bitte neu starten');
-        file_put_contents($part, fopen($chunk['tmp_name'], 'rb'), FILE_APPEND | LOCK_EX);
-        if (filesize($part) > MAX_GALLERY_BYTES) {
-            unlink($part);
-            fail('Datei ist zu gross (max. 8 GB)');
-        }
-        if ($index < $total - 1) respond(['ok' => true]);
+        $part = receiveChunk(MAX_GALLERY_BYTES);
+        if (!$part) respond(['ok' => true]);
 
         if (!contentAllowed($part)) {
             unlink($part);
@@ -280,9 +272,34 @@ switch ($action) {
         rename($part, "$dir/$final");
         galleryProxy("$dir/$final", 'thumb');
         galleryProxy("$dir/$final", 'preview');
-        // Liegengebliebene Teile von abgebrochenen Uploads aufräumen
-        foreach (glob(STORAGE . '/tmp/*') ?: [] as $old) if (filemtime($old) < time() - 86400) @unlink($old);
         respond(['ok' => true, 'name' => $final]);
+
+    // Kurzer Video-Loop fürs Portfolio (MP4/WebM, in Stücken) → content/video/
+    case 'loop-chunk':
+        if (!$isPost) fail('POST erwartet', 405);
+        $ext = extensionOf((string) ($_POST['name'] ?? ''));
+        if (!isset(LOOP_TYPES[$ext])) fail('Für Loops nur MP4 oder WebM');
+        $part = receiveChunk(MAX_LOOP_BYTES);
+        if (!$part) respond(['ok' => true]);
+        if (!in_array((string) (new finfo(FILEINFO_MIME_TYPE))->file($part), ['video/mp4', 'video/webm', 'application/mp4', 'video/x-m4v'], true)) {
+            unlink($part);
+            fail('Datei ist kein MP4- oder WebM-Video');
+        }
+        $dir = CONTENT . '/video';
+        $name = uniqueName($dir, slugify((string) ($_POST['title'] ?? 'loop')) . '-' . bin2hex(random_bytes(3)), $ext);
+        rename($part, "$dir/$name");
+        respond(['ok' => true, 'path' => "content/video/$name"]);
+
+    // Standbild eines Loops (im Browser erzeugt): Vorschau in Übersichten und solange das Video lädt
+    case 'loop-poster':
+        if (!$isPost) fail('POST erwartet', 405);
+        $path = (string) ($_POST['path'] ?? '');
+        $poster = $_FILES['poster'] ?? null;
+        if (!preg_match('#^content/video/([a-z0-9-]+)\.(mp4|webm)$#', $path, $m) || !is_file(ROOT . "/$path")) fail('Video nicht gefunden', 404);
+        if (!$poster || $poster['error'] !== UPLOAD_ERR_OK || $poster['size'] > 3 * 1024 * 1024) fail('Standbild fehlt oder ist zu gross');
+        if ((new finfo(FILEINFO_MIME_TYPE))->file($poster['tmp_name']) !== 'image/jpeg') fail('Standbild muss ein JPG sein');
+        move_uploaded_file($poster['tmp_name'], CONTENT . "/video/{$m[1]}.jpg");
+        respond(['ok' => true]);
 }
 
 fail('Unbekannte Aktion', 404);

@@ -27,6 +27,10 @@ const MIME_OK = [
     'video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm', 'video/x-matroska', 'application/mp4',
 ];
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+const LOOP_TYPES = ['mp4' => 'video/mp4', 'webm' => 'video/webm'];   // kurze Video-Loops im Portfolio
+const MAX_LOOP_BYTES = 60 * 1024 * 1024;
+// Pfad eines Bildes oder Loops im Portfolio (alles andere lehnt der Server ab)
+const MEDIA_PATH = '#^content/(img/[a-z0-9-]+\.(jpg|png|webp|gif)|video/[a-z0-9-]+\.(mp4|webm))$#';
 const MAX_GALLERY_BYTES = 8 * 1024 * 1024 * 1024;
 const SESSION_IDLE = 8 * 3600;
 
@@ -50,12 +54,12 @@ function config(): array
 /* ── Ordner beim ersten Aufruf anlegen ──────────────────────── */
 function ensureStorage(): void
 {
-    foreach ([CONTENT . '/img', GALLERIES, STORAGE . '/tmp', STORAGE . '/backups'] as $dir) {
+    foreach ([CONTENT . '/img', CONTENT . '/video', GALLERIES, STORAGE . '/tmp', STORAGE . '/backups'] as $dir) {
         if (!is_dir($dir)) mkdir($dir, 0755, true);
     }
     if (!is_file(STORAGE . '/.htaccess')) file_put_contents(STORAGE . '/.htaccess', "Require all denied\n");
     // Keine Ordner-Listen, auch falls der Server sie erlauben würde
-    foreach ([CONTENT, CONTENT . '/img', STORAGE] as $dir) if (!is_file("$dir/index.html")) touch("$dir/index.html");
+    foreach ([CONTENT, CONTENT . '/img', CONTENT . '/video', STORAGE] as $dir) if (!is_file("$dir/index.html")) touch("$dir/index.html");
     // Hochgeladene Dateien dürfen nie als Script laufen
     if (!is_file(CONTENT . '/.htaccess')) {
         file_put_contents(CONTENT . '/.htaccess', "<FilesMatch \"\\.(php\\d?|phtml|phar|pl|py|cgi|sh|htaccess)$\">\n  Require all denied\n</FilesMatch>\n");
@@ -282,6 +286,31 @@ function projectSlugs(array $projects): array
         $seen[$id] = true;
         return $id;
     }, $projects);
+}
+
+/* ── Uploads in Stücken (Galerien, Video-Loops) ─────────────── */
+// Hängt das empfangene Stück an. Gibt beim letzten Stück den Pfad der fertigen Datei zurück, sonst null.
+function receiveChunk(int $maxBytes): ?string
+{
+    $id = (string) ($_POST['upload'] ?? '');
+    $index = (int) ($_POST['index'] ?? -1);
+    $total = (int) ($_POST['total'] ?? 0);
+    $chunk = $_FILES['chunk'] ?? null;
+    if (!preg_match('/^[a-z0-9]{12,40}$/', $id) || $index < 0 || $index >= $total) fail('Ungültiger Upload');
+    if (!$chunk || $chunk['error'] !== UPLOAD_ERR_OK) fail('Upload-Teil fehlgeschlagen');
+
+    $part = STORAGE . "/tmp/$id.part";
+    if ($index === 0) @unlink($part);
+    if ($index > 0 && !is_file($part)) fail('Upload unterbrochen — bitte neu starten');
+    file_put_contents($part, fopen($chunk['tmp_name'], 'rb'), FILE_APPEND | LOCK_EX);
+    if (filesize($part) > $maxBytes) {
+        unlink($part);
+        fail('Datei ist zu gross (max. ' . round($maxBytes / 1024 / 1024) . ' MB)');
+    }
+    if ($index < $total - 1) return null;
+    // Liegengebliebene Teile von abgebrochenen Uploads aufräumen
+    foreach (glob(STORAGE . '/tmp/*') ?: [] as $old) if (filemtime($old) < time() - 86400) @unlink($old);
+    return $part;
 }
 
 /* ── Galerien ───────────────────────────────────────────────── */

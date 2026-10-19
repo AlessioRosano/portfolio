@@ -25,8 +25,9 @@
 RedirectMatch 404 /(setup|storage|\.git|\.github|\.vscode)(/|$)
 
 <IfModule mod_headers.c>
-  # Nur eigene Scripts erlaubt — fremder oder eingeschleuster Code läuft nicht
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  # Nur eigene Scripts erlaubt — fremder oder eingeschleuster Code läuft nicht.
+  # Einzige Ausnahme: die Video-Player von YouTube (ohne Cookies) und Vimeo, erst nach Klick geladen.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"

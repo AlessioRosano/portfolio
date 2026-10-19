@@ -557,11 +557,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pcover { margin: 0; padding: 0 var(--pad); }
 /* Standard: Titelbild füllt den Rahmen (wird beschnitten) und zoomt beim Scrollen */
 .pcover .media { height: min(88vh, 62vw); border-radius: var(--radius); }
-.pcover .media > img, .pcover .media > svg { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
+.pcover .media > img, .pcover .media > video, .pcover .media > svg { width: 100%; height: 100%; object-fit: cover; transform-origin: center; display: block; }
 @media (max-width: 760px) { .pcover .media { height: auto; aspect-ratio: 4 / 5; } }
 /* Bild mit «Nicht beschneiden» (CMS): vollständig im eigenen Format, höchstens bildschirmhoch, zentriert */
 .pcover.is-full .media { width: fit-content; max-width: 100%; height: auto; aspect-ratio: auto; margin: 0 auto; }
-.pcover.is-full .media > img { width: auto; max-width: 100%; height: auto; max-height: 88vh; object-fit: contain; }
+.pcover.is-full .media > img, .pcover.is-full .media > video { width: auto; max-width: 100%; height: auto; max-height: 88vh; object-fit: contain; }
 
 .pinfo__grid { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(32px, 5vw, 96px); align-items: start; }
 .pinfo__desc { margin: 0; font-size: clamp(22px, 2.2vw, 40px); line-height: 1.18; letter-spacing: -0.025em; font-weight: 600; max-width: 30ch; white-space: pre-line; }
@@ -577,16 +577,42 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pgallery__item.is-wide { grid-column: 1 / -1; }
 .pgallery__item .media { border-radius: var(--radius); aspect-ratio: 4 / 5; }
 .pgallery__item.is-wide .media { aspect-ratio: 16 / 9; }
-.pgallery__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pgallery__item img, .pgallery__item video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pgallery:empty { display: none; }
 @media (max-width: 760px) {
   .pgallery { grid-template-columns: 1fr; }
   .pgallery__item .media, .pgallery__item.is-wide .media { aspect-ratio: auto; }
-  .pgallery__item img { height: auto; }
+  .pgallery__item img, .pgallery__item video { height: auto; }
 }
 /* Galeriebild mit «Nicht beschneiden»: vollständig in seinem eigenen Format */
 .pgallery__item.is-full .media { aspect-ratio: auto; }
-.pgallery__item.is-full img { height: auto; }
+.pgallery__item.is-full img, .pgallery__item.is-full video { height: auto; }
+
+/* Film (YouTube/Vimeo): Platzhalter im eigenen Look, Player erst nach Klick */
+.pfilm { padding: var(--pad) var(--pad) 0; }
+.pfilm[hidden] { display: none; }
+.pfilm__frame { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: var(--bx); }
+.pfilm__frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.pfilm__play {
+  position: absolute; inset: 0; display: flex; align-items: flex-end; gap: clamp(16px, 2vw, 28px);
+  padding: clamp(20px, 3vw, 48px); color: var(--white); text-align: left; cursor: none;
+  background: var(--bx) center / cover no-repeat;
+}
+.pfilm__play::before { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 35%, color-mix(in srgb, var(--bx) 85%, black)); }
+.pfilm__icon, .pfilm__text { position: relative; }
+.pfilm__icon {
+  flex: none; width: clamp(56px, 6vw, 96px); aspect-ratio: 1; border-radius: 50%; background: var(--white);
+  transition: transform 0.6s var(--ease-out);
+}
+.pfilm__icon::after {
+  content: ""; position: absolute; left: 54%; top: 50%; transform: translate(-50%, -50%);
+  border-style: solid; border-width: 0.6em 0 0.6em 1em; border-color: transparent transparent transparent var(--bx); font-size: clamp(14px, 1.4vw, 22px);
+}
+.pfilm__play:hover .pfilm__icon { transform: scale(1.08); }
+.pfilm__text { display: grid; gap: 6px; }
+.pfilm__text b { font-size: clamp(22px, 2.4vw, 40px); letter-spacing: -0.03em; line-height: 1; }
+.pfilm__text .mono { opacity: 0.8; max-width: 52ch; }
+@media (hover: none) { .pfilm__play { cursor: pointer; } }
 .page-project .next__title { font-size: clamp(44px, 8vw, 160px); }
 
 /* ── Reduzierte Bewegung ─────────────────────────────────────── */

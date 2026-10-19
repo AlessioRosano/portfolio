@@ -34,10 +34,37 @@ function img(src, alt, sizes, { eager = false } = {}) {
 }
 
 // Titelbild = erstes Bild; ohne Bilder wird eine Platzhalter-Grafik generiert
+// Video-Loops (MP4/WebM) stehen in derselben Liste wie Bilder. Abgespielt werden sie nur auf der
+// Projektseite (play), in Übersichten erscheint ihr Standbild — das hält die Startseite leicht.
+const isLoop = (src) => /\.(mp4|webm)$/i.test(src);
+const loopPoster = (src) => src.replace(/\.\w+$/, ".jpg");
+
+function mediaItem(src, alt, sizes, { play = false, eager = false } = {}) {
+  if (!isLoop(src)) return img(src, alt, sizes, { eager });
+  if (!play) return `<img src="${esc(loopPoster(src))}" alt="${esc(alt)}" loading="lazy" decoding="async" />`;
+  // Wer «Bewegung reduzieren» eingestellt hat, startet den Loop selbst
+  const autoplay = reduced ? "controls" : "autoplay muted loop";
+  return `<video src="${esc(src)}" poster="${esc(loopPoster(src))}" ${autoplay} playsinline preload="${eager ? "auto" : "metadata"}" aria-label="${esc(alt)}"></video>`;
+}
+
 function media(p, W, H, sizes, opts) {
   const src = p.images?.[0];
-  if (src) return img(src, p.title, sizes, opts);
+  if (src) return mediaItem(src, p.title, sizes, opts);
   return makeArt(p.cat, p.art, W, H, p.title);
+}
+
+// Film-Link (YouTube/Vimeo) → Adresse des eingebetteten Players, datensparsam (nocookie / dnt)
+function filmEmbed(url) {
+  try {
+    const u = new URL(url);
+    if (/(^|\.)youtu(\.be|be\.com)$/.test(u.hostname)) {
+      const id = u.hostname === "youtu.be" ? u.pathname.slice(1) : u.searchParams.get("v") || u.pathname.split("/")[2];
+      if (/^[\w-]{11}$/.test(id)) return { name: "YouTube", src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1` };
+    }
+    const vimeo = /(^|\.)vimeo\.com$/.test(u.hostname) && u.pathname.match(/^\/(?:video\/)?(\d+)(?:\/([a-f0-9]+))?/);
+    if (vimeo) return { name: "Vimeo", src: `https://player.vimeo.com/video/${vimeo[1]}?autoplay=1&dnt=1${vimeo[2] ? `&h=${vimeo[2]}` : ""}` };
+  } catch {}
+  return null;
 }
 
 // Inhalte aus dem CMS — werden beim Start geladen (siehe Boot)
@@ -361,7 +388,7 @@ function buildProject() {
     description: p.desc,
     genre: CATS[p.cat],
     dateCreated: String(p.year || ""),
-    image: p.images?.[0] ? absoluteUrl(p.images[0]) : undefined,
+    image: p.images?.[0] ? absoluteUrl(isLoop(p.images[0]) ? loopPoster(p.images[0]) : p.images[0]) : undefined,
     url: location.href,
     creator: { "@type": "Person", name: NAME, url: absoluteUrl("") },
   });
@@ -382,7 +409,26 @@ function buildProject() {
   // Bilder, die im CMS auf «Nicht beschneiden» stehen, erscheinen vollständig (Plakate, Bilder mit Text)
   const full = new Set(p.full || []);
   cover.classList.toggle("is-full", full.has(p.images?.[0]));
-  cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true })}</div>`;
+  cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true })}</div>`;
+
+  // Film: Platzhalter im eigenen Look; der Player von YouTube/Vimeo lädt erst nach dem Klick
+  const film = filmEmbed(p.video || "");
+  const filmBox = $("[data-p-film]");
+  filmBox.hidden = !film;
+  if (film) {
+    const still = p.images?.[0] && (isLoop(p.images[0]) ? loopPoster(p.images[0]) : p.images[0]);
+    filmBox.innerHTML = `
+      <div class="pfilm__frame">
+        <button class="pfilm__play" type="button" data-cursor="Abspielen"${still ? ` style="background-image:url('${esc(still)}')"` : ""}>
+          <span class="pfilm__icon" aria-hidden="true"></span>
+          <span class="pfilm__text"><b>Film abspielen</b>
+            <span class="mono">Lädt den Player von ${film.name}. Erst ab dann gelten dessen Datenschutzregeln.</span></span>
+        </button>
+      </div>`;
+    $(".pfilm__play", filmBox).addEventListener("click", () => {
+      $(".pfilm__frame", filmBox).innerHTML = `<iframe src="${esc(film.src)}" title="${esc(p.title)} (${film.name})" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`;
+    }, { once: true });
+  }
 
   $("[data-p-desc]").textContent = p.desc;
   const specs = [["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
@@ -391,7 +437,7 @@ function buildProject() {
 
   // Galerie: abwechselnd ein grosses Bild und zwei nebeneinander
   $("[data-p-gallery]").innerHTML = (p.images || []).slice(1).map((src, n) =>
-    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${img(src, `${p.title} — Bild ${n + 2}`, n % 3 === 0 ? "100vw" : "(max-width: 760px) 100vw, 50vw")}</div></figure>`).join("");
+    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${mediaItem(src, `${p.title}, Bild ${n + 2}`, n % 3 === 0 ? "100vw" : "(max-width: 760px) 100vw, 50vw", { play: true })}</div></figure>`).join("");
 
   // Nächstes Projekt: innerhalb der Disziplin, sonst das nächste insgesamt
   const next = siblings.length > 1 ? siblings[(k + 1) % siblings.length] : PROJECTS[(i + 1) % PROJECTS.length];

@@ -34,7 +34,7 @@ function normalize(d) {
   d.ABOUT = { statement: "", portrait: "", caption: "", specs: [], status: "", ...d.ABOUT };
   d.PROJECTS = d.PROJECTS.map((p) => ({
     title: "", cat: "branding", year: new Date().getFullYear(), role: "", tools: "", desc: "",
-    link: "", art: 0, images: [], full: [], ...p,
+    link: "", video: "", art: 0, images: [], full: [], ...p,
   }));
   return d;
 }
@@ -102,20 +102,55 @@ async function prepareImage(file) {
   return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
+// Video-Loops (MP4/WebM) liegen in derselben Liste wie Bilder; als Vorschau dient ein Standbild daneben
+const isLoop = (path) => /\.(mp4|webm)$/i.test(path);
+const loopPoster = (path) => path.replace(/\.\w+$/, ".jpg");
+const isLoopFile = (f) => /^video\/(mp4|webm)$/.test(f.type) || /\.(mp4|webm)$/i.test(f.name);
+
+async function uploadLoop(file, title, onProgress) {
+  const total = Math.max(1, Math.ceil(file.size / chunkSize));
+  const id = [...crypto.getRandomValues(new Uint8Array(12))].map((n) => n.toString(36).padStart(2, "0")).join("").slice(0, 24);
+  let res;
+  for (let i = 0; i < total; i++) {
+    const form = new FormData();
+    form.append("upload", id);
+    form.append("index", i);
+    form.append("total", total);
+    form.append("name", file.name);
+    form.append("title", title);
+    form.append("chunk", file.slice(i * chunkSize, (i + 1) * chunkSize), "chunk");
+    res = await api("loop-chunk", form);
+    onProgress?.((i + 1) / total);
+  }
+  const poster = await videoPoster(file).catch(() => null);
+  if (poster) {
+    const form = new FormData();
+    form.append("path", res.path);
+    form.append("poster", poster, "poster.jpg");
+    await api("loop-poster", form).catch(() => {});
+  }
+  return res.path;
+}
+
 async function addImages(files) {
-  const imgs = [...files].filter((f) => f.type.startsWith("image/"));
+  const imgs = [...files].filter((f) => f.type.startsWith("image/") || isLoopFile(f));
   if (!imgs.length) return;
   const p = state.PROJECTS[current];
   const drop = $("[data-drop]");
   drop?.classList.add("is-busy");
   let added = 0;
   for (const [n, f] of imgs.entries()) {
-    if (drop) drop.querySelector("strong").textContent = `Bild ${n + 1} von ${imgs.length} wird hochgeladen …`;
+    const label = `${isLoopFile(f) ? "Loop" : "Bild"} ${n + 1} von ${imgs.length} wird hochgeladen`;
+    if (drop) drop.querySelector("strong").textContent = `${label} …`;
     try {
-      const form = new FormData();
-      form.append("file", await prepareImage(f));
-      form.append("title", p.title);
-      p.images.push((await api("upload", form)).path);
+      if (isLoopFile(f)) {
+        p.images.push(await uploadLoop(f, p.title, (x) => { if (drop) drop.querySelector("strong").textContent = `${label} … ${Math.round(x * 100)} %`; }));
+      } else {
+        const form = new FormData();
+        form.append("file", await prepareImage(f));
+        form.append("title", p.title);
+        p.images.push((await api("upload", form)).path);
+      }
       added++;
     } catch (e) {
       toast(`«${f.name}»: ${e.message}`);
@@ -123,14 +158,14 @@ async function addImages(files) {
   }
   if (added) {
     markDirty();
-    toast(`${added} ${added === 1 ? "Bild" : "Bilder"} hochgeladen — Speichern nicht vergessen`);
+    toast(`${added} ${added === 1 ? "Datei" : "Dateien"} hochgeladen — Speichern nicht vergessen`);
   }
   renderEditor();
   renderList();
 }
 
 const thumb = (p, W = 400, H = 500) =>
-  p.images.length ? `<img src="${esc(p.images[0])}" alt="" />` : makeArt(p.cat, p.art, W, H, p.title);
+  p.images.length ? `<img src="${esc(isLoop(p.images[0]) ? loopPoster(p.images[0]) : p.images[0])}" alt="" />` : makeArt(p.cat, p.art, W, H, p.title);
 
 /* ── UI: Kopfzeile, Hinweise ─────────────────────────────────── */
 function updateStatus(text) {
@@ -216,20 +251,24 @@ function renderEditor() {
       <label class="field"><span class="mono">Beschreibung</span>
         <textarea data-f="desc" rows="5" placeholder="Worum geht es, was war deine Rolle, was ist das Besondere?">${esc(p.desc)}</textarea></label>
 
-      <label class="field"><span class="mono">Link (optional)</span>
-        <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://vimeo.com/…" />
-        <small>Wird im Projekt als «Link ↗» angezeigt — z. B. Film auf Vimeo, Behance oder Live-Website.</small></label>
+      <label class="field field--3"><span class="mono">Film (YouTube oder Vimeo, optional)</span>
+        <input type="url" data-f="video" value="${esc(p.video)}" placeholder="https://vimeo.com/123456789" />
+        <small>Erscheint auf der Projektseite als Player. Er lädt erst beim Klick, vorher gibt es keine Cookies von YouTube oder Vimeo.</small></label>
+      <label class="field field--3"><span class="mono">Link (optional)</span>
+        <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
+        <small>Wird im Projekt als «Link ↗» angezeigt, z. B. Behance oder Live-Website.</small></label>
 
       <div class="field">
-        <span class="mono">Bilder</span>
+        <span class="mono">Bilder &amp; Loops</span>
         <div class="drop" data-drop tabindex="0" role="button">
           <strong>Bilder hierher ziehen oder klicken</strong>
-          <span class="mono muted">JPG, PNG, WebP, GIF — grosse Bilder werden automatisch verkleinert</span>
+          <span class="mono muted">Bilder (JPG, PNG, WebP, GIF) oder kurze Loops (MP4, WebM, ohne Ton, max. 60 MB)</span>
         </div>
         ${p.images.length ? `<div class="images">${p.images.map((src, k) => `
           <div class="img-wrap">
           <div class="img${p.full.includes(src) ? " is-full" : ""}">
-            <img src="${esc(src)}" alt="" />
+            <img src="${esc(isLoop(src) ? loopPoster(src) : src)}" alt="" />
+            ${isLoop(src) ? `<span class="img__badge mono" style="left:auto;right:8px">▶ Loop</span>` : ""}
             ${k === 0 ? `<span class="img__badge mono">Titelbild</span>` : ""}
             <div class="img__tools">
               <span>
@@ -488,7 +527,7 @@ $("[data-items]").addEventListener("click", (e) => {
 $("[data-new]").addEventListener("click", () => {
   state.PROJECTS.unshift({
     title: "Neues Projekt", cat: filter || "branding", year: new Date().getFullYear(),
-    role: "", tools: "", desc: "", link: "", art: 0, images: [], full: [],
+    role: "", tools: "", desc: "", link: "", video: "", art: 0, images: [], full: [],
   });
   current = 0;
   markDirty();

@@ -22,17 +22,18 @@ In diesem README beschreibe ich, wie das Projekt entstanden ist, wie es technisc
 2. [Was die Website kann](#was-die-website-kann)
 3. [Technischer Aufbau](#technischer-aufbau)
 4. [Das CMS](#das-cms)
-5. [Download-Galerien](#download-galerien)
-6. [Bilder und Performance (Proxies)](#bilder-und-performance-proxies)
-7. [Suchmaschinen (SEO)](#suchmaschinen-seo)
-8. [Sicherheit](#sicherheit)
-9. [Deploy: von Git zu Infomaniak](#deploy-von-git-zu-infomaniak)
-10. [Lokal arbeiten](#lokal-arbeiten)
-11. [Backups](#backups)
-12. [Arbeitsweise](#arbeitsweise)
-13. [Schwierigkeiten](#schwierigkeiten)
-14. [Learnings](#learnings)
-15. [Ressourcen](#ressourcen)
+5. [Videos im Portfolio](#videos-im-portfolio)
+6. [Download-Galerien](#download-galerien)
+7. [Bilder und Performance (Proxies)](#bilder-und-performance-proxies)
+8. [Suchmaschinen (SEO)](#suchmaschinen-seo)
+9. [Sicherheit](#sicherheit)
+10. [Deploy: von Git zu Infomaniak](#deploy-von-git-zu-infomaniak)
+11. [Lokal arbeiten](#lokal-arbeiten)
+12. [Backups](#backups)
+13. [Arbeitsweise](#arbeitsweise)
+14. [Schwierigkeiten](#schwierigkeiten)
+15. [Learnings](#learnings)
+16. [Ressourcen](#ressourcen)
 
 ---
 
@@ -181,7 +182,7 @@ Erreichbar unter `/admin`, geschützt mit einem Passwort.
 
 | Tab | Was ich dort pflege |
 |---|---|
-| **Projekte** | Titel, Jahr, Disziplin, Rolle, Tools, Beschreibung, Link, Bilder (Drag & Drop, Reihenfolge, Titelbild, pro Bild «Nicht beschneiden»), Platzhalter-Grafik, Reihenfolge der Projekte |
+| **Projekte** | Titel, Jahr, Disziplin, Rolle, Tools, Beschreibung, Link, Film (YouTube/Vimeo), Bilder und Video-Loops (Drag & Drop, Reihenfolge, Titelbild, pro Bild «Nicht beschneiden»), Platzhalter-Grafik, Reihenfolge der Projekte |
 | **Disziplinen** | Name, Einleitung, Stichworte, Tools, drei Arbeitsschritte |
 | **Wer** | Text, Portrait, Bildunterschrift, Steckbrief-Zeilen, Status |
 | **Galerien** | Galerien für Kund:innen anlegen, Dateien hochladen, Link und Passwort weitergeben |
@@ -192,6 +193,14 @@ Erreichbar unter `/admin`, geschützt mit einem Passwort.
 - Wer ungespeicherte Änderungen hat oder einen Upload laufen lässt, wird beim Verlassen gewarnt.
 
 ---
+
+## Videos im Portfolio
+
+Zwei Wege, je nach Länge:
+
+- **Filme (YouTube oder Vimeo):** Im CMS trage ich nur den Link ein. Auf der Projektseite erscheint ein Platzhalter in meinem Look (Standbild, Play-Knopf). Der Player wird erst beim **Klick** geladen, mit `youtube-nocookie.com` bzw. Vimeo mit `dnt=1`. Vorher fliessen keine Daten zu YouTube oder Vimeo, und die Seite bleibt schnell. Die Content-Security-Policy erlaubt genau diese beiden Player und sonst keine fremden Frames.
+- **Kurze Loops (MP4/WebM, ohne Ton):** Ich ziehe sie ins selbe Feld wie Bilder. Sie werden in Stücken hochgeladen (bis 60 MB) und liegen in `content/video/`. Beim Upload zieht das CMS ein Standbild aus dem Video. Auf der Projektseite laufen Loops automatisch, stumm und endlos, als Titelbild oder in der Galerie. In allen Übersichten erscheint nur das Standbild, damit die Startseite kein einziges Video lädt. Wer „Bewegung reduzieren“ eingestellt hat, startet den Loop selbst.
+- Empfehlung für Loops: 5–15 Sekunden, 1080p, H.264 (MP4), ohne Tonspur, unter 15 MB.
 
 ## Download-Galerien
 
