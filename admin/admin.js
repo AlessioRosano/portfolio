@@ -723,9 +723,11 @@ function renderGalleryEditor() {
         <div class="uploads" data-g-uploads></div>
         ${files.length ? `<div class="files">${files.map((f) => `
           <div class="file">
-            ${f.kind === "video"
-              ? `<video src="${esc(fileUrl(g.slug, f.name))}#t=0.5" preload="metadata" muted></video>`
-              : `<img src="${esc(fileUrl(g.slug, f.name, f.thumb ? "&thumb=1" : ""))}" alt="" loading="lazy" />`}
+            ${f.thumb
+              ? `<img src="${esc(fileUrl(g.slug, f.name, "&thumb=1"))}" alt="" loading="lazy" />`
+              : f.kind === "video"
+                ? `<video src="${esc(fileUrl(g.slug, f.name))}#t=0.5" preload="metadata" muted></video>`
+                : `<img src="${esc(fileUrl(g.slug, f.name))}" alt="" loading="lazy" />`}
             <span class="file__name mono">${f.kind === "video" ? "▶ " : ""}${esc(f.name)} · ${fmtBytes(f.size)}</span>
             <button class="file__del" data-g-file-del="${esc(f.name)}" title="Datei löschen">✕</button>
           </div>`).join("")}</div>` : ""}
@@ -755,10 +757,44 @@ async function uploadGalleryFile(slug, file, row) {
     form.append("total", total);
     form.append("name", file.name);
     form.append("chunk", file.slice(i * chunkSize, (i + 1) * chunkSize), "chunk");
-    await api("chunk", form);
+    const res = await api("chunk", form);
     row.querySelector("progress").value = (i + 1) / total;
     row.querySelector("[data-pct]").textContent = `${Math.round(((i + 1) / total) * 100)} %`;
+    if (res.name) return res.name;
   }
+}
+
+// Standbild aus einem Video ziehen (bei ca. 10 % der Länge, max. 1 s) — dient als Vorschau in der Galerie.
+// Klappt nicht bei jedem Codec (z. B. HEVC in Chrome); dann zeigt die Galerie das Video selbst.
+async function videoPoster(file) {
+  const url = URL.createObjectURL(file);
+  const video = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto", src: url });
+  const wait = (event) => new Promise((resolve, reject) => {
+    video.addEventListener(event, resolve, { once: true });
+    video.addEventListener("error", reject, { once: true });
+    setTimeout(() => reject(new Error("Zeitüberschreitung")), 20000);
+  });
+  try {
+    await wait("loadeddata");
+    video.currentTime = Math.min(1, (video.duration || 0) / 10);
+    await wait("seeked");
+    const scale = Math.min(1, 1200 / Math.max(video.videoWidth, video.videoHeight));
+    const canvas = Object.assign(document.createElement("canvas"), { width: Math.round(video.videoWidth * scale), height: Math.round(video.videoHeight * scale) });
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    return await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function uploadPoster(slug, name, file) {
+  const blob = await videoPoster(file).catch(() => null);
+  if (!blob) return;
+  const form = new FormData();
+  form.append("slug", slug);
+  form.append("name", name);
+  form.append("poster", blob, "poster.jpg");
+  await api("gallery-poster", form).catch(() => {});
 }
 
 async function addGalleryFiles(files) {
@@ -776,7 +812,11 @@ async function addGalleryFiles(files) {
   let done = 0;
   for (const { file, row } of queue) {
     try {
-      await uploadGalleryFile(slug, file, row);
+      const name = await uploadGalleryFile(slug, file, row);
+      if (file.type.startsWith("video/") || /\.(mov|mp4|m4v|webm)$/i.test(file.name)) {
+        row.querySelector("[data-pct]").textContent = "Standbild …";
+        await uploadPoster(slug, name, file);
+      }
       row.remove();
       done++;
     } catch (e) {

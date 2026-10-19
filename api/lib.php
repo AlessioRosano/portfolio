@@ -287,26 +287,89 @@ function galleryFiles(string $slug): array
             'name' => $name,
             'size' => filesize($path),
             'kind' => str_starts_with(GALLERY_TYPES[extensionOf($name)] ?? '', 'video/') ? 'video' : 'image',
-            'thumb' => is_file("$dir/thumbs/$name.jpg"),
+            'thumb' => isset(IMAGE_TYPES[extensionOf($name)]) || is_file("$dir/thumbs/$name.jpg"),
         ];
     }
     usort($files, fn ($a, $b) => strnatcasecmp($a['name'], $b['name']));
     return $files;
 }
 
-// Vorschaubild (max. 800 px) für schnelle Übersichten — braucht die GD-Erweiterung
-function makeThumb(string $path): void
+/* ── Bild-Proxies: kleinere Versionen fürs schnelle Laden ─────── */
+// Alles mit GD (bei Infomaniak vorhanden). Was nicht klappt, wird übersprungen — dann gilt das Original.
+
+const VARIANT_WIDTHS = [480, 960, 1600, 2400];   // Portfolio-Bilder, als WebP
+const MAX_DECODE_PIXELS = 40_000_000;            // grösser braucht zu viel Arbeitsspeicher
+
+function loadImage(string $path): ?GdImage
 {
-    if (!function_exists('imagecreatefromstring') || filesize($path) > 60 * 1024 * 1024) return;
+    if (!function_exists('imagecreatefromstring')) return null;
+    $info = @getimagesize($path);
+    if (!$info || $info[0] * $info[1] > MAX_DECODE_PIXELS) return null;
     $img = @imagecreatefromstring((string) file_get_contents($path));
-    if (!$img) return;
+    if (!$img) return null;
+    imagepalettetotruecolor($img);
+    // Handy-Fotos speichern die Drehung nur als Info (EXIF) — hier wirklich drehen
+    $orientation = $info[2] === IMAGETYPE_JPEG && function_exists('exif_read_data') ? (@exif_read_data($path)['Orientation'] ?? 1) : 1;
+    $rotate = [3 => 180, 6 => -90, 8 => 90][$orientation] ?? 0;
+    return $rotate ? imagerotate($img, $rotate, 0) : $img;
+}
+
+function scaledTo(GdImage $img, int $maxSide): GdImage
+{
     $w = imagesx($img);
     $h = imagesy($img);
-    $scale = min(1, 800 / max($w, $h));
-    $thumb = imagescale($img, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale)));
-    $dir = dirname($path) . '/thumbs';
-    if (!is_dir($dir)) mkdir($dir, 0755);
-    imagejpeg($thumb, "$dir/" . basename($path) . '.jpg', 80);
+    $scale = $maxSide / max($w, $h);
+    return $scale >= 1 ? $img : imagescale($img, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale)));
+}
+
+// Galerie: Vorschau für die Übersicht (800 px) bzw. die Grossansicht (2000 px), als JPG in thumbs/
+function galleryProxy(string $path, string $kind): ?string
+{
+    $dest = dirname($path) . '/thumbs/' . basename($path) . ($kind === 'preview' ? '.preview.jpg' : '.jpg');
+    if (is_file($dest)) return $dest;
+    if (!isset(IMAGE_TYPES[extensionOf($path)]) || !($img = loadImage($path))) return null;
+    if (!is_dir(dirname($dest))) mkdir(dirname($dest), 0755);
+    imagejpeg(scaledTo($img, $kind === 'preview' ? 2000 : 800), $dest, $kind === 'preview' ? 82 : 78);
+    return $dest;
+}
+
+// Portfolio: WebP-Varianten neben dem Original, z. B. bild.jpg → bild.w480.webp, bild.w960.webp …
+function variantFile(string $name, int $width): string
+{
+    return preg_replace('/\.\w+$/', ".w$width.webp", $name);
+}
+
+function makeVariants(string $path): ?array
+{
+    if (!function_exists('imagewebp') || extensionOf($path) === 'gif' || !($img = loadImage($path))) return null;
+    $w = imagesx($img);
+    $h = imagesy($img);
+    $widths = array_values(array_unique([...array_filter(VARIANT_WIDTHS, fn ($x) => $x < $w), min($w, max(VARIANT_WIDTHS))]));
+    foreach ($widths as $width) {
+        $out = $width === $w ? $img : imagescale($img, $width, max(1, (int) round($h * $width / $w)));
+        imagesavealpha($out, true);
+        imagewebp($out, dirname($path) . '/' . variantFile(basename($path), $width), 80);
+    }
+    return ['w' => $w, 'h' => $h, 'sizes' => $widths];
+}
+
+// Liste aller Varianten (storage/variants.json). Fehlende werden nachgeholt — pro Aufruf nur so viele,
+// wie in $budget Sekunden passen, damit die Seite nie spürbar wartet.
+function imageVariants(float $budget = 1.5): array
+{
+    $file = STORAGE . '/variants.json';
+    $map = readJson($file);
+    $start = microtime(true);
+    $changed = false;
+    foreach (glob(CONTENT . '/img/*') ?: [] as $path) {
+        $name = basename($path);
+        if (isset($map[$name]) || !preg_match('/^[a-z0-9-]+\.(jpg|png|webp)$/', $name)) continue;
+        if (microtime(true) - $start > $budget) break;
+        $map[$name] = makeVariants($path) ?? false;   // false: nicht möglich, nicht nochmals versuchen
+        $changed = true;
+    }
+    if ($changed) writeJson($file, $map);
+    return array_filter($map);
 }
 
 /* ── Dateien ausliefern (mit Range für Video-Spulen) ────────── */

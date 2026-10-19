@@ -40,6 +40,16 @@ Dann http://localhost:8000 (Website) und http://localhost:8000/admin (CMS).
 Das lokale CMS-Passwort steht als Kommentar in `api/config.local.php` (nicht in Git).
 Lokal angelegte Inhalte bleiben lokal — die echten Inhalte pflegst du online im CMS.
 
+## Bilder und Tempo
+
+- **Portfolio:** Das CMS verkleinert Bilder vor dem Upload auf max. 2400 px (JPG). Der Server legt daneben
+  WebP-Varianten mit 480 / 960 / 1600 / 2400 px an (`bild.w960.webp` …); die Website lädt per `srcset`
+  nur die passende Grösse. Fehlende Varianten (ältere Bilder) holt `api/data.php` automatisch nach.
+- **Galerien:** Übersicht mit 800-px-Vorschau, Grossansicht mit 2000-px-Vorschau (beides in `thumbs/`,
+  bei Bedarf erzeugt), Download immer im Original. Videos bekommen beim Upload im CMS ein Standbild.
+- Empfehlung: Fotos als JPG (sRGB), Grafiken als PNG, lange Seite ab 2400 px. iPhone-Fotos besser als JPG
+  (HEIC zeigen nur Safari-Browser an).
+
 ## Sicherheit
 
 - Keine Zugangsdaten im Code: FTP-Daten und CMS-Passwort sind nur GitHub-Secrets; auf dem Server liegt nur der Passwort-Hash.

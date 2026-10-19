@@ -154,6 +154,7 @@ switch ($action) {
         $dir = CONTENT . '/img';
         $name = uniqueName($dir, slugify((string) ($_POST['title'] ?? 'bild')) . '-' . bin2hex(random_bytes(3)), $ext);
         move_uploaded_file($file['tmp_name'], "$dir/$name");
+        imageVariants(20);   // Proxies fürs neue Bild sofort erzeugen
         respond(['path' => "content/img/$name"]);
 
     case 'export':
@@ -224,6 +225,22 @@ switch ($action) {
         if (!is_file($path)) fail('Datei nicht gefunden', 404);
         unlink($path);
         @unlink(galleryDir($slug) . "/thumbs/$name.jpg");
+        @unlink(galleryDir($slug) . "/thumbs/$name.preview.jpg");
+        respond(['ok' => true]);
+
+    // Standbild eines Videos (erzeugt im Browser beim Upload) als Vorschau speichern
+    case 'gallery-poster':
+        if (!$isPost) fail('POST erwartet', 405);
+        $slug = (string) ($_POST['slug'] ?? '');
+        $name = basename((string) ($_POST['name'] ?? ''));
+        $poster = $_FILES['poster'] ?? null;
+        if (!validSlug($slug) || !isset(galleries()[$slug])) fail('Galerie nicht gefunden', 404);
+        $video = galleryDir($slug) . "/$name";
+        if (!is_file($video) || !str_starts_with(GALLERY_TYPES[extensionOf($name)] ?? '', 'video/')) fail('Video nicht gefunden', 404);
+        if (!$poster || $poster['error'] !== UPLOAD_ERR_OK || $poster['size'] > 3 * 1024 * 1024) fail('Standbild fehlt oder ist zu gross');
+        if ((new finfo(FILEINFO_MIME_TYPE))->file($poster['tmp_name']) !== 'image/jpeg') fail('Standbild muss ein JPG sein');
+        if (!is_dir(galleryDir($slug) . '/thumbs')) mkdir(galleryDir($slug) . '/thumbs', 0755);
+        move_uploaded_file($poster['tmp_name'], galleryDir($slug) . "/thumbs/$name.jpg");
         respond(['ok' => true]);
 
     // Grosse Dateien kommen in Stücken: jedes Stück wird angehängt, beim letzten wird geprüft und abgelegt
@@ -258,7 +275,8 @@ switch ($action) {
         $dir = galleryDir($slug);
         $final = uniqueName($dir, slugify(pathinfo($name, PATHINFO_FILENAME), 80), $ext);
         rename($part, "$dir/$final");
-        if (isset(IMAGE_TYPES[$ext])) makeThumb("$dir/$final");
+        galleryProxy("$dir/$final", 'thumb');
+        galleryProxy("$dir/$final", 'preview');
         // Liegengebliebene Teile von abgebrochenen Uploads aufräumen
         foreach (glob(STORAGE . '/tmp/*') ?: [] as $old) if (filemtime($old) < time() - 86400) @unlink($old);
         respond(['ok' => true, 'name' => $final]);

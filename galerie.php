@@ -186,12 +186,14 @@ header('Referrer-Policy: same-origin');
       <?php foreach ($files as $i => $f): ?>
       <figure class="item">
         <button class="item__media" type="button" data-open="<?= $i ?>" aria-label="<?= $h($f['name']) ?> gross ansehen">
-          <?php if ($f['kind'] === 'video'): ?>
+          <?php if ($f['thumb']): ?>
+            <img src="<?= $h($url($f['name'], '&thumb=1')) ?>" alt="" loading="lazy" decoding="async" />
+          <?php elseif ($f['kind'] === 'video'): ?>
             <video src="<?= $h($url($f['name'])) ?>#t=0.5" preload="metadata" muted playsinline></video>
-            <span class="item__play mono">▶ Video</span>
           <?php else: ?>
-            <img src="<?= $h($url($f['name'], $f['thumb'] ? '&thumb=1' : '')) ?>" alt="" loading="lazy" />
+            <img src="<?= $h($url($f['name'])) ?>" alt="" loading="lazy" decoding="async" />
           <?php endif; ?>
+          <?php if ($f['kind'] === 'video'): ?><span class="item__play mono">▶ Video</span><?php endif; ?>
         </button>
         <figcaption class="mono">
           <span><?= $h($f['name']) ?> · <?= bytes($f['size']) ?></span>
@@ -211,7 +213,14 @@ header('Referrer-Policy: same-origin');
       </div>
     </dialog>
 
-    <script type="application/json" id="gallery-files"><?= json_encode(array_map(fn ($f) => ['name' => $f['name'], 'kind' => $f['kind'], 'src' => $url($f['name']), 'dl' => $url($f['name'], '&dl=1')], $files), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+    <script type="application/json" id="gallery-files"><?= json_encode(array_map(fn ($f) => [
+        'name' => $f['name'],
+        'kind' => $f['kind'],
+        // Grossansicht: Fotos als 2000-px-Vorschau, Videos im Original; Download immer das Original
+        'src' => $url($f['name'], $f['kind'] === 'image' && $f['thumb'] ? '&preview=1' : ''),
+        'poster' => $f['kind'] === 'video' && $f['thumb'] ? $url($f['name'], '&thumb=1') : '',
+        'dl' => $url($f['name'], '&dl=1'),
+    ], $files), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
     <script src="js/galerie.js"></script>
 <?php endif; ?>
   </main>

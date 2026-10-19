@@ -24,21 +24,31 @@ if (QUICK) document.documentElement.classList.add("is-quick");
 history.scrollRestoration = "manual";
 window.scrollTo(0, 0);
 
+// <img> mit srcset: der Browser lädt nur die WebP-Variante, die zur Anzeigegrösse passt
+// (Varianten erzeugt der Server, siehe IMAGES aus api/data.php). sizes = ungefähre Anzeigebreite.
+function img(src, alt, sizes, { eager = false } = {}) {
+  const v = IMAGES[src];
+  const srcset = v ? ` srcset="${v.sizes.map((w) => `${esc(src.replace(/\.\w+$/, `.w${w}.webp`))} ${w}w`).join(", ")}" sizes="${sizes}" width="${v.w}" height="${v.h}"` : "";
+  const load = eager ? ` fetchpriority="high"` : ` loading="lazy"`;
+  return `<img src="${esc(src)}"${srcset} alt="${esc(alt)}"${load} decoding="async" />`;
+}
+
 // Titelbild = erstes Bild; ohne Bilder wird eine Platzhalter-Grafik generiert
-function media(p, W, H) {
+function media(p, W, H, sizes, opts) {
   const src = p.images?.[0];
-  if (src) return `<img src="${esc(src)}" alt="${esc(p.title)}" loading="lazy" />`;
+  if (src) return img(src, p.title, sizes, opts);
   return makeArt(p.cat, p.art, W, H, p.title);
 }
 
 // Inhalte aus dem CMS — werden beim Start geladen (siehe Boot)
-let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, PROJECT_IDS;
+let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, IMAGES, PROJECT_IDS;
 
 async function loadContent() {
   const res = await fetch("api/data.php", { cache: "no-store" });
   if (!res.ok) throw new Error(`Inhalte nicht geladen (${res.status})`);
-  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT } = await res.json());
+  ({ CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, IMAGES } = await res.json());
   SOCIAL ??= [];
+  IMAGES ??= {};
   ABOUT ??= {};
   PROJECT_IDS = projectIds(PROJECTS);
 }
@@ -128,7 +138,7 @@ function buildSlider() {
     const p = PROJECTS[i % PROJECTS.length];
     cards.push(`
       <div class="card" data-href="${projectUrl(p)}" data-cursor="Ansehen">
-        <div class="media${mediaClass(p)}">${media(p, W, H)}</div>
+        <div class="media${mediaClass(p)}">${media(p, W, H, "(max-width: 760px) 72vw, 60vw")}</div>
         <div class="card__cap mono"><span>[AR—${pad(i + 1, 3)}] ${esc(p.title)}</span><span>${esc(CATS[p.cat])} — ${esc(p.year)}</span></div>
       </div>`);
   }
@@ -197,7 +207,7 @@ function buildAbout() {
 
   const portrait = $("[data-about-portrait]");
   portrait.hidden = !ABOUT.portrait;
-  $(".media", portrait).innerHTML = ABOUT.portrait ? `<img src="${esc(ABOUT.portrait)}" alt="Portrait von ${esc(NAME)}" loading="lazy" />` : "";
+  $(".media", portrait).innerHTML = ABOUT.portrait ? img(ABOUT.portrait, `Portrait von ${NAME}`, "(max-width: 760px) 100vw, 33vw") : "";
   $("figcaption", portrait).textContent = ABOUT.caption || "";
 
   const rows = (ABOUT.specs || []).filter(([k, v]) => k || v).map(([k, v]) => [esc(k), esc(v)]);
@@ -234,7 +244,7 @@ function buildDisciplines() {
             <span></span>
             <p>${esc(d.lead)}</p>
             <div class="tags mono">${d.tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
-            <div class="svc__thumbs">${ps.slice(0, 2).map((p) => `<div class="media${mediaClass(p)}">${media(p, 400, 500)}</div>`).join("")}</div>
+            <div class="svc__thumbs">${ps.slice(0, 2).map((p) => `<div class="media${mediaClass(p)}">${media(p, 400, 500, "120px")}</div>`).join("")}</div>
           </div>
         </div></div>
       </a>`;
@@ -287,7 +297,7 @@ function buildWork(list) {
     const [W, H] = land ? [500, 400] : [400, 500];
     return `
       <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen">
-        <div class="work__frame"><div class="media${mediaClass(p)}" style="aspect-ratio:${W} / ${H}">${media(p, W, H)}</div></div>
+        <div class="work__frame"><div class="media${mediaClass(p)}" style="aspect-ratio:${W} / ${H}">${media(p, W, H, "(max-width: 760px) 100vw, 50vw")}</div></div>
         <div class="work__meta">
           <span class="mono">[${pad(j + 1)}]</span>
           <h3>${esc(p.title)}<em class="serif">${esc(p.role)}</em></h3>
@@ -322,7 +332,7 @@ function buildProject() {
   // Titelbild über die ganze Breite (Mobile hochkant)
   const cover = $("[data-p-cover]");
   const [W, H] = SLIDER_MQ.matches ? [800, 1000] : [1600, 900];
-  cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H)}</div>`;
+  cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true })}</div>`;
 
   $("[data-p-desc]").textContent = p.desc;
   const specs = [["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
@@ -331,7 +341,7 @@ function buildProject() {
 
   // Galerie: abwechselnd ein grosses Bild und zwei nebeneinander
   $("[data-p-gallery]").innerHTML = (p.images || []).slice(1).map((src, n) =>
-    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}"><div class="media${mediaClass(p)}"><img src="${esc(src)}" alt="${esc(p.title)} — Bild ${n + 2}" loading="lazy" /></div></figure>`).join("");
+    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}"><div class="media${mediaClass(p)}">${img(src, `${p.title} — Bild ${n + 2}`, n % 3 === 0 ? "100vw" : "(max-width: 760px) 100vw, 50vw")}</div></figure>`).join("");
 
   // Nächstes Projekt: innerhalb der Disziplin, sonst das nächste insgesamt
   const next = siblings.length > 1 ? siblings[(k + 1) % siblings.length] : PROJECTS[(i + 1) % PROJECTS.length];

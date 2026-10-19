@@ -8,13 +8,16 @@ function show(i) {
   current = (i + files.length) % files.length;
   const f = files[current];
   stage.innerHTML = f.kind === "video"
-    ? `<video src="${f.src}" controls autoplay playsinline></video>`
+    ? `<video src="${f.src}"${f.poster ? ` poster="${f.poster}"` : ""} controls autoplay playsinline></video>`
     : `<img src="${f.src}" alt="" />`;
   if (files.length > 1) stage.insertAdjacentHTML("beforeend",
     `<button class="lb__nav lb__nav--prev" data-step="-1" aria-label="Vorheriges"></button><button class="lb__nav lb__nav--next" data-step="1" aria-label="Nächstes"></button>`);
   box.querySelector("[data-lb-name]").textContent = `${current + 1} / ${files.length} — ${f.name}`;
   box.querySelector("[data-lb-dl]").href = f.dl;
   if (!box.open) box.showModal();
+  // Nächstes Foto schon vorladen, damit das Weiterblättern sofort geht
+  const next = files[(current + 1) % files.length];
+  if (next.kind === "image") new Image().src = next.src;
 }
 
 document.addEventListener("click", (e) => {
