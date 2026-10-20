@@ -605,7 +605,8 @@ function splitLines(el) {
   const words = [];
   const parts = [];
   [...el.childNodes].forEach((n) => {
-    n.textContent.split(/\s+/).filter(Boolean).forEach((word) => {
+    // Geschützte Leerzeichen (&nbsp;) halten Wörter zusammen, z. B. «super gut.»
+    n.textContent.split(/[^\S\u00a0]+/).filter(Boolean).forEach((word) => {
       const s = document.createElement("span");
       if (n.nodeType === 1) {
         const inner = document.createElement(n.tagName.toLowerCase());
