@@ -94,7 +94,7 @@ async function loadContent() {
 const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
 const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 
-// Fotos: farbig, nur im Slider schwarz-weiss bis zum Hover (siehe CSS)
+// Fotos: farbig, nur im Slider und auf «Zeig mal» schwarz-weiss bis zum Hover (siehe CSS)
 const mediaClass = (p) => (p.images?.length || p.filmThumb ? " is-photo" : "");
 
 // Ist das Vorschaubild ein Loop, merkt sich die Karte das Video; geladen wird es erst bei Bedarf (loopVideo)

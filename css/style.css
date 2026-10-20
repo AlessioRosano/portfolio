@@ -304,13 +304,13 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 /* ── Media / generierte Artworks / echte Bilder ─────────────── */
 .media { position: relative; overflow: hidden; background: var(--bx-08); }
 .media svg { width: 100%; height: 100%; transition: transform 1.1s var(--ease-out); }
-/* Echte Bilder sind überall farbig. Nur im Slider der Startseite schwarz-weiss, beim Hover farbig (siehe .card:hover) */
+/* Echte Bilder sind farbig. Nur im Slider der Startseite und auf «Zeig mal» schwarz-weiss, beim Hover farbig (siehe .card:hover) */
 .media.is-photo { background: #f2f2f2; }
 .media.is-photo img {
   width: 100%; height: 100%; object-fit: cover;
   transition: transform 1.1s var(--ease-out), filter 0.6s var(--ease-out);
 }
-@media (hover: hover) { .hero__slider .media.is-photo img { filter: grayscale(1); } }   /* am Handy gleich farbig */
+@media (hover: hover) { .hero__slider .media.is-photo img, .works__grid .media.is-photo img { filter: grayscale(1); } }   /* am Handy gleich farbig */
 .frame { position: relative; }
 .frame::before, .frame::after {
   content: ""; position: absolute; width: 14px; height: 14px; z-index: 2; pointer-events: none;

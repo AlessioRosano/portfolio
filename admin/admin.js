@@ -293,7 +293,7 @@ function renderEditor() {
 
       <label class="field"><span class="mono">Beschreibung</span>
         <textarea data-f="desc" rows="5" placeholder="Worum geht es, was war deine Rolle, was ist das Besondere?">${esc(p.desc)}</textarea>
-        <small>Link hinter ein Wort legen: <code>[Wort](https://…)</code>, z. B. <code>[Bäckerei Müller](https://baeckerei-mueller.ch)</code>. Nur https-Links.</small></label>
+        <small>Link hinter ein Wort legen: das Wort in eckige Klammern, direkt danach (ohne Leerzeichen) der Link in runden Klammern. Beispiel: <code>Die [Certum AG](https://www.certum.ch) sucht …</code>. Nur https-Links.</small></label>
 
       <div class="field field--3"><span class="mono">Filme (YouTube oder Vimeo, optional)</span>
         ${p.videos.map((url, k) => `
@@ -348,7 +348,7 @@ function renderEditor() {
       </div>
 
       ${p.images.length ? `
-      <p class="field muted" style="margin:0">Bilder erscheinen überall in Originalfarben. Nur im Slider der Startseite sind sie schwarz-weiss, bis man mit der Maus darüberfährt (am Handy gleich farbig).</p>` : `
+      <p class="field muted" style="margin:0">Bilder erscheinen in Originalfarben. Nur im Slider der Startseite und auf «Zeig mal» sind sie schwarz-weiss, bis man mit der Maus darüberfährt (am Handy gleich farbig).</p>` : `
       <div class="field">
         <span class="mono">Platzhalter, solange keine Bilder da sind</span>
         <div class="placeholder">
