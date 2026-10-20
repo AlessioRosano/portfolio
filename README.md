@@ -143,7 +143,7 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie aus. So kann ich sie jederzeit zurückholen.
 
-- **Disziplin-Seiten:** Einleitung, Stichworte und der Abschnitt «So gehe ich vor» sind ausgeblendet. Übrig bleiben Titel, Projekte und der Link zur nächsten Disziplin. Auf der Startseite erscheinen Einleitung und Stichworte weiterhin beim Hover über eine Disziplin.
+- **Disziplin-Seiten:** Einleitung, Stichworte, die Überschrift „Ein paar Beispiele.“ und der Abschnitt «So gehe ich vor» sind ausgeblendet. Übrig bleiben Titel, Projekte und der Link zur nächsten Disziplin. Die Projekte folgen jetzt direkt auf den Titel. Auf der Startseite erscheinen Einleitung und Stichworte weiterhin beim Hover über eine Disziplin.
 - **Kein Stern mehr** unter den Seitentiteln (Disziplin- und Projektseiten)
 - **Navigation:** «Zeig mal» steht jetzt an dritter Stelle: Was, Wer, Zeig mal, Kontakt.
 - **Unterlängen nicht mehr abgeschnitten:** Beim «g» in „richtig gut.“ fehlte unten ein Stück. Die Zeilen der animierten Titel blenden mit `overflow: hidden` ein und hatten unten zu wenig Platz für die tiefen Unterlängen der Serifenschrift. Jetzt haben sie mehr Raum, ohne dass sich der Zeilenabstand ändert. Nachgemessen habe ich das im Browser: Vorher lag der Bogen vom «g» knapp 2 px unter der Kante, jetzt bleiben gut 6 px Luft.
@@ -161,7 +161,7 @@ Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie
 
 **Zeig mal (`arbeiten.html`)**: alle Arbeiten in einem Raster, Filter nach Disziplin (auch als Link teilbar, z.B. `arbeiten.html?d=video`). Beim Hover werden die Bilder farbig, der Titel erscheint, und Loops laufen an.
 
-**Disziplin-Seite (`disziplin.html?d=video`)**: grosser Titel, Anzahl Projekte, die Projekte und ein Link zur nächsten Disziplin. Einleitung, Stichworte und «So gehe ich vor» sind im Code noch da, aber ausgeblendet (eine CSS-Regel in `style.css`). Auf der Startseite stehen Einleitung und Stichworte weiterhin im Hover bei «Was».
+**Disziplin-Seite (`disziplin.html?d=video`)**: grosser Titel, Anzahl Projekte, die Projekte und ein Link zur nächsten Disziplin. Einleitung, Stichworte, „Ein paar Beispiele.“ und «So gehe ich vor» sind im Code noch da, aber ausgeblendet (eine CSS-Regel in `style.css`). Auf der Startseite stehen Einleitung und Stichworte weiterhin im Hover bei «Was».
 
 **Projektseite (`projekt.html?p=…`)**: zuoberst der Film (falls vorhanden, Player lädt erst beim Klick), dann ein grosses Titelbild oder ein Video-Loop mit Zoom beim Scrollen, Beschreibung, Steckbrief, Galerie aus Bildern und Loops, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 

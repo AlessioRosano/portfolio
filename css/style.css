@@ -503,11 +503,12 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .hero__meta--sub { align-items: flex-start; }
 .hero__meta--sub p:not(.serif) { max-width: 30ch; }
 .hero__tags { margin-top: clamp(28px, 3vw, 48px); }
-/* Disziplin-Seite schlanker: Einleitung, Stichworte und «So gehe ich vor» sind nur ausgeblendet.
+/* Disziplin-Seite schlanker: Einleitung, Stichworte, «Ein paar Beispiele.» und «So gehe ich vor» sind nur ausgeblendet.
    Auf der Startseite (Hover bei «Was») bleiben Einleitung und Stichworte sichtbar.
-   Wieder einblenden: diese Regel löschen und im HTML das Kontakt-Label zurück auf (03) setzen. */
+   Wieder einblenden: diese Regel löschen und im HTML das Kontakt-Label zurück auf «(03) — Kontakt» setzen. */
 [data-page="discipline"] .hero__meta--sub > .mask:has([data-d-lead]),
 [data-page="discipline"] .hero__tags,
+[data-page="discipline"] .work > .section__head,
 [data-page="discipline"] .process { display: none; }
 @media (max-width: 760px) {
   .hero__meta--sub { text-align: left; align-items: flex-start; gap: 10px; }
