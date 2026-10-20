@@ -238,6 +238,18 @@ function initSlider() {
 
   if (lenis) lenis.on("scroll", (l) => { boost = Math.min(Math.abs(l.velocity) * 0.6, 24); });
 
+  // Pfeile < >: um genau eine Karte weiter, weich ausgleitend; das automatische Laufen geht weiter
+  $$("[data-slide]").forEach((btn) => btn.addEventListener("click", () => {
+    const card = $(".card", track);
+    const step = card.offsetWidth + parseFloat(getComputedStyle(track).columnGap || 0);
+    const move = { v: 0 };
+    let last = 0;
+    gsap.to(move, {
+      v: -btn.dataset.slide * step, duration: 0.9, ease: "expo.out",
+      onUpdate: () => { x += move.v - last; last = move.v; },
+    });
+  }));
+
   gsap.ticker.add((t, dt) => {
     const half = track.scrollWidth / 2;
     if (!drag) x -= ((hover ? base * 0.3 : base) + boost) * (dt / 16.67);
