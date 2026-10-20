@@ -121,7 +121,7 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 **Startseite (`index.html`)**
 - Intro-Animation (nur beim ersten Besuch, danach ein kurzer Übergang)
-- endloser Projekt-Slider zum Ziehen, der beim Scrollen beschleunigt
+- endloser Projekt-Slider zum Ziehen, der beim Scrollen beschleunigt: Bilder ohne Rahmen, schwarz-weiss. Beim Hover werden sie farbig und leicht grösser, der Projekttitel erscheint in der Mitte, und Video-Loops laufen an.
 - **Was:** die vier Disziplinen mit Hover-Details und Vorschaubildern
 - **Wer:** Text, der beim Scrollen Wort für Wort erscheint, mit Portrait und Steckbrief
 - Kontaktformular (öffnet das Mail-Programm, es braucht keinen Server-Versand)

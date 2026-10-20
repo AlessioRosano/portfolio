@@ -163,10 +163,13 @@ function buildSlider() {
   // Mindestens 8 Karten, damit die Endlos-Reihe den Bildschirm füllt
   for (let i = 0; i < Math.max(8, PROJECTS.length); i++) {
     const p = PROJECTS[i % PROJECTS.length];
+    // Ist das erste Medium ein Loop, läuft er beim Hover an (geladen wird er erst dann)
+    const first = p.images?.[0];
+    const loop = first && isLoop(first) && !reduced ? ` data-loop="${esc(first)}"` : "";
     cards.push(`
-      <div class="card" data-href="${projectUrl(p)}" data-cursor="Ansehen">
+      <div class="card" data-href="${projectUrl(p)}"${loop}>
         <div class="media${mediaClass(p)}">${media(p, W, H, "(max-width: 760px) 72vw, 60vw")}</div>
-        <div class="card__cap mono"><span>[AR—${pad(i + 1, 3)}] ${esc(p.title)}</span><span>${esc(CATS[p.cat])} — ${esc(p.year)}</span></div>
+        <div class="card__title" aria-hidden="true">${esc(p.title)}</div>
       </div>`);
   }
   track.innerHTML = cards.join("") + cards.join("");
@@ -181,7 +184,7 @@ function sizeSlider() {
   const foot = $(".hero__foot");
   const top = meta.offsetTop + meta.offsetHeight;          // Layout-Werte, unabhängig von Transforms
   const cs = getComputedStyle(slider);
-  const chrome = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 20 /* Karten-Padding */ + 30 /* Bildzeile */;
+  const chrome = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
   const avail = innerHeight - top - foot.offsetHeight - chrome - parseFloat(getComputedStyle(hero).paddingBottom);
   const h = Math.max(320, Math.min(avail, innerWidth * 0.5));
   hero.style.setProperty("--card-h", `${Math.round(h)}px`);
@@ -213,6 +216,25 @@ function initSlider() {
     if (card && moved < 6) navigate(card.dataset.href);
   });
   slider.addEventListener("pointercancel", () => { drag = false; slider.classList.remove("is-drag"); });
+
+  // Video-Loops: beim Hover laden und abspielen, beim Verlassen anhalten
+  track.addEventListener("pointerover", (e) => {
+    const c = e.target.closest(".card[data-loop]");
+    if (!c || c.contains(e.relatedTarget)) return;
+    let video = $("video", c);
+    if (!video) {
+      video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
+      $(".media", c).appendChild(video);
+    }
+    c.classList.add("is-playing");
+    video.play().catch(() => {});
+  });
+  track.addEventListener("pointerout", (e) => {
+    const c = e.target.closest(".card[data-loop]");
+    if (!c || c.contains(e.relatedTarget)) return;
+    c.classList.remove("is-playing");
+    $("video", c)?.pause();
+  });
 
   if (lenis) lenis.on("scroll", (l) => { boost = Math.min(Math.abs(l.velocity) * 0.6, 24); });
 
