@@ -53,6 +53,14 @@ function media(p, W, H, sizes, opts) {
   return makeArt(p.cat, p.art, W, H, p.title);
 }
 
+// Filme eines Projekts: Liste «videos»; ältere Inhalte haben noch ein einzelnes Feld «video»
+const projectFilms = (p) => (Array.isArray(p.videos) ? p.videos : p.video ? [p.video] : []);
+
+// Textlinks in der Beschreibung: [Wort](https://…). Erst escapen, dann nur https-Links umwandeln.
+const LINK_RE = /\[([^\]\n]+)\]\((https:\/\/[^\s()<>"]+)\)/g;
+const linkify = (s = "") => esc(s).replace(LINK_RE, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+const plainText = (s = "") => s.replace(LINK_RE, "$1");   // für Meta-Beschreibung und strukturierte Daten
+
 // Film-Link (YouTube/Vimeo) → Adresse des eingebetteten Players, datensparsam (nocookie / dnt)
 function filmEmbed(url) {
   try {
@@ -517,11 +525,11 @@ function buildProject() {
   const siblings = PROJECTS.filter((x) => x.cat === p.cat);
   const k = siblings.indexOf(p);
 
-  setMeta(`${p.title} — ${NAME}`, p.desc || `${p.title}: ${CATS[p.cat]}-Projekt von ${NAME}, ${p.year}.`);
+  setMeta(`${p.title} — ${NAME}`, plainText(p.desc) || `${p.title}: ${CATS[p.cat]}-Projekt von ${NAME}, ${p.year}.`);
   structuredData({
     "@type": "CreativeWork",
     name: p.title,
-    description: p.desc,
+    description: plainText(p.desc),
     genre: CATS[p.cat],
     dateCreated: String(p.year || ""),
     image: p.images?.[0] ? absoluteUrl(stillOf(p.images[0])) : undefined,
@@ -538,38 +546,47 @@ function buildProject() {
   $("[data-p-role]").textContent = p.role;
   $("[data-p-meta]").textContent = `${CATS[p.cat]}, ${p.year}`;
 
-  // Titelbild über die ganze Breite (Mobile hochkant)
+  // Das Titelbild (erstes Bild oder Loop) ist die Vorschau in Slider und Übersichten. Auf der Projektseite
+  // erscheinen nur Filme und die übrigen Bilder. Hat ein Projekt sonst nichts, springt es als Titelbild ein.
   const cover = $("[data-p-cover]");
   const [W, H] = SLIDER_MQ.matches ? [800, 1000] : [1600, 900];
   // Bilder, die im CMS auf «Nicht beschneiden» stehen, erscheinen vollständig (Plakate, Bilder mit Text)
   const full = new Set(p.full || []);
-  cover.classList.toggle("is-full", full.has(p.images?.[0]));
-  cover.hidden = !p.images?.length && !!p.video;   // nur Film, keine Bilder: Titelbild wäre doppelt
-  cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true })}</div>`;
+  const films = projectFilms(p).map(filmEmbed).filter(Boolean);
+  cover.hidden = films.length > 0 || (p.images?.length || 0) > 1;
+  if (!cover.hidden) {
+    cover.classList.toggle("is-full", full.has(p.images?.[0]));
+    cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true })}</div>`;
+  }
 
-  // Film: Platzhalter im eigenen Look; der Player von YouTube/Vimeo lädt erst nach dem Klick
-  const film = filmEmbed(p.video || "");
+  // Filme: Platzhalter im eigenen Look; der Player von YouTube/Vimeo lädt erst nach dem Klick
   const filmBox = $("[data-p-film]");
-  filmBox.hidden = !film;
-  if (film) {
-    // Vorschaubild des Films (vom eigenen Server), sonst das erste Bild des Projekts
-    const base = p.filmThumb || (p.images?.[0] && stillOf(p.images[0]));
+  filmBox.hidden = !films.length;
+  // Vorschaubild jedes Films (vom eigenen Server), sonst das erste Bild des Projekts
+  const thumbs = p.filmThumbs || [p.filmThumb];
+  const fallback = p.images?.[0] && stillOf(p.images[0]);
+  filmBox.innerHTML = films.map((film, n) => {
+    const base = thumbs[n] || fallback;
     const v = base && IMAGES[base];
     const still = v ? variant(base, v.sizes.filter((w) => w <= 1600).pop() || v.sizes[0]) : base;
-    filmBox.innerHTML = `
-      <div class="pfilm__frame">
+    const label = films.length > 1 ? `Film ${n + 1} abspielen` : "Film abspielen";
+    return `
+      <div class="pfilm__frame" data-film="${n}">
         <button class="pfilm__play" type="button" data-cursor="Abspielen"${still ? ` style="background-image:url('${esc(still)}')"` : ""}>
           <span class="pfilm__icon" aria-hidden="true"></span>
-          <span class="pfilm__text"><b>Film abspielen</b>
+          <span class="pfilm__text"><b>${label}</b>
             <span class="mono">Lädt den Player von ${film.name}. Erst ab dann gelten dessen Datenschutzregeln.</span></span>
         </button>
       </div>`;
-    $(".pfilm__play", filmBox).addEventListener("click", () => {
-      $(".pfilm__frame", filmBox).innerHTML = `<iframe src="${esc(film.src)}" title="${esc(p.title)} (${film.name})" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`;
-    }, { once: true });
-  }
+  }).join("");
+  filmBox.addEventListener("click", (e) => {
+    const frame = e.target.closest(".pfilm__play")?.parentElement;
+    if (!frame) return;
+    const film = films[+frame.dataset.film];
+    frame.innerHTML = `<iframe src="${esc(film.src)}" title="${esc(p.title)} (${film.name})" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`;
+  });
 
-  $("[data-p-desc]").textContent = p.desc;
+  $("[data-p-desc]").innerHTML = linkify(p.desc);
   const specs = [["Kunde", esc(p.client)], ["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
   if (p.link) specs.push(["Link", `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))} ↗</a>`]);
   $("[data-p-specs]").innerHTML = specRows(specs.filter(([, v]) => v));

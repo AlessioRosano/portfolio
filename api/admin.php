@@ -47,7 +47,7 @@ switch ($action) {
 
 requireAdmin();
 // Lesen geht per GET, jede Änderung nur per POST (mit CSRF-Token, siehe oben)
-if (!$isPost && !in_array($action, ['data', 'export', 'galleries'], true)) fail('POST erwartet', 405);
+if (!$isPost && !in_array($action, ['data', 'export', 'galleries', 'media'], true)) fail('POST erwartet', 405);
 
 // Galerie aus dem CMS-Aufruf, sonst Abbruch
 function requireGallery(string $slug): array
@@ -101,10 +101,15 @@ function cleanData(array $d): array
     $projects = array_map(function ($p) use ($text, $cats) {
         if (!is_array($p) || !isset($cats[$p['cat'] ?? ''])) fail('Projekt hat eine ungültige Disziplin');
         $link = $text($p['link'] ?? '', 500);
-        // Film auf YouTube oder Vimeo (wird auf der Projektseite erst nach Klick geladen)
-        $video = $text($p['video'] ?? '', 300);
-        if ($video !== '' && !preg_match('#^https://((www\.|m\.)?youtube\.com/(watch\?v=|shorts/|embed/)|youtu\.be/)[A-Za-z0-9_-]{11}([?&\#][^\s"<>]*)?$|^https://(www\.|player\.)?vimeo\.com/(video/)?\d+(/[a-f0-9]+)?([?\#][^\s"<>]*)?$#', $video)) {
-            fail('Video-Link: bitte einen YouTube- oder Vimeo-Link (https://…)');
+        // Filme auf YouTube oder Vimeo (werden auf der Projektseite erst nach Klick geladen).
+        // Ältere Projekte haben noch ein einzelnes Feld «video»: es wird beim Speichern zur Liste.
+        $videos = array_key_exists('videos', $p) ? (array) $p['videos'] : [$p['video'] ?? ''];
+        $videos = array_values(array_filter(array_map(fn ($v) => $text($v, 300), $videos), 'strlen'));
+        if (count($videos) > 20) fail('Höchstens 20 Filme pro Projekt');
+        foreach ($videos as $video) {
+            if (!preg_match('#^https://((www\.|m\.)?youtube\.com/(watch\?v=|shorts/|embed/)|youtu\.be/)[A-Za-z0-9_-]{11}([?&\#][^\s"<>]*)?$|^https://(www\.|player\.)?vimeo\.com/(video/)?\d+(/[a-f0-9]+)?([?\#][^\s"<>]*)?$#', $video)) {
+                fail('Film-Link: bitte einen YouTube- oder Vimeo-Link (https://…)');
+            }
         }
         if ($link !== '' && !preg_match('#^https?://[^\s"<>]+$#i', $link)) fail('Links müssen mit https:// beginnen');
         $images = array_values((array) ($p['images'] ?? []));
@@ -123,7 +128,7 @@ function cleanData(array $d): array
             'tools' => $text($p['tools'] ?? '', 300),
             'desc' => $text($p['desc'] ?? ''),
             'link' => $link,
-            'video' => $video,
+            'videos' => $videos,
             'art' => (int) ($p['art'] ?? 0) % 2,
             'images' => $images,
             // Bilder, die nicht beschnitten werden dürfen (nur solche, die auch im Projekt sind)
@@ -167,9 +172,11 @@ switch ($action) {
 
     case 'save':
         $data = cleanData(jsonBody());
-        // Vorschaubild jedes Films einmalig holen (danach liegt es auf dem eigenen Server)
+        // Vorschaubild jedes Films einmalig holen (danach liegt es auf dem eigenen Server).
+        // filmThumb = Vorschau des ersten Films, für Übersichten bei Projekten ohne eigene Bilder.
         foreach ($data['PROJECTS'] as &$project) {
-            $project['filmThumb'] = $project['video'] !== '' ? filmThumb($project['video']) : '';
+            $project['filmThumbs'] = array_map('filmThumb', $project['videos']);
+            $project['filmThumb'] = $project['filmThumbs'][0] ?? '';
         }
         unset($project);
         imageVariants(10);
@@ -192,6 +199,26 @@ switch ($action) {
         move_uploaded_file($file['tmp_name'], "$dir/$name");
         imageVariants(20);   // Proxies fürs neue Bild sofort erzeugen
         respond(['path' => "content/img/$name"]);
+
+    case 'media':
+        // Alle hochgeladenen Portfolio-Dateien für den Tab «Medien» (ohne WebP-Varianten und Loop-Standbilder)
+        $files = [];
+        foreach (glob(CONTENT . '/{img,video}/*.{jpg,png,webp,gif,mp4,webm}', GLOB_BRACE) ?: [] as $file) {
+            $name = basename($file);
+            $dir = basename(dirname($file));
+            if (preg_match('/\.w\d+\.webp$/', $name) || ($dir === 'video' && extensionOf($name) === 'jpg')) continue;
+            // Vorschau: bei Loops das Standbild daneben, bei Bildern die kleinste WebP-Variante
+            $thumb = $dir === 'video' ? preg_replace('/\.\w+$/', '.jpg', $name) : variantFile($name, 480);
+            $files[] = [
+                'path' => "content/$dir/$name",
+                'kind' => $dir === 'video' ? 'loop' : (str_starts_with($name, 'film-') ? 'film' : 'image'),
+                'thumb' => is_file(dirname($file) . "/$thumb") ? "content/$dir/$thumb" : null,
+                'size' => filesize($file),
+                'time' => filemtime($file),
+            ];
+        }
+        usort($files, fn ($a, $b) => $b['time'] <=> $a['time']);
+        respond($files);
 
     case 'export':
         // Backup aller Inhalte (Texte + Projektbilder) als ZIP

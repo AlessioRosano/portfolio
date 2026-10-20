@@ -32,14 +32,16 @@ async function api(action, body) {
 // Leeres Projekt: Standardwerte für neue Projekte und für Felder, die ältere Projekte noch nicht haben
 const blankProject = () => ({
   title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
-  link: "", video: "", art: 0, images: [], full: [], wide: [],
+  link: "", videos: [], art: 0, images: [], full: [], wide: [],
 });
 
 function normalize(d) {
   d.SOCIAL ??= [];
   d.ABOUT = { statement: "", portrait: "", caption: "", specs: [], status: "", ...d.ABOUT };
-  d.PROJECTS = d.PROJECTS.map((p) => ({
+  d.PROJECTS = d.PROJECTS.map(({ video, ...p }) => ({
     ...blankProject(), ...p,
+    // Früher ein einzelner Film («video»), jetzt eine Liste
+    videos: Array.isArray(p.videos) ? p.videos : video ? [video] : [],
     // Galerie-Layout: Projekte ohne eigene Wahl behalten ihr bisheriges Muster (jedes dritte Bild breit)
     wide: Array.isArray(p.wide) ? p.wide : (p.images || []).filter((_, i) => i > 0 && (i - 1) % 3 === 0),
   }));
@@ -282,11 +284,17 @@ function renderEditor() {
         <input type="text" data-f="tools" value="${esc(p.tools)}" placeholder="z. B. Illustrator, Figma" /></label>
 
       <label class="field"><span class="mono">Beschreibung</span>
-        <textarea data-f="desc" rows="5" placeholder="Worum geht es, was war deine Rolle, was ist das Besondere?">${esc(p.desc)}</textarea></label>
+        <textarea data-f="desc" rows="5" placeholder="Worum geht es, was war deine Rolle, was ist das Besondere?">${esc(p.desc)}</textarea>
+        <small>Link hinter ein Wort legen: <code>[Wort](https://…)</code>, z. B. <code>[Bäckerei Müller](https://baeckerei-mueller.ch)</code>. Nur https-Links.</small></label>
 
-      <label class="field field--3"><span class="mono">Film (YouTube oder Vimeo, optional)</span>
-        <input type="url" data-f="video" value="${esc(p.video)}" placeholder="https://vimeo.com/123456789" />
-        <small>Erscheint auf der Projektseite als Player. Er lädt erst beim Klick, vorher gibt es keine Cookies von YouTube oder Vimeo.</small></label>
+      <div class="field field--3"><span class="mono">Filme (YouTube oder Vimeo, optional)</span>
+        ${p.videos.map((url, k) => `
+          <div class="pw">
+            <input type="url" data-film="${k}" value="${esc(url)}" placeholder="https://vimeo.com/123456789" aria-label="Film ${k + 1}" />
+            <button class="btn btn--sm btn--danger" type="button" data-film-del="${k}" title="Film entfernen">✕</button>
+          </div>`).join("")}
+        <div><button class="btn btn--sm" type="button" data-film-add>+ Film hinzufügen</button></div>
+        <small>Erscheinen zuoberst auf der Projektseite, in dieser Reihenfolge. Der Player lädt erst beim Klick, vorher gibt es keine Cookies von YouTube oder Vimeo.</small></div>
       <label class="field field--3"><span class="mono">Link (optional)</span>
         <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
         <small>Wird im Projekt als «Link ↗» angezeigt, z. B. Behance oder Live-Website.</small></label>
@@ -317,10 +325,10 @@ function renderEditor() {
           ${k ? `<div class="seg img__layout mono" role="group" aria-label="Breite in der Galerie">
             <button type="button" data-layout="half" data-src="${esc(src)}" class="${p.wide.includes(src) ? "" : "is-active"}" title="Halbe Breite, zwei nebeneinander">Hoch</button>
             <button type="button" data-layout="wide" data-src="${esc(src)}" class="${p.wide.includes(src) ? "is-active" : ""}" title="Ganze Breite">Quer</button>
-          </div>` : `<span class="img__layout mono muted">Titelbild: ganze Breite</span>`}
+          </div>` : `<span class="img__layout mono muted">Nur Vorschau</span>`}
           <label class="check img__full mono"><input type="checkbox" data-full="${esc(src)}"${p.full.includes(src) ? " checked" : ""} /> Nicht beschneiden</label>
           </div>`).join("")}</div>
-          <small class="muted" style="margin-top:6px">Das erste Bild ist das Titelbild (gross auf der Projektseite und im Slider). Die übrigen erscheinen als Galerie darunter.
+          <small class="muted" style="margin-top:6px">Das erste Bild ist das Titelbild: Es erscheint als Vorschau im Slider und in den Übersichten, auf der Projektseite aber nicht (ausser das Projekt hat sonst keine Bilder und keinen Film). Die übrigen bilden dort die Galerie.
           «Nicht beschneiden» für Plakate oder Bilder mit Text: Auf der Projektseite erscheint das Bild dann vollständig, ohne Zuschnitt und Zoom.</small>` : ""}
       </div>
 
@@ -533,6 +541,61 @@ function renderAll() {
   updateStatus();
 }
 
+/* ── Medien: alle hochgeladenen Fotos und Loops auf einen Blick (nur ansehen) ── */
+let mediaFiles = null;           // Liste vom Server, wird beim Öffnen des Tabs geladen
+let mediaFilter = "";
+const MEDIA_KINDS = { image: "Fotos", loop: "Loops", film: "Film-Vorschauen" };
+
+// Wo wird eine Datei verwendet? Zählt den aktuellen Stand im CMS, auch ungespeicherte Änderungen.
+function mediaUsage() {
+  const use = {};
+  const add = (path, label) => (use[path] ??= []).push(label);
+  state.PROJECTS.forEach((p) => {
+    const name = p.title || "Ohne Titel";
+    p.images.forEach((src, k) => add(src, k ? name : `${name} (Titelbild)`));
+    (p.filmThumbs || []).forEach((src) => src && add(src, `${name} (Film)`));
+  });
+  if (state.ABOUT.portrait) add(state.ABOUT.portrait, "Wer: Portrait");
+  return use;
+}
+
+async function loadMedia() {
+  try { mediaFiles = await api("media"); } catch (err) { mediaFiles = []; toast(err.message); }
+  renderMedia();
+}
+
+function renderMedia() {
+  const box = $("[data-media]");
+  if (!mediaFiles) { box.innerHTML = `<h1>Medien</h1><p class="muted">Lädt …</p>`; return; }
+  const use = mediaUsage();
+  const tests = { "": () => true, unused: (f) => !use[f.path], ...Object.fromEntries(Object.keys(MEDIA_KINDS).map((k) => [k, (f) => f.kind === k])) };
+  const chip = (key, label) => {
+    const n = mediaFiles.filter(tests[key]).length;
+    return n || !key ? `<button data-media-filter="${key}" class="${mediaFilter === key ? "is-active" : ""}">${label} ${pad(n)}</button>` : "";
+  };
+  const list = mediaFiles.filter(tests[mediaFilter] || tests[""]);
+  box.innerHTML = `
+    <h1>Medien</h1>
+    <p class="muted">Alle Fotos und Loops, die fürs Portfolio hochgeladen sind, die neusten zuerst. Ein Klick öffnet das Original. Dateien der Kunden-Galerien stehen unter «Galerien».</p>
+    <div class="chips mono">${chip("", "Alle")}${Object.entries(MEDIA_KINDS).map(([k, v]) => chip(k, v)).join("")}${chip("unused", "Nicht verwendet")}</div>
+    ${list.length ? `<div class="media-grid">${list.map((f) => `
+      <div class="media-tile${use[f.path] ? "" : " is-unused"}">
+        <a class="img" href="${esc(f.path)}" target="_blank" rel="noopener" title="Original öffnen">
+          ${f.kind === "loop" && !f.thumb ? "" : `<img src="${esc(f.thumb || f.path)}" alt="" loading="lazy" />`}
+          ${f.kind === "loop" ? `<span class="img__badge mono">▶ Loop</span>` : ""}
+        </a>
+        <span class="media-tile__name mono muted">${esc(f.path.split("/").pop())} · ${fmtBytes(f.size)}</span>
+        <span class="media-tile__use">${use[f.path] ? use[f.path].map(esc).join("<br />") : `<span class="muted">Nicht verwendet</span>`}</span>
+      </div>`).join("")}</div>` : `<p class="muted">Hier ist noch nichts.</p>`}`;
+}
+
+$("[data-media]").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-media-filter]");
+  if (!b) return;
+  mediaFilter = b.dataset.mediaFilter;
+  renderMedia();
+});
+
 /* ── Handy: Liste und Bearbeiten sind zwei Ansichten (auf dem Desktop nebeneinander) ── */
 function showEditor(view, on) {
   $(view).classList.toggle("is-editing", on);
@@ -549,6 +612,7 @@ $("[data-tabs]").addEventListener("click", (e) => {
   if (!b) return;
   $$("[data-tab]").forEach((x) => x.classList.toggle("is-active", x === b));
   $$(".view").forEach((v) => v.classList.toggle("is-active", v.id === `view-${b.dataset.tab}`));
+  if (b.dataset.tab === "media") loadMedia();   // jedes Mal frisch, damit neue Uploads dabei sind
 });
 
 $("[data-save]").addEventListener("click", save);
@@ -599,6 +663,12 @@ $("[data-new]").addEventListener("click", () => {
 
 const editor = $("[data-editor]");
 editor.addEventListener("input", (e) => {
+  const film = e.target.dataset.film;
+  if (film !== undefined) {
+    state.PROJECTS[current].videos[+film] = e.target.value.trim();
+    markDirty();
+    return;
+  }
   const f = e.target.dataset.f;
   if (!f || e.target.type === "checkbox" || e.target.tagName === "SELECT") return;
   const p = state.PROJECTS[current];
@@ -627,6 +697,15 @@ editor.addEventListener("click", async (e) => {
   const p = state.PROJECTS[current];
   const art = e.target.closest("[data-art]");
   if (art) { p.art = +art.dataset.art; markDirty(); renderEditor(); renderList(); return; }
+
+  if (e.target.closest("[data-film-add]")) {
+    p.videos.push("");
+    renderEditor();
+    $$("[data-film]", editor).pop()?.focus();
+    return;
+  }
+  const filmDel = e.target.closest("[data-film-del]");
+  if (filmDel) { p.videos.splice(+filmDel.dataset.filmDel, 1); markDirty(); renderEditor(); return; }
 
   const layout = e.target.closest("[data-layout]");
   if (layout) {
