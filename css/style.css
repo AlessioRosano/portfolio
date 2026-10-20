@@ -694,32 +694,12 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .pgallery__item.is-full .media { aspect-ratio: auto; }
 .pgallery__item.is-full img, .pgallery__item.is-full video { height: auto; }
 
-/* Film (YouTube/Vimeo): Platzhalter im eigenen Look, Player erst nach Klick */
+/* Filme (YouTube/Vimeo): Player direkt eingebettet */
 .pfilm { padding: 0 var(--pad); display: grid; gap: var(--pad); }
 .pfilm[hidden] { display: none; }
 .pfilm:not([hidden]) + .pcover { margin-top: var(--pad); }
-.pfilm__frame { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: var(--bx); }
+.pfilm__frame { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: var(--bx-08); }
 .pfilm__frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.pfilm__play {
-  position: absolute; inset: 0; display: flex; align-items: flex-end; gap: clamp(16px, 2vw, 28px);
-  padding: clamp(20px, 3vw, 48px); color: var(--white); text-align: left; cursor: none;
-  background: var(--bx) center / cover no-repeat;
-}
-.pfilm__play::before { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 35%, color-mix(in srgb, var(--bx) 85%, black)); }
-.pfilm__icon, .pfilm__text { position: relative; }
-.pfilm__icon {
-  flex: none; width: clamp(56px, 6vw, 96px); aspect-ratio: 1; border-radius: 50%; background: var(--white);
-  transition: transform 0.6s var(--ease-out);
-}
-.pfilm__icon::after {
-  content: ""; position: absolute; left: 54%; top: 50%; transform: translate(-50%, -50%);
-  border-style: solid; border-width: 0.6em 0 0.6em 1em; border-color: transparent transparent transparent var(--bx); font-size: clamp(14px, 1.4vw, 22px);
-}
-.pfilm__play:hover .pfilm__icon { transform: scale(1.08); }
-.pfilm__text { display: grid; gap: 6px; }
-.pfilm__text b { font-size: clamp(22px, 2.4vw, 40px); letter-spacing: -0.03em; line-height: 1; }
-.pfilm__text .mono { opacity: 0.8; max-width: 52ch; }
-@media (hover: none) { .pfilm__play { cursor: pointer; } }
 .page-project .next__title { font-size: clamp(34px, 8vw, 160px); }
 
 /* ── Reduzierte Bewegung ─────────────────────────────────────── */

@@ -67,7 +67,7 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 - **Titelbild nur als Vorschau:** Das erste Bild (oder der erste Loop) eines Projekts erscheint im Slider und in den Übersichten. Auf der Projektseite stehen nur die Filme und die übrigen Bilder. Hat ein Projekt sonst nichts, springt das Titelbild dort ein.
 - **Look:** Pro Besuch würfelt die Seite eine Farbe (Orange, Pink oder Blau), Favicon inklusive. Fotos sind in Übersichten schwarz-weiss und werden beim Hover farbig.
 - **Desktop vs. Handy:** Am Desktop gibt es Smooth-Scroll mit Lenis, Hover-Effekte und einen eigenen Cursor. Am Handy scrollt die Seite nativ, Bilder sind gleich farbig, und es gibt ein Burger-Menü.
-- **Videos:** Pro Projekt gehen beliebig viele Filme von YouTube oder Vimeo (bis 20). Der Player lädt erst beim Klick (`youtube-nocookie.com`, Vimeo mit `dnt=1`). Das Vorschaubild holt der Server einmalig und legt es selbst ab. Eigene kurze Loops (MP4/WebM) laufen stumm, solange sie im Bild sind (`playInView`). In Übersichten erscheint nur ihr Standbild, damit die Startseite kein Video lädt.
+- **Videos:** Pro Projekt gehen beliebig viele Filme von YouTube oder Vimeo (bis 20). Der Player ist direkt eingebettet, ohne eigenes Overlay davor, und lädt erst, wenn er ins Bild scrollt (`youtube-nocookie.com`, Vimeo mit `dnt=1`). Das Vorschaubild für die Übersichten holt der Server einmalig und legt es selbst ab. Eigene kurze Loops (MP4/WebM) laufen stumm, solange sie im Bild sind (`playInView`). In Übersichten erscheint nur ihr Standbild, damit die Startseite kein Video lädt.
 - **Rücksicht:** Wer «Bewegung reduzieren» eingestellt hat, bekommt keine automatisch laufenden Loops.
 
 ### CMS
@@ -125,7 +125,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 12. **«Zeig mal» und Handy:** neue Seite mit allen Arbeiten, natives Scrollen und Burger-Menü am Handy, CMS fürs Handy, Quer/Hoch pro Galeriebild.
 13. **Weniger Text:** Auf den Disziplin-Seiten sind Einleitung, Stichworte und «So gehe ich vor» ausgeblendet, nicht gelöscht (eine CSS-Regel). Dazu Loops, die auch dort laufen, und ein neues Feld «Kunde».
 14. **Aufräumen, zweite Runde:** Doppelter Code in Website, CMS und PHP ist zusammengelegt (z. B. `loopVideo`, `galleryOrDeny()`). Jede Regel steht nur noch an einer Stelle. Getestet habe ich das, indem ich alte und neue Version nebeneinander laufen liess und die fertigen Seiten verglichen habe.
-15. **Mehr Film, weniger Doppeltes:** mehrere Filme pro Projekt, Textlinks in der Beschreibung und der Tab «Medien» im CMS. Das Titelbild ist jetzt nur noch Vorschau und wiederholt sich auf der Projektseite nicht mehr.
+15. **Mehr Film, weniger Doppeltes:** mehrere Filme pro Projekt, Textlinks in der Beschreibung und der Tab «Medien» im CMS. Das Titelbild ist jetzt nur noch Vorschau und wiederholt sich auf der Projektseite nicht mehr. Filme stehen direkt als Player da, statt hinter einem Abspiel-Overlay.
 
 ---
 

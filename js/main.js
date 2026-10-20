@@ -67,10 +67,10 @@ function filmEmbed(url) {
     const u = new URL(url);
     if (/(^|\.)youtu(\.be|be\.com)$/.test(u.hostname)) {
       const id = u.hostname === "youtu.be" ? u.pathname.slice(1) : u.searchParams.get("v") || u.pathname.split("/")[2];
-      if (/^[\w-]{11}$/.test(id)) return { name: "YouTube", src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1` };
+      if (/^[\w-]{11}$/.test(id)) return { name: "YouTube", src: `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1` };
     }
     const vimeo = /(^|\.)vimeo\.com$/.test(u.hostname) && u.pathname.match(/^\/(?:video\/)?(\d+)(?:\/([a-f0-9]+))?/);
-    if (vimeo) return { name: "Vimeo", src: `https://player.vimeo.com/video/${vimeo[1]}?autoplay=1&dnt=1${vimeo[2] ? `&h=${vimeo[2]}` : ""}` };
+    if (vimeo) return { name: "Vimeo", src: `https://player.vimeo.com/video/${vimeo[1]}?dnt=1${vimeo[2] ? `&h=${vimeo[2]}` : ""}` };
   } catch {}
   return null;
 }
@@ -559,32 +559,12 @@ function buildProject() {
     cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true })}</div>`;
   }
 
-  // Filme: Platzhalter im eigenen Look; der Player von YouTube/Vimeo lädt erst nach dem Klick
+  // Filme: Player von YouTube/Vimeo direkt eingebettet, datensparsam (nocookie / dnt).
+  // Er lädt erst, wenn er ins Bild scrollt.
   const filmBox = $("[data-p-film]");
   filmBox.hidden = !films.length;
-  // Vorschaubild jedes Films (vom eigenen Server), sonst das erste Bild des Projekts
-  const thumbs = p.filmThumbs || [p.filmThumb];
-  const fallback = p.images?.[0] && stillOf(p.images[0]);
-  filmBox.innerHTML = films.map((film, n) => {
-    const base = thumbs[n] || fallback;
-    const v = base && IMAGES[base];
-    const still = v ? variant(base, v.sizes.filter((w) => w <= 1600).pop() || v.sizes[0]) : base;
-    const label = films.length > 1 ? `Film ${n + 1} abspielen` : "Film abspielen";
-    return `
-      <div class="pfilm__frame" data-film="${n}">
-        <button class="pfilm__play" type="button" data-cursor="Abspielen"${still ? ` style="background-image:url('${esc(still)}')"` : ""}>
-          <span class="pfilm__icon" aria-hidden="true"></span>
-          <span class="pfilm__text"><b>${label}</b>
-            <span class="mono">Lädt den Player von ${film.name}. Erst ab dann gelten dessen Datenschutzregeln.</span></span>
-        </button>
-      </div>`;
-  }).join("");
-  filmBox.addEventListener("click", (e) => {
-    const frame = e.target.closest(".pfilm__play")?.parentElement;
-    if (!frame) return;
-    const film = films[+frame.dataset.film];
-    frame.innerHTML = `<iframe src="${esc(film.src)}" title="${esc(p.title)} (${film.name})" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`;
-  });
+  filmBox.innerHTML = films.map((film, n) => `
+    <div class="pfilm__frame"><iframe src="${esc(film.src)}" title="${esc(p.title)}${films.length > 1 ? `, Film ${n + 1}` : ""} (${film.name})" loading="lazy" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe></div>`).join("");
 
   $("[data-p-desc]").innerHTML = linkify(p.desc);
   const specs = [["Kunde", esc(p.client)], ["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];

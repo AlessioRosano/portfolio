@@ -294,7 +294,7 @@ function renderEditor() {
             <button class="btn btn--sm btn--danger" type="button" data-film-del="${k}" title="Film entfernen">✕</button>
           </div>`).join("")}
         <div><button class="btn btn--sm" type="button" data-film-add>+ Film hinzufügen</button></div>
-        <small>Erscheinen zuoberst auf der Projektseite, in dieser Reihenfolge. Der Player lädt erst beim Klick, vorher gibt es keine Cookies von YouTube oder Vimeo.</small></div>
+        <small>Erscheinen zuoberst auf der Projektseite, in dieser Reihenfolge. Der Player ist direkt eingebettet (YouTube ohne Cookies, Vimeo ohne Tracking) und lädt, sobald er ins Bild scrollt.</small></div>
       <label class="field field--3"><span class="mono">Link (optional)</span>
         <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
         <small>Wird im Projekt als «Link ↗» angezeigt, z. B. Behance oder Live-Website.</small></label>
