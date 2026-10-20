@@ -48,7 +48,7 @@ function mediaItem(src, alt, sizes, { play = false, eager = false } = {}) {
 }
 
 function media(p, W, H, sizes, opts) {
-  const src = p.images?.[0];
+  const src = p.images?.[0] || p.filmThumb;   // ohne Bilder: Vorschaubild des Films
   if (src) return mediaItem(src, p.title, sizes, opts);
   return makeArt(p.cat, p.art, W, H, p.title);
 }
@@ -83,7 +83,7 @@ const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
 const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 
 // Fotos: in der Übersicht schwarz-weiss, auf der Projektseite farbig (siehe CSS)
-const mediaClass = (p) => (p.images?.length ? " is-photo" : "");
+const mediaClass = (p) => (p.images?.length || p.filmThumb ? " is-photo" : "");
 
 /* ── Grosse Namen / Titel (Loader, Hero, Footer) ─────────────── */
 function buildNames() {
@@ -409,6 +409,7 @@ function buildProject() {
   // Bilder, die im CMS auf «Nicht beschneiden» stehen, erscheinen vollständig (Plakate, Bilder mit Text)
   const full = new Set(p.full || []);
   cover.classList.toggle("is-full", full.has(p.images?.[0]));
+  cover.hidden = !p.images?.length && !!p.video;   // nur Film, keine Bilder: Titelbild wäre doppelt
   cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true })}</div>`;
 
   // Film: Platzhalter im eigenen Look; der Player von YouTube/Vimeo lädt erst nach dem Klick
@@ -416,7 +417,11 @@ function buildProject() {
   const filmBox = $("[data-p-film]");
   filmBox.hidden = !film;
   if (film) {
-    const still = p.images?.[0] && (isLoop(p.images[0]) ? loopPoster(p.images[0]) : p.images[0]);
+    // Vorschaubild des Films (vom eigenen Server), sonst das erste Bild des Projekts
+    const first = p.images?.[0];
+    const base = p.filmThumb || (first && (isLoop(first) ? loopPoster(first) : first));
+    const v = base && IMAGES[base];
+    const still = v ? base.replace(/\.\w+$/, `.w${v.sizes.filter((w) => w <= 1600).pop() || v.sizes[0]}.webp`) : base;
     filmBox.innerHTML = `
       <div class="pfilm__frame">
         <button class="pfilm__play" type="button" data-cursor="Abspielen"${still ? ` style="background-image:url('${esc(still)}')"` : ""}>
@@ -703,7 +708,7 @@ function intro() {
     else {
       gsap.set(hChars, { yPercent: 110 });
       gsap.set(".hero .reveal-up", { yPercent: 120 });
-      gsap.set(".hero .card, .hero__tags > *, .pcover", { opacity: 0, y: 40 });
+      gsap.set(".hero .card, .hero__tags > *, .pfilm, .pcover", { opacity: 0, y: 40 });
     }
     const tl = gsap.timeline();
     tl.to(loader, { autoAlpha: 0, duration: 0.35, ease: "power2.out" })
@@ -711,7 +716,7 @@ function intro() {
     if (!hashTarget) {
       tl.to(hChars, { yPercent: 0, duration: 0.9, ease: "expo.out", stagger: 0.015 }, 0.1)
         .to(".hero .reveal-up", { yPercent: 0, duration: 0.9, ease: "expo.out", stagger: 0.05 }, 0.25)
-        .to(".hero .card, .hero__tags > *, .pcover", { opacity: 1, y: 0, duration: 0.9, ease: "expo.out", stagger: 0.03 }, 0.3);
+        .to(".hero .card, .hero__tags > *, .pfilm, .pcover", { opacity: 1, y: 0, duration: 0.9, ease: "expo.out", stagger: 0.03 }, 0.3);
     }
     return;
   }
@@ -736,7 +741,7 @@ function intro() {
   gsap.set(hName, { y: innerHeight / 2 - (r.top + r.height / 2), scale: 0.4 });
   gsap.set(".hero .reveal-up", { yPercent: 120 });
   gsap.set(".hero .card, .hero__tags > *", { opacity: 0, y: 60, scale: 0.95 });
-  if ($(".pcover")) gsap.set(".pcover", { opacity: 0, y: 80 });
+  if ($(".pcover")) gsap.set(".pfilm, .pcover", { opacity: 0, y: 80 });
   gsap.set(".nav", { yPercent: -100, opacity: 0 });
 
   // Loader-Name liegt deckungsgleich über dem Hero-Namen → Loader ausblenden, Name wächst
@@ -747,7 +752,7 @@ function intro() {
     .to(".hero .reveal-up", { yPercent: 0, duration: 1.1, ease: "expo.out", stagger: 0.08 }, "<")
     .to(".hero .card, .hero__tags > *", { opacity: 1, y: 0, scale: 1, duration: 1.2, ease: "expo.out", stagger: 0.05 }, "<0.1")
     .add(() => { loader.remove(); unlock(); }, "-=0.6");
-  if ($(".pcover")) tl.to(".pcover", { opacity: 1, y: 0, duration: 1.3, ease: "expo.out" }, "-=1.4");
+  if ($(".pcover")) tl.to(".pfilm, .pcover", { opacity: 1, y: 0, duration: 1.3, ease: "expo.out", stagger: 0.1 }, "-=1.4");
 }
 
 /* ── Boot ────────────────────────────────────────────────────── */

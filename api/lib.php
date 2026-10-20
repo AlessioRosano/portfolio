@@ -288,6 +288,53 @@ function projectSlugs(array $projects): array
     }, $projects);
 }
 
+/* ── Filme (YouTube/Vimeo): Vorschaubild auf den eigenen Server holen ── */
+// Besucher sehen das echte Thumbnail sofort, laden dafür aber nichts von YouTube oder Vimeo.
+
+// YouTube/Vimeo-Link → [Anbieter, ID, Vimeo-Hash] (gleiche Regeln wie filmEmbed in js/main.js)
+function parseFilm(string $url): ?array
+{
+    if (preg_match('#^https://(?:(?:www\.|m\.)?youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})#', $url, $m)) return ['youtube', $m[1], ''];
+    if (preg_match('#^https://(?:www\.|player\.)?vimeo\.com/(?:video/)?(\d+)(?:/([a-f0-9]+))?#', $url, $m)) return ['vimeo', $m[1], $m[2] ?? ''];
+    return null;
+}
+
+function httpGet(string $url): ?string
+{
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_TIMEOUT => 8, CURLOPT_USERAGENT => 'Mozilla/5.0 (Portfolio)']);
+        $body = curl_exec($ch);
+        $ok = curl_getinfo($ch, CURLINFO_RESPONSE_CODE) === 200;
+        return $ok && is_string($body) ? $body : null;
+    }
+    $body = @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 8, 'user_agent' => 'Mozilla/5.0 (Portfolio)']]));
+    return $body === false ? null : $body;
+}
+
+// Gibt den Pfad des gespeicherten Vorschaubilds zurück ('' wenn nicht möglich). Pro Film nur einmal geladen.
+function filmThumb(string $url): string
+{
+    $film = parseFilm($url);
+    if (!$film) return '';
+    [$provider, $id, $hash] = $film;
+    $name = "film-$provider-" . substr(md5($id), 0, 12) . '.jpg';
+    $path = CONTENT . "/img/$name";
+    if (is_file($path)) return "content/img/$name";
+
+    $candidates = $provider === 'youtube'
+        ? ["https://i.ytimg.com/vi/$id/maxresdefault.jpg", "https://i.ytimg.com/vi/$id/sddefault.jpg", "https://i.ytimg.com/vi/$id/hqdefault.jpg"]
+        : [json_decode((string) httpGet('https://vimeo.com/api/oembed.json?width=1920&url=' . rawurlencode("https://vimeo.com/$id" . ($hash ? "/$hash" : ''))), true)['thumbnail_url'] ?? null];
+    foreach (array_filter($candidates) as $src) {
+        $data = httpGet($src);
+        $img = $data ? @imagecreatefromstring($data) : false;
+        if (!$img || imagesx($img) < 400) continue;   // YouTube liefert für fehlende Grössen ein winziges Ersatzbild
+        imagejpeg(scaledTo($img, 2400), $path, 85);     // neu gespeichert: nur Bilddaten, nichts Fremdes
+        return "content/img/$name";
+    }
+    return '';
+}
+
 /* ── Uploads in Stücken (Galerien, Video-Loops) ─────────────── */
 // Hängt das empfangene Stück an. Gibt beim letzten Stück den Pfad der fertigen Datei zurück, sonst null.
 function receiveChunk(int $maxBytes): ?string

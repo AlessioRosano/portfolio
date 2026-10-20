@@ -105,9 +105,16 @@ async function prepareImage(file) {
 // Video-Loops (MP4/WebM) liegen in derselben Liste wie Bilder; als Vorschau dient ein Standbild daneben
 const isLoop = (path) => /\.(mp4|webm)$/i.test(path);
 const loopPoster = (path) => path.replace(/\.\w+$/, ".jpg");
-const isLoopFile = (f) => /^video\/(mp4|webm)$/.test(f.type) || /\.(mp4|webm)$/i.test(f.name);
+const isLoopFile = (f) => f.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(f.name);
+const MAX_LOOP_MB = 60;
 
 async function uploadLoop(file, title, onProgress) {
+  if (file.size > MAX_LOOP_MB * 1024 * 1024) throw new Error(`Loop ist zu gross (max. ${MAX_LOOP_MB} MB). Kürzer oder kleiner exportieren.`);
+  // Zuerst prüfen, ob der Browser das Video abspielen kann — dabei entsteht gleich das Standbild
+  const poster = await videoPoster(file).catch(() => null);
+  if (!poster) throw new Error("Dieses Video kann der Browser nicht abspielen (z. B. HEVC oder ProRes). Bitte als MP4 mit H.264 exportieren.");
+  // MOV/M4V mit H.264 sind technisch MP4 — als .mp4 ablegen, damit jeder Browser sie abspielt
+  const name = /\.webm$/i.test(file.name) ? file.name : file.name.replace(/\.\w+$/, "") + ".mp4";
   const total = Math.max(1, Math.ceil(file.size / chunkSize));
   const id = [...crypto.getRandomValues(new Uint8Array(12))].map((n) => n.toString(36).padStart(2, "0")).join("").slice(0, 24);
   let res;
@@ -116,24 +123,25 @@ async function uploadLoop(file, title, onProgress) {
     form.append("upload", id);
     form.append("index", i);
     form.append("total", total);
-    form.append("name", file.name);
+    form.append("name", name);
     form.append("title", title);
     form.append("chunk", file.slice(i * chunkSize, (i + 1) * chunkSize), "chunk");
     res = await api("loop-chunk", form);
     onProgress?.((i + 1) / total);
   }
-  const poster = await videoPoster(file).catch(() => null);
-  if (poster) {
-    const form = new FormData();
-    form.append("path", res.path);
-    form.append("poster", poster, "poster.jpg");
-    await api("loop-poster", form).catch(() => {});
-  }
+  const form = new FormData();
+  form.append("path", res.path);
+  form.append("poster", poster, "poster.jpg");
+  await api("loop-poster", form).catch(() => {});
   return res.path;
 }
 
 async function addImages(files) {
-  const imgs = [...files].filter((f) => f.type.startsWith("image/") || isLoopFile(f));
+  const all = [...files];
+  const imgs = all.filter((f) => f.type.startsWith("image/") || isLoopFile(f));
+  // Nichts stillschweigend ignorieren: sagen, welche Dateien nicht gehen
+  const skipped = all.filter((f) => !imgs.includes(f));
+  if (skipped.length) toast(`Nicht unterstützt: ${skipped.map((f) => f.name).join(", ")} (erlaubt: Bilder und Videos MP4, MOV, M4V, WebM)`);
   if (!imgs.length) return;
   const p = state.PROJECTS[current];
   const drop = $("[data-drop]");
@@ -262,7 +270,7 @@ function renderEditor() {
         <span class="mono">Bilder &amp; Loops</span>
         <div class="drop" data-drop tabindex="0" role="button">
           <strong>Bilder hierher ziehen oder klicken</strong>
-          <span class="mono muted">Bilder (JPG, PNG, WebP, GIF) oder kurze Loops (MP4, WebM, ohne Ton, max. 60 MB)</span>
+          <span class="mono muted">Bilder (JPG, PNG, WebP, GIF) oder kurze Loops (MP4, MOV, WebM; H.264, ohne Ton, max. 60 MB)</span>
         </div>
         ${p.images.length ? `<div class="images">${p.images.map((src, k) => `
           <div class="img-wrap">

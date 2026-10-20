@@ -145,6 +145,12 @@ switch ($action) {
     case 'save':
         if (!$isPost) fail('POST erwartet', 405);
         $data = cleanData(jsonBody());
+        // Vorschaubild jedes Films einmalig holen (danach liegt es auf dem eigenen Server)
+        foreach ($data['PROJECTS'] as &$project) {
+            $project['filmThumb'] = $project['video'] !== '' ? filmThumb($project['video']) : '';
+        }
+        unset($project);
+        imageVariants(10);
         // Vorherigen Stand aufheben (die letzten 30)
         copy(CONTENT . '/data.json', STORAGE . '/backups/data-' . date('Ymd-His') . '.json');
         $backups = glob(STORAGE . '/backups/data-*.json') ?: [];
@@ -281,7 +287,8 @@ switch ($action) {
         if (!isset(LOOP_TYPES[$ext])) fail('Für Loops nur MP4 oder WebM');
         $part = receiveChunk(MAX_LOOP_BYTES);
         if (!$part) respond(['ok' => true]);
-        if (!in_array((string) (new finfo(FILEINFO_MIME_TYPE))->file($part), ['video/mp4', 'video/webm', 'application/mp4', 'video/x-m4v'], true)) {
+        // MP4-Exporte melden sich teils als QuickTime (gleicher Container) — beides ist in Ordnung
+        if (!in_array((string) (new finfo(FILEINFO_MIME_TYPE))->file($part), ['video/mp4', 'video/webm', 'application/mp4', 'video/x-m4v', 'video/quicktime'], true)) {
             unlink($part);
             fail('Datei ist kein MP4- oder WebM-Video');
         }
