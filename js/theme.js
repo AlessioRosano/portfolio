@@ -13,8 +13,11 @@
   if (theme !== "orange") document.documentElement.dataset.theme = theme;
 
   var hex = colors[theme];
-  var icon = document.querySelector('link[rel="icon"]');
-  if (icon) icon.href = icon.href.replace(/%23ff6600/gi, encodeURIComponent(hex));
+  // Tab-Icon in der Besuchsfarbe (die Dateien favicon.svg/.ico für Google bleiben orange)
+  var icon = document.querySelector('link[rel="icon"][type="image/svg+xml"]');
+  if (icon && theme !== "orange") {
+    icon.href = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="' + hex + '"/><text x="16" y="21.5" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14" fill="#fff">AR</text></svg>');
+  }
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = hex;
 })();

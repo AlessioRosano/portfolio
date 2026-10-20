@@ -108,6 +108,7 @@ Damit die Seite in der Google-Suche auftaucht, habe ich sie für Suchmaschinen v
 - **Eine einzige Adresse:** `www.` und `http://` leiten jetzt auf `https://alessiorosano.ch` um, dazu kommt ein Canonical-Link auf jeder Seite. Sonst sähe Google dieselbe Seite unter mehreren Adressen.
 - **Titel und Beschreibung** für jede Disziplin und jedes Projekt
 - **Vorschaubild für geteilte Links** (LinkedIn, WhatsApp usw.): Ich habe es mit PHP und meinen Schriften als `img/og.jpg` erzeugt.
+- **Favicon für die Google-Suche:** Google zeigt kein Icon an, das nur als Code (Data-URL) im HTML steckt. Darum gibt es echte Dateien: `favicon.ico` (16/32/48 px), `favicon.svg`, `icon-192.png` und `apple-touch-icon.png`. Im Browser-Tab färbt `js/theme.js` das Icon trotzdem in der Besuchsfarbe ein.
 - **Strukturierte Daten** (schema.org): Google erkennt mich als Person (mit Ort, Fachgebieten und Social-Links) und meine Projekte als Werke.
 - **Google Search Console:** Ich habe die Domain per DNS-Eintrag bei Infomaniak bestätigt, die Sitemap eingereicht und die Indexierung beantragt.
 
@@ -190,6 +191,7 @@ portfolio/
 │   ├── file.php       liefert Galerie-Dateien aus (nur mit Passwort)
 │   └── zip.php        ganze Galerie als ZIP
 ├── setup/             Startinhalte für einen leeren Server
+├── favicon.ico, favicon.svg, icon-192.png, apple-touch-icon.png   Icons (Browser, Google, iPhone)
 ├── .htaccess          HTTPS, Sicherheits-Header, gesperrte Dateien
 ├── .user.ini          PHP-Limits (Uploads, Laufzeit), keine Fehlermeldungen im Browser
 └── .github/workflows/deploy.yml   automatischer Deploy
@@ -288,6 +290,7 @@ Ein Test-Foto mit 19 MB ergibt in der Übersicht 0,2 MB und in der Grossansicht 
 - **Eine Adresse:** `www.` und `http://` leiten mit einer einzigen Weiterleitung auf `https://alessiorosano.ch` um. Jede Seite hat einen Canonical-Link.
 - **Titel und Beschreibung** passend zu jeder Disziplin und jedem Projekt (gesetzt per JavaScript, das Google ausführt)
 - **Vorschau beim Teilen** (Open Graph): eigenes Vorschaubild `img/og.jpg` mit 1200 × 630 px
+- **Favicon als echte Dateien** (`favicon.ico`, `favicon.svg`, `icon-192.png`, `apple-touch-icon.png`), damit Google es in den Suchergebnissen anzeigt
 - **Strukturierte Daten** (schema.org): `Person` auf der Startseite (mit Social-Links aus dem CMS) und `CreativeWork` für Projekte
 - **Name als Text:** Der grosse animierte Name besteht aus einzelnen Buchstaben. Google liest ihn trotzdem korrekt als „Alessio Rosano“.
 - **Google Search Console:** Die Domain ist per TXT-Eintrag in der DNS-Zone bei Infomaniak bestätigt (Domain-Property, deckt `www` und `http` mit ab). Die Sitemap ist eingereicht, die Indexierung der Startseite beantragt. Dort sehe ich auch, wie oft und wofür die Seite in der Suche erscheint.

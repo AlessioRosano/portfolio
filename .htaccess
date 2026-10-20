@@ -24,6 +24,11 @@
 # Interne Ordner: Startinhalte, gesperrter Speicher, Git- und Editor-Ordner
 RedirectMatch 404 /(setup|storage|\.git|\.github|\.vscode)(/|$)
 
+# Favicon mit korrektem Dateityp (für Google und Browser)
+<IfModule mod_mime.c>
+  AddType image/x-icon .ico
+</IfModule>
+
 <IfModule mod_headers.c>
   # Nur eigene Scripts erlaubt — fremder oder eingeschleuster Code läuft nicht.
   # Einzige Ausnahme: die Video-Player von YouTube (ohne Cookies) und Vimeo, erst nach Klick geladen.
