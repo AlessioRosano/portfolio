@@ -107,6 +107,8 @@ function cleanData(array $d): array
             'images' => $images,
             // Bilder, die nicht beschnitten werden dürfen (nur solche, die auch im Projekt sind)
             'full' => array_values(array_intersect($images, array_filter((array) ($p['full'] ?? []), 'is_string'))),
+            // Galeriebilder in ganzer Breite (Querformat); alle anderen halbe Breite
+            'wide' => array_values(array_intersect($images, array_filter((array) ($p['wide'] ?? []), 'is_string'))),
         ];
     }, array_values($d['PROJECTS']));
 

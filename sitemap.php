@@ -1,6 +1,6 @@
 <?php
 // Sitemap für Suchmaschinen, erreichbar als /sitemap.xml (siehe .htaccess).
-// Baut sich aus den CMS-Inhalten auf: Startseite, alle Disziplinen, alle Projekte.
+// Baut sich aus den CMS-Inhalten auf: Startseite, «Zeig mal», alle Disziplinen, alle Projekte.
 require __DIR__ . '/api/lib.php';
 
 ensureStorage();
@@ -8,7 +8,7 @@ $data = readJson(CONTENT . '/data.json');
 $base = 'https://' . preg_replace('/^www\./', '', $_SERVER['HTTP_HOST'] ?? 'alessiorosano.ch') . '/';
 $lastmod = date('Y-m-d', filemtime(CONTENT . '/data.json'));
 
-$urls = [$base];
+$urls = [$base, $base . 'arbeiten.html'];
 foreach (array_keys($data['CATS'] ?? []) as $cat) $urls[] = $base . 'disziplin.html?d=' . rawurlencode($cat);
 foreach (projectSlugs($data['PROJECTS'] ?? []) as $id) $urls[] = $base . 'projekt.html?p=' . rawurlencode($id);
 

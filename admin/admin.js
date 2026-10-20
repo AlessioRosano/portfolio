@@ -35,6 +35,8 @@ function normalize(d) {
   d.PROJECTS = d.PROJECTS.map((p) => ({
     title: "", cat: "branding", year: new Date().getFullYear(), role: "", tools: "", desc: "",
     link: "", video: "", art: 0, images: [], full: [], ...p,
+    // Galerie-Layout: Projekte ohne eigene Wahl behalten ihr bisheriges Muster (jedes dritte Bild breit)
+    wide: Array.isArray(p.wide) ? p.wide : (p.images || []).filter((_, i) => i > 0 && (i - 1) % 3 === 0),
   }));
   return d;
 }
@@ -136,6 +138,14 @@ async function uploadLoop(file, title, onProgress) {
   return res.path;
 }
 
+// Querformat? (für das Galerie-Layout neuer Bilder) — Bilder direkt, Loops über ihr Standbild
+async function isLandscape(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    return bmp.width > bmp.height;
+  } catch { return false; }
+}
+
 async function addImages(files) {
   const all = [...files];
   const imgs = all.filter((f) => f.type.startsWith("image/") || isLoopFile(f));
@@ -152,12 +162,16 @@ async function addImages(files) {
     if (drop) drop.querySelector("strong").textContent = `${label} …`;
     try {
       if (isLoopFile(f)) {
-        p.images.push(await uploadLoop(f, p.title, (x) => { if (drop) drop.querySelector("strong").textContent = `${label} … ${Math.round(x * 100)} %`; }));
+        const path = await uploadLoop(f, p.title, (x) => { if (drop) drop.querySelector("strong").textContent = `${label} … ${Math.round(x * 100)} %`; });
+        p.images.push(path);
+        if (await isLandscape(await fetch(loopPoster(path)).then((r) => r.blob()).catch(() => null))) p.wide.push(path);
       } else {
         const form = new FormData();
         form.append("file", await prepareImage(f));
         form.append("title", p.title);
-        p.images.push((await api("upload", form)).path);
+        const path = (await api("upload", form)).path;
+        p.images.push(path);
+        if (await isLandscape(f)) p.wide.push(path);
       }
       added++;
     } catch (e) {
@@ -289,6 +303,10 @@ function renderEditor() {
               </span>
             </div>
           </div>
+          ${k ? `<div class="seg img__layout mono" role="group" aria-label="Breite in der Galerie">
+            <button type="button" data-layout="half" data-src="${esc(src)}" class="${p.wide.includes(src) ? "" : "is-active"}" title="Halbe Breite, zwei nebeneinander">Hoch</button>
+            <button type="button" data-layout="wide" data-src="${esc(src)}" class="${p.wide.includes(src) ? "is-active" : ""}" title="Ganze Breite">Quer</button>
+          </div>` : `<span class="img__layout mono muted">Titelbild: ganze Breite</span>`}
           <label class="check img__full mono"><input type="checkbox" data-full="${esc(src)}"${p.full.includes(src) ? " checked" : ""} /> Nicht beschneiden</label>
           </div>`).join("")}</div>
           <small class="muted" style="margin-top:6px">Das erste Bild ist das Titelbild (gross auf der Projektseite und im Slider). Die übrigen erscheinen als Galerie darunter.
@@ -535,7 +553,7 @@ $("[data-items]").addEventListener("click", (e) => {
 $("[data-new]").addEventListener("click", () => {
   state.PROJECTS.unshift({
     title: "Neues Projekt", cat: filter || "branding", year: new Date().getFullYear(),
-    role: "", tools: "", desc: "", link: "", video: "", art: 0, images: [], full: [],
+    role: "", tools: "", desc: "", link: "", video: "", art: 0, images: [], full: [], wide: [],
   });
   current = 0;
   markDirty();
@@ -579,6 +597,15 @@ editor.addEventListener("click", async (e) => {
   const art = e.target.closest("[data-art]");
   if (art) { p.art = +art.dataset.art; markDirty(); renderEditor(); renderList(); return; }
 
+  const layout = e.target.closest("[data-layout]");
+  if (layout) {
+    const src = layout.dataset.src;
+    p.wide = layout.dataset.layout === "wide" ? [...new Set([...p.wide, src])] : p.wide.filter((s) => s !== src);
+    markDirty();
+    renderEditor();
+    return;
+  }
+
   const im = e.target.closest("[data-img]");
   if (im) {
     const k = +im.dataset.k, A = p.images;
@@ -586,7 +613,11 @@ editor.addEventListener("click", async (e) => {
     if (act === "left" && k > 0) [A[k - 1], A[k]] = [A[k], A[k - 1]];
     if (act === "right" && k < A.length - 1) [A[k + 1], A[k]] = [A[k], A[k + 1]];
     if (act === "cover") A.unshift(A.splice(k, 1)[0]);
-    if (act === "del") p.full = p.full.filter((s) => s !== A.splice(k, 1)[0]);   // Datei bleibt auf dem Server liegen (sicher)
+    if (act === "del") {   // Datei bleibt auf dem Server liegen (sicher)
+      const gone = A.splice(k, 1)[0];
+      p.full = p.full.filter((s) => s !== gone);
+      p.wide = p.wide.filter((s) => s !== gone);
+    }
     markDirty();
     renderEditor();
     renderList();

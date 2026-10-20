@@ -128,6 +128,14 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 - **AR-Zeichen statt Name** im Header, dasselbe Zeichen wie im Browser-Tab
 - Den Stern im Header der Startseite habe ich entfernt, damit der Kopf ruhiger wirkt.
 
+### 12. «Zeig mal», Handy und Galerie-Layout
+
+- **Neue Seite «Zeig mal»** (`arbeiten.html`): alle Arbeiten in einem Raster, filterbar nach Disziplin, im selben Look wie der Slider. Sie ist in der Navigation verlinkt und steht in der Sitemap.
+- **Handy:** Das Scrollen läuft dort jetzt nativ mit Schwung, statt mit dem Smooth-Scrolling vom Desktop, das am Handy bremst und abrupt stoppt. Die Seite rechnet nicht mehr alles neu, wenn die Adressleiste ein- und ausfährt, und Inhalte blenden schneller und mit kürzeren Wegen ein.
+- **Burger-Menü** auf dem Handy: ein farbiges Vollbild mit allen Menüpunkten
+- **Startscreen am Handy:** Der Name ist etwas niedriger, „Video, Branding …“ steht links und „Weniger Lärm …“ rechts.
+- **Galerie-Layout pro Bild:** Im CMS wähle ich für jedes Galeriebild **Quer** (ganze Breite) oder **Hoch** (halbe Breite, zwei nebeneinander). Neue Bilder bekommen die Einstellung automatisch nach ihrem Seitenverhältnis.
+
 ---
 
 ## Was die Website kann
@@ -139,13 +147,16 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 - **Wer:** Text, der beim Scrollen Wort für Wort erscheint, mit Portrait und Steckbrief
 - Kontaktformular (öffnet das Mail-Programm, es braucht keinen Server-Versand)
 
+**Zeig mal (`arbeiten.html`)**: alle Arbeiten in einem Raster, Filter nach Disziplin (auch als Link teilbar, z.B. `arbeiten.html?d=video`). Beim Hover werden die Bilder farbig, der Titel erscheint, und Loops laufen an.
+
 **Disziplin-Seite (`disziplin.html?d=video`)**: Einleitung, Stichworte, Projekte, Arbeitsweise in drei Schritten, Link zur nächsten Disziplin
 
 **Projektseite (`projekt.html?p=…`)**: zuoberst der Film (falls vorhanden, Player lädt erst beim Klick), dann ein grosses Titelbild oder ein Video-Loop mit Zoom beim Scrollen, Beschreibung, Steckbrief, Galerie aus Bildern und Loops, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 
 **Überall**
 - Jeder Besuch bekommt zufällig eine Farbe: Orange, Pink oder Blau. Sie bleibt während des Besuchs gleich, Favicon und Browserfarbe passen sich an. Der frühere Farbschalter ist im Code noch vorhanden, aber ausgeblendet.
-- Im Header steht das AR-Zeichen statt des Namens.
+- Im Header steht das AR-Zeichen statt des Namens. Die Navigation: Was, Zeig mal, Wer, Kontakt. Am Handy öffnet ein Burger dieselben Punkte als Vollbild-Menü.
+- Am Handy: natives Scrollen mit Schwung, leichtere Animationen
 - Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**
 - Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen: keine automatisch laufenden Loops
 
@@ -159,7 +170,7 @@ Fotos erscheinen in den Übersichten schwarz-weiss und auf der Projektseite in F
 
 ```
 portfolio/
-├── index.html, disziplin.html, projekt.html   Website (Inhalte kommen per JS aus der API)
+├── index.html, arbeiten.html, disziplin.html, projekt.html   Website (Inhalte per JS aus der API)
 ├── galerie.php                                Galerie-Seite für Kund:innen
 ├── css/style.css                              Gestaltung; alle Farben aus einer Variable --bx
 ├── js/
@@ -199,7 +210,7 @@ Erreichbar unter `/admin`, geschützt mit einem Passwort.
 
 | Tab | Was ich dort pflege |
 |---|---|
-| **Projekte** | Titel, Jahr, Disziplin, Rolle, Tools, Beschreibung, Link, Film (YouTube/Vimeo), Bilder und Video-Loops (Drag & Drop, Reihenfolge, Titelbild, pro Bild «Nicht beschneiden»), Platzhalter-Grafik, Reihenfolge der Projekte |
+| **Projekte** | Titel, Jahr, Disziplin, Rolle, Tools, Beschreibung, Link, Film (YouTube/Vimeo), Bilder und Video-Loops (Drag & Drop, Reihenfolge, Titelbild, pro Bild «Nicht beschneiden» und Quer/Hoch in der Galerie), Platzhalter-Grafik, Reihenfolge der Projekte |
 | **Disziplinen** | Name, Einleitung, Stichworte, Tools, drei Arbeitsschritte |
 | **Wer** | Text, Portrait, Bildunterschrift, Steckbrief-Zeilen, Status |
 | **Galerien** | Galerien für Kund:innen anlegen, Dateien hochladen, Link und Passwort weitergeben |
@@ -270,7 +281,7 @@ Ein Test-Foto mit 19 MB ergibt in der Übersicht 0,2 MB und in der Grossansicht 
 
 ## Suchmaschinen (SEO)
 
-- **Sitemap** unter `/sitemap.xml`: Sie wird aus den CMS-Inhalten erzeugt (`sitemap.php`), neue Projekte sind also automatisch drin.
+- **Sitemap** unter `/sitemap.xml`: Sie wird aus den CMS-Inhalten erzeugt (`sitemap.php`), mit Startseite, «Zeig mal», Disziplinen und Projekten. Neue Projekte sind also automatisch drin.
 - **`robots.txt`:** Die Website ist erlaubt, CMS, API und Kunden-Galerien sind gesperrt. Ausnahme ist `api/data.php`, damit Google die Inhalte laden kann.
 - **Eine Adresse:** `www.` und `http://` leiten mit einer einzigen Weiterleitung auf `https://alessiorosano.ch` um. Jede Seite hat einen Canonical-Link.
 - **Titel und Beschreibung** passend zu jeder Disziplin und jedem Projekt (gesetzt per JavaScript, das Google ausführt)

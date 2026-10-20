@@ -179,6 +179,43 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .nav { grid-template-columns: 1fr auto; }
   .nav__links { display: none; }
 }
+.nav__links a[aria-current="page"]::after { transform: scaleX(1); }
+
+/* ── Burger + Menü (Handy) ───────────────────────────────────── */
+.nav__burger { display: none; position: relative; width: 34px; height: 34px; margin-right: -6px; }
+.nav__burger span {
+  position: absolute; left: 7px; right: 7px; height: 1.5px; background: currentColor;
+  transition: transform 0.5s var(--ease), top 0.5s var(--ease);
+}
+.nav__burger span:first-child { top: 13px; }
+.nav__burger span:last-child { top: 20px; }
+body.menu-open .nav__burger span:first-child { top: 16.5px; transform: rotate(45deg); }
+body.menu-open .nav__burger span:last-child { top: 16.5px; transform: rotate(-45deg); }
+@media (max-width: 860px) { .nav__burger { display: inline-block; } }
+
+.menu {
+  position: fixed; inset: 0; z-index: 45; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 96px var(--pad) var(--pad); background: var(--bx); color: var(--white);
+  clip-path: inset(0 0 100% 0); transition: clip-path 0.7s var(--ease); pointer-events: none;
+}
+body.menu-open .menu { clip-path: inset(0 0 0 0); pointer-events: auto; }
+body.menu-open { overflow: hidden; }
+.menu__links { display: grid; gap: 4px; }
+.menu__links a {
+  display: flex; align-items: baseline; gap: 12px;
+  font-size: clamp(44px, 13vw, 88px); font-weight: 800; letter-spacing: -0.045em; line-height: 1;
+  opacity: 0; transform: translateY(24px); transition: opacity 0.5s, transform 0.7s var(--ease-out);
+}
+.menu__links a .mono { font-size: 0.8rem; opacity: 0.6; }
+.menu__links a[aria-current="page"] { opacity: 0.55; }
+body.menu-open .menu__links a { opacity: 1; transform: none; }
+body.menu-open .menu__links a:nth-child(2) { transition-delay: 0.05s; }
+body.menu-open .menu__links a:nth-child(3) { transition-delay: 0.1s; }
+body.menu-open .menu__links a:nth-child(4) { transition-delay: 0.15s; }
+.menu__foot { display: flex; justify-content: space-between; margin: 0; opacity: 0.7; }
+/* Header über dem offenen Menü: weiss */
+body.menu-open .nav { color: var(--white); background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.menu-open .nav__logo text { fill: var(--bx); }
 
 /* ── Hero ────────────────────────────────────────────────────── */
 .hero {
@@ -205,7 +242,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero__star { display: block; width: clamp(26px, 2vw, 44px); transition: transform 0.7s var(--ease); }
 .hero__star:hover { transform: rotate(180deg); }
 @media (max-width: 760px) {
-  .hero__meta { flex-direction: column; text-align: center; gap: 4px; }
+  /* Handy: «Video, Branding …» links, «Weniger Lärm …» rechts */
+  .hero__meta { flex-direction: column; align-items: stretch; text-align: left; gap: 6px; }
+  .hero__meta:not(.hero__meta--sub) > :last-child { text-align: right; }
   .hero__star-wrap { display: none; }
 }
 
@@ -442,6 +481,21 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .svc__content { grid-template-columns: 1fr; }
   .svc__content > :first-child { display: none; }
 }
+
+/* ── Zeig mal: alle Arbeiten ─────────────────────────────────── */
+.works { padding-top: clamp(16px, 2vw, 40px); }
+.works__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px, 1.2vw, 20px); }
+.works__grid .card { display: block; }
+.works__grid .card .media { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+.works__grid .card__title { font-size: clamp(24px, 2.4vw, 46px); }
+.works__grid .card.is-hidden { display: none; }
+.works__empty { margin: 0; }
+.works__filter button { padding: 7px 12px; border-radius: 999px; background: var(--bx-08); transition: background 0.3s, color 0.3s; }
+.works__filter button span { opacity: 0.55; padding: 0; background: none; }
+.works__filter button:hover { background: var(--bx-15); }
+.works__filter button[aria-pressed="true"] { background: var(--bx); color: var(--white); }
+@media (max-width: 1000px) { .works__grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .works__grid { grid-template-columns: 1fr; } }
 
 /* ── Unterseite: Hero ────────────────────────────────────────── */
 .hero--sub { min-height: auto; padding-bottom: clamp(56px, 7vw, 120px); }

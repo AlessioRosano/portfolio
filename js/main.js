@@ -6,6 +6,8 @@
 
 /* ── Helpers ($, $$, pad, esc, projectIds: js/utils.js) ───────── */
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Handy/Tablet: natives Scrollen mit Schwung statt Smooth-Scroll, leichtere Animationen
+const TOUCH = matchMedia("(hover: none), (pointer: coarse)").matches;
 const hasGsap = !!window.gsap;
 const PAGE = document.body.dataset.page || null;
 const SUB = PAGE === "discipline" ? new URLSearchParams(location.search).get("d") : null;
@@ -108,9 +110,12 @@ function fitNames() {
       const h = inner.offsetHeight * (fs / 100);
       if (h > innerHeight * max) fs *= (innerHeight * max) / h;
     }
+    // Handy: grosse Namen (zweizeilig) etwas weniger hoch, damit Untertitel und Slider mehr Platz haben
+    if (SMALL_MQ.matches && !el.closest(".footer")) fs *= 0.86;
     el.style.fontSize = `${Math.floor(fs * 100) / 100}px`;
   });
 }
+const SMALL_MQ = matchMedia("(max-width: 640px)");
 
 /* ── Seitenübergang ──────────────────────────────────────────── */
 const cover = $(".cover");
@@ -153,6 +158,19 @@ function initLinks() {
 /* ── Hero-Slider (Startseite) ────────────────────────────────── */
 const SLIDER_MQ = matchMedia("(max-width: 760px)");
 SLIDER_MQ.addEventListener("change", () => buildSlider());
+// Projektkarte für Slider und «Zeig mal»: nur das Bild; beim Hover farbig, Titel in der Mitte, Loop läuft an.
+// Als Link (<a>) in Rastern, als <div> im Slider (dort entscheidet das Ziehen, ob ein Klick zählt).
+function projectCard(p, { W, H, sizes, link = false }) {
+  const first = p.images?.[0];
+  const loop = first && isLoop(first) && !reduced ? ` data-loop="${esc(first)}"` : "";
+  const open = link ? `<a class="card" href="${projectUrl(p)}" aria-label="${esc(p.title)}"` : `<div class="card" data-href="${projectUrl(p)}"`;
+  return `
+      ${open} data-cat="${esc(p.cat)}"${loop}>
+        <div class="media${mediaClass(p)}">${media(p, W, H, sizes)}</div>
+        <div class="card__title" aria-hidden="true">${esc(p.title)}</div>
+      </${link ? "a" : "div"}>`;
+}
+
 function buildSlider() {
   const track = $("[data-track]");
   if (!track) return;
@@ -162,15 +180,7 @@ function buildSlider() {
   const cards = [];
   // Mindestens 8 Karten, damit die Endlos-Reihe den Bildschirm füllt
   for (let i = 0; i < Math.max(8, PROJECTS.length); i++) {
-    const p = PROJECTS[i % PROJECTS.length];
-    // Ist das erste Medium ein Loop, läuft er beim Hover an (geladen wird er erst dann)
-    const first = p.images?.[0];
-    const loop = first && isLoop(first) && !reduced ? ` data-loop="${esc(first)}"` : "";
-    cards.push(`
-      <div class="card" data-href="${projectUrl(p)}"${loop}>
-        <div class="media${mediaClass(p)}">${media(p, W, H, "(max-width: 760px) 72vw, 60vw")}</div>
-        <div class="card__title" aria-hidden="true">${esc(p.title)}</div>
-      </div>`);
+    cards.push(projectCard(PROJECTS[i % PROJECTS.length], { W, H, sizes: "(max-width: 760px) 72vw, 60vw" }));
   }
   track.innerHTML = cards.join("") + cards.join("");
 }
@@ -217,25 +227,6 @@ function initSlider() {
   });
   slider.addEventListener("pointercancel", () => { drag = false; slider.classList.remove("is-drag"); });
 
-  // Video-Loops: beim Hover laden und abspielen, beim Verlassen anhalten
-  track.addEventListener("pointerover", (e) => {
-    const c = e.target.closest(".card[data-loop]");
-    if (!c || c.contains(e.relatedTarget)) return;
-    let video = $("video", c);
-    if (!video) {
-      video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
-      $(".media", c).appendChild(video);
-    }
-    c.classList.add("is-playing");
-    video.play().catch(() => {});
-  });
-  track.addEventListener("pointerout", (e) => {
-    const c = e.target.closest(".card[data-loop]");
-    if (!c || c.contains(e.relatedTarget)) return;
-    c.classList.remove("is-playing");
-    $("video", c)?.pause();
-  });
-
   if (lenis) lenis.on("scroll", (l) => { boost = Math.min(Math.abs(l.velocity) * 0.6, 24); });
 
   // Pfeile < >: um genau eine Karte weiter, weich ausgleitend; das automatische Laufen geht weiter
@@ -260,6 +251,86 @@ function initSlider() {
   });
 }
 
+/* ── Menü am Handy: Burger öffnet ein Vollbild mit den Menüpunkten ── */
+function initMenu() {
+  const btn = $("[data-menu-toggle]");
+  if (!btn) return;
+  const menu = document.createElement("div");
+  menu.className = "menu";
+  menu.id = "menu";
+  menu.inert = true;
+  // Gleiche Links wie in der Navigation (eine Quelle, keine doppelte Pflege)
+  menu.innerHTML = `<nav class="menu__links" aria-label="Menü">${$$(".nav__links a").map((a) =>
+    `<a href="${esc(a.getAttribute("href"))}"${a.hasAttribute("aria-current") ? ' aria-current="page"' : ""}>${a.innerHTML}</a>`).join("")}</nav>
+    <p class="menu__foot mono"><span>St.Gallen, CH</span><span data-clock></span></p>`;
+  document.body.appendChild(menu);
+
+  const setOpen = (open) => {
+    document.body.classList.toggle("menu-open", open);
+    menu.inert = !open;
+    btn.setAttribute("aria-expanded", String(open));
+    btn.setAttribute("aria-label", open ? "Menü schliessen" : "Menü öffnen");
+    if (open) lenis?.stop(); else lenis?.start();
+  };
+  btn.addEventListener("click", () => setOpen(!document.body.classList.contains("menu-open")));
+  menu.addEventListener("click", (e) => { if (e.target.closest("a")) setOpen(false); });   // schliesst vor dem Scrollen/Wechseln
+  addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+  matchMedia("(min-width: 861px)").addEventListener("change", (e) => e.matches && setOpen(false));
+}
+
+/* ── Video-Loops in Karten: beim Hover laden und abspielen, beim Verlassen anhalten ── */
+function initLoopHover() {
+  document.addEventListener("pointerover", (e) => {
+    const c = e.target.closest?.(".card[data-loop]");
+    if (!c || c.contains(e.relatedTarget)) return;
+    let video = $("video", c);
+    if (!video) {
+      video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
+      $(".media", c).appendChild(video);
+    }
+    c.classList.add("is-playing");
+    video.play().catch(() => {});
+  });
+  document.addEventListener("pointerout", (e) => {
+    const c = e.target.closest?.(".card[data-loop]");
+    if (!c || c.contains(e.relatedTarget)) return;
+    c.classList.remove("is-playing");
+    $("video", c)?.pause();
+  });
+}
+
+/* ── Zeig mal: alle Arbeiten, filterbar nach Disziplin ───────── */
+function buildWorks() {
+  if (PAGE !== "works") return;
+  const grid = $("[data-works]");
+  const filter = $("[data-w-filter]");
+  const years = PROJECTS.map((p) => p.year).filter(Boolean);
+  const count = (n) => `${pad(n)} ${n === 1 ? "Projekt" : "Projekte"}`;
+
+  setMeta(`Zeig mal — ${NAME}`, `Alle Arbeiten von ${NAME}: ${Object.values(CATS).join(", ")}.`, "arbeiten.html");
+  $("[data-w-span]").textContent = `${count(PROJECTS.length)}${years.length ? `, ${Math.min(...years)}–${Math.max(...years)}` : ""}`;
+  $("[data-w-empty]").hidden = PROJECTS.length > 0;
+  grid.innerHTML = PROJECTS.map((p) => projectCard(p, { W: 400, H: 300, sizes: "(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 33vw", link: true })).join("");
+
+  const cats = [["", "Alle", PROJECTS.length], ...DISCIPLINES.map((d) => [d.cat, CATS[d.cat], PROJECTS.filter((p) => p.cat === d.cat).length])];
+  filter.innerHTML = cats.map(([cat, name, n]) =>
+    `<button type="button" data-w-cat="${esc(cat)}" aria-pressed="${cat === ""}">${esc(name)} <span>${pad(n)}</span></button>`).join("");
+
+  const apply = (cat) => {
+    $$("[data-w-cat]", filter).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wCat === cat)));
+    $$(".card", grid).forEach((c) => c.classList.toggle("is-hidden", !!cat && c.dataset.cat !== cat));
+    $("[data-w-count]").textContent = cat ? `${CATS[cat]}: ${count(PROJECTS.filter((p) => p.cat === cat).length)}` : "Alle Arbeiten";
+    history.replaceState(null, "", cat ? `?d=${encodeURIComponent(cat)}` : location.pathname);
+    if (window.ScrollTrigger) ScrollTrigger.refresh();
+  };
+  filter.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-w-cat]");
+    if (b) apply(b.dataset.wCat);
+  });
+  const initial = new URLSearchParams(location.search).get("d");
+  apply(CATS[initial] ? initial : "");
+}
+
 /* ── Wer (Startseite, gepflegt im CMS unter «Wer») ─────────────── */
 function buildAbout() {
   const statement = $("[data-about-statement]");
@@ -280,7 +351,7 @@ function buildAbout() {
 const absoluteUrl = (path) => new URL(path, `${location.origin}/`).href;
 
 // Für Unterseiten, deren Inhalt erst per JS feststeht (Google führt das JavaScript aus)
-function setMeta(title, description) {
+function setMeta(title, description, canonicalPath) {
   const text = String(description).replace(/\s+/g, " ").trim();
   const short = text.length > 155 ? `${text.slice(0, 152).replace(/\s\S*$/, "")} …` : text;
   document.title = title;
@@ -288,7 +359,7 @@ function setMeta(title, description) {
   $('meta[property="og:title"]')?.setAttribute("content", title);
   $('meta[property="og:description"]')?.setAttribute("content", short);
   const canonical = $('link[rel="canonical"]') || document.head.appendChild(Object.assign(document.createElement("link"), { rel: "canonical" }));
-  canonical.href = location.href.split("#")[0];
+  canonical.href = canonicalPath ? absoluteUrl(canonicalPath) : location.href.split("#")[0];
 }
 
 // schema.org als JSON-LD — wird nicht ausgeführt, darum mit der Content-Security-Policy vereinbar
@@ -474,9 +545,12 @@ function buildProject() {
   if (p.link) specs.push(["Link", `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))} ↗</a>`]);
   $("[data-p-specs]").innerHTML = specs.filter(([, v]) => v).map(([k2, v]) => `<div><dt>${k2}</dt><dd>${v}</dd></div>`).join("");
 
-  // Galerie: abwechselnd ein grosses Bild und zwei nebeneinander
-  $("[data-p-gallery]").innerHTML = (p.images || []).slice(1).map((src, n) =>
-    `<figure class="pgallery__item${n % 3 === 0 ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${mediaItem(src, `${p.title}, Bild ${n + 2}`, n % 3 === 0 ? "100vw" : "(max-width: 760px) 100vw, 50vw", { play: true })}</div></figure>`).join("");
+  // Galerie: Querformat = ganze Breite, Hochformat = halbe Breite, zwei nebeneinander
+  // (im CMS pro Bild wählbar; ältere Projekte ohne Wahl: jedes dritte Bild breit)
+  $("[data-p-gallery]").innerHTML = (p.images || []).slice(1).map((src, n) => {
+      const wide = Array.isArray(p.wide) ? p.wide.includes(src) : n % 3 === 0;
+      return `<figure class="pgallery__item${wide ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${mediaItem(src, `${p.title}, Bild ${n + 2}`, wide ? "100vw" : "(max-width: 760px) 100vw, 50vw", { play: true })}</div></figure>`;
+    }).join("");
 
   // Nächstes Projekt: innerhalb der Disziplin, sonst das nächste insgesamt
   const next = siblings.length > 1 ? siblings[(k + 1) % siblings.length] : PROJECTS[(i + 1) % PROJECTS.length];
@@ -535,9 +609,11 @@ function revealOnEnter(trigger, targets, vars) {
 // Elemente blenden von unten ein, sobald sie ins Bild scrollen (gemeinsam ankommende gestaffelt)
 function fadeIn(targets, y = 40, vars = {}) {
   if (!targets.length) return;
+  // Am Handy: kurze Wege und früher starten, damit beim schnellen Wischen nichts leer wirkt
+  if (TOUCH) { y = Math.min(y, 20); vars = { ...vars, duration: 0.7, stagger: 0.05 }; }
   gsap.set(targets, { opacity: 0, y });
   ScrollTrigger.batch(targets, {
-    start: "top 90%",
+    start: TOUCH ? "top 100%" : "top 90%",
     once: true,
     onEnter: (b) => gsap.to(b, { opacity: 1, y: 0, duration: 1.2, ease: "expo.out", stagger: 0.1, ...vars }),
   });
@@ -552,6 +628,7 @@ function initScroll() {
 
   fadeIn($$("main .label"), 10, { duration: 0.8, ease: "power3.out" });
   fadeIn($$(".work__item"), 80, { stagger: 0.12 });
+  fadeIn($$(".works__grid .card"), 60, { stagger: 0.08 });
   fadeIn($$(".pgallery__item"), 60);
   fadeIn($$(".services__list > *, .about__grid > *, .form > *, .process__grid > *, .process__specs > *, .pinfo__grid > *, .contact__inner--cta .btn"));
 
@@ -589,8 +666,8 @@ function initScroll() {
   gsap.set(fc, { yPercent: 110 });
   revealOnEnter($(".footer__name"), fc, { yPercent: 0, duration: 1, ease: "expo.out", stagger: 0.03 });
 
-  // Hero-Name leichter Parallax beim Rausscrollen
-  gsap.to(".hero__name", {
+  // Hero-Name leichter Parallax beim Rausscrollen (nicht am Handy: ruckelt dort mit der Adressleiste)
+  if (!TOUCH) gsap.to(".hero__name", {
     yPercent: 30,
     ease: "none",
     scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
@@ -725,7 +802,7 @@ function intro() {
   const countEl = $("[data-count]");
   const hashTarget = location.hash.length > 1 ? $(location.hash) : null;
   // Erster Besuch direkt auf einer Unterseite: etwas kürzerer Loader
-  const fast = !!SUB;
+  const fast = !!SUB || PAGE === "works";
   const D = fast ? 0.9 : 2.4;
 
   if (reduced || !hasGsap) {
@@ -791,6 +868,7 @@ function intro() {
 
 /* ── Boot ────────────────────────────────────────────────────── */
 initTheme();
+initMenu();
 initClock();
 initForm();
 initProgress();
@@ -801,6 +879,7 @@ Promise.all([loadContent(), document.fonts.ready]).then(() => {
   buildSub();
   buildNames();
   buildSlider();
+  buildWorks();
   buildDisciplines();
   buildAbout();
   buildSocial();
@@ -814,8 +893,10 @@ Promise.all([loadContent(), document.fonts.ready]).then(() => {
   }
 
   gsap.registerPlugin(ScrollTrigger);
+  // Ein- und ausfahrende Adressleiste am Handy löst sonst ständig Neuberechnungen aus
+  ScrollTrigger.config({ ignoreMobileResize: true });
 
-  if (window.Lenis && !reduced) {
+  if (window.Lenis && !reduced && !TOUCH) {
     lenis = new Lenis({ lerp: 0.09 });
     lenis.stop();
     lenis.on("scroll", ScrollTrigger.update);
@@ -824,12 +905,17 @@ Promise.all([loadContent(), document.fonts.ready]).then(() => {
   }
 
   initSlider();
+  initLoopHover();
   initCursor();
   initScroll();
   intro();
 
   let rt;
+  let lastWidth = innerWidth;
   addEventListener("resize", () => {
+    // Am Handy ändert sich beim Scrollen nur die Höhe (Adressleiste) — dann nichts neu berechnen
+    if (TOUCH && innerWidth === lastWidth) return;
+    lastWidth = innerWidth;
     clearTimeout(rt);
     rt = setTimeout(() => {
       fitNames();
