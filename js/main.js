@@ -229,20 +229,8 @@ function initSlider() {
 
   if (lenis) lenis.on("scroll", (l) => { boost = Math.min(Math.abs(l.velocity) * 0.6, 24); });
 
-  // Am Handy gibt es kein Hover: Loops laufen, solange sie im Bild sind, und pausieren ausserhalb
-  if (TOUCH && !reduced && "IntersectionObserver" in window) {
-    const io = new IntersectionObserver((entries) => entries.forEach(({ target: c, isIntersecting }) => {
-      let video = $("video", c);
-      if (isIntersecting && !video) {
-        video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
-        $(".media", c).appendChild(video);
-      }
-      if (!video) return;
-      c.classList.toggle("is-playing", isIntersecting);
-      if (isIntersecting) video.play().catch(() => {}); else video.pause();
-    }), { threshold: 0.2 });
-    $$(".card[data-loop]", track).forEach((c) => io.observe(c));
-  }
+  // Am Handy gibt es kein Hover: Loops laufen, solange sie im Bild sind
+  if (TOUCH) playInView($$(".card[data-loop]", track));
 
   // Pfeile < >: um genau eine Karte weiter, weich ausgleitend; das automatische Laufen geht weiter
   $$("[data-slide]").forEach((btn) => btn.addEventListener("click", () => {
@@ -291,6 +279,23 @@ function initMenu() {
   menu.addEventListener("click", (e) => { if (e.target.closest("a")) setOpen(false); });   // schliesst vor dem Scrollen/Wechseln
   addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
   matchMedia("(min-width: 861px)").addEventListener("change", (e) => e.matches && setOpen(false));
+}
+
+/* ── Video-Loops: laufen, solange die Karte im Bild ist, und pausieren ausserhalb.
+   Das Video wird erst geladen, wenn die Karte zum ersten Mal sichtbar wird. ── */
+function playInView(items) {
+  if (reduced || !items.length || !("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver((entries) => entries.forEach(({ target: c, isIntersecting }) => {
+    let video = $("video", c);
+    if (isIntersecting && !video) {
+      video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
+      $(".media", c).appendChild(video);
+    }
+    if (!video) return;
+    c.classList.toggle("is-playing", isIntersecting);
+    if (isIntersecting) video.play().catch(() => {}); else video.pause();
+  }), { threshold: 0.2 });
+  items.forEach((c) => io.observe(c));
 }
 
 /* ── Video-Loops in Karten: beim Hover laden und abspielen, beim Verlassen anhalten ── */
@@ -479,8 +484,10 @@ function buildWork(list) {
   grid.innerHTML = list.map((p, j) => {
     const land = j % 4 === 1 || j % 4 === 2;
     const [W, H] = land ? [500, 400] : [400, 500];
+    const first = p.images?.[0];
+    const loop = first && isLoop(first) ? ` data-loop="${esc(first)}"` : "";
     return `
-      <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen">
+      <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen"${loop}>
         <div class="work__frame"><div class="media${mediaClass(p)}" style="aspect-ratio:${W} / ${H}">${media(p, W, H, "(max-width: 760px) 100vw, 50vw")}</div></div>
         <div class="work__meta">
           <span class="mono">[${pad(j + 1)}]</span>
@@ -489,6 +496,8 @@ function buildWork(list) {
         </div>
       </a>`;
   }).join("");
+  // Disziplin-Seite: Loops laufen automatisch, solange sie im Bild sind (auch am Desktop)
+  playInView($$(".work__item[data-loop]", grid));
 }
 
 /* ── Projektseite (vollflächig) ──────────────────────────────── */

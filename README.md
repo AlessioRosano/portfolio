@@ -146,6 +146,7 @@ Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie
 - **Disziplin-Seiten:** Einleitung, Stichworte, die Überschrift „Ein paar Beispiele.“ und der Abschnitt «So gehe ich vor» sind ausgeblendet. Übrig bleiben Titel, Projekte und der Link zur nächsten Disziplin. Die Projekte folgen jetzt direkt auf den Titel. Auf der Startseite erscheinen Einleitung und Stichworte weiterhin beim Hover über eine Disziplin.
 - **Kein Stern mehr** unter den Seitentiteln (Disziplin- und Projektseiten)
 - **Kein farbiger Rahmen** mehr um die Projektbilder auf den Disziplin-Seiten. Sie stehen jetzt frei, wie im Slider auf der Startseite.
+- **Loops auf den Disziplin-Seiten:** Dort zeigten die Projekte nur das Standbild. Jetzt laufen Loops automatisch, solange sie im Bild sind, und pausieren ausserhalb. Geladen wird das Video erst, wenn die Karte sichtbar wird. Dieselbe Funktion (`playInView`) nutzt auch der Slider am Handy.
 - **Neues Feld «Kunde»** im CMS bei jedem Projekt. Auf der Projektseite steht es zuoberst im Steckbrief. Bleibt es leer, erscheint die Zeile gar nicht, ältere Projekte sehen also aus wie vorher.
 - **Navigation:** «Zeig mal» steht jetzt an dritter Stelle: Was, Wer, Zeig mal, Kontakt.
 - **Unterlängen nicht mehr abgeschnitten:** Beim «g» in „richtig gut.“ fehlte unten ein Stück. Die Zeilen der animierten Titel blenden mit `overflow: hidden` ein und hatten unten zu wenig Platz für die tiefen Unterlängen der Serifenschrift. Jetzt haben sie mehr Raum, ohne dass sich der Zeilenabstand ändert. Nachgemessen habe ich das im Browser: Vorher lag der Bogen vom «g» knapp 2 px unter der Kante, jetzt bleiben gut 6 px Luft.
@@ -163,7 +164,7 @@ Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie
 
 **Zeig mal (`arbeiten.html`)**: alle Arbeiten in einem Raster, Filter nach Disziplin (auch als Link teilbar, z.B. `arbeiten.html?d=video`). Beim Hover werden die Bilder farbig, der Titel erscheint, und Loops laufen an.
 
-**Disziplin-Seite (`disziplin.html?d=video`)**: grosser Titel, Anzahl Projekte, die Projekte und ein Link zur nächsten Disziplin. Einleitung, Stichworte, „Ein paar Beispiele.“ und «So gehe ich vor» sind im Code noch da, aber ausgeblendet (eine CSS-Regel in `style.css`). Auf der Startseite stehen Einleitung und Stichworte weiterhin im Hover bei «Was».
+**Disziplin-Seite (`disziplin.html?d=video`)**: grosser Titel, Anzahl Projekte, die Projekte (Loops laufen automatisch, solange sie im Bild sind) und ein Link zur nächsten Disziplin. Einleitung, Stichworte, „Ein paar Beispiele.“ und «So gehe ich vor» sind im Code noch da, aber ausgeblendet (eine CSS-Regel in `style.css`). Auf der Startseite stehen Einleitung und Stichworte weiterhin im Hover bei «Was».
 
 **Projektseite (`projekt.html?p=…`)**: zuoberst der Film (falls vorhanden, Player lädt erst beim Klick), dann ein grosses Titelbild oder ein Video-Loop mit Zoom beim Scrollen, Beschreibung, Steckbrief (Kunde, Disziplin, Jahr, Rolle, Tools, Link), Galerie aus Bildern und Loops, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 
