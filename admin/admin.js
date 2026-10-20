@@ -29,12 +29,17 @@ async function api(action, body) {
   return data;
 }
 
+// Leeres Projekt: Standardwerte für neue Projekte und für Felder, die ältere Projekte noch nicht haben
+const blankProject = () => ({
+  title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
+  link: "", video: "", art: 0, images: [], full: [], wide: [],
+});
+
 function normalize(d) {
   d.SOCIAL ??= [];
   d.ABOUT = { statement: "", portrait: "", caption: "", specs: [], status: "", ...d.ABOUT };
   d.PROJECTS = d.PROJECTS.map((p) => ({
-    title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
-    link: "", video: "", art: 0, images: [], full: [], ...p,
+    ...blankProject(), ...p,
     // Galerie-Layout: Projekte ohne eigene Wahl behalten ihr bisheriges Muster (jedes dritte Bild breit)
     wide: Array.isArray(p.wide) ? p.wide : (p.images || []).filter((_, i) => i > 0 && (i - 1) % 3 === 0),
   }));
@@ -104,11 +109,27 @@ async function prepareImage(file) {
   return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
-// Video-Loops (MP4/WebM) liegen in derselben Liste wie Bilder; als Vorschau dient ein Standbild daneben
-const isLoop = (path) => /\.(mp4|webm)$/i.test(path);
-const loopPoster = (path) => path.replace(/\.\w+$/, ".jpg");
+// Video-Loops liegen in derselben Liste wie Bilder (isLoop, loopPoster, stillOf: js/utils.js)
 const isLoopFile = (f) => f.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(f.name);
 const MAX_LOOP_MB = 60;
+
+// Datei in Stücken hochladen (umgeht Upload-Limits des Servers); gibt die Antwort aufs letzte Stück zurück
+async function uploadChunks(action, file, fields, onProgress) {
+  const total = Math.max(1, Math.ceil(file.size / chunkSize));
+  const id = [...crypto.getRandomValues(new Uint8Array(12))].map((n) => n.toString(36).padStart(2, "0")).join("").slice(0, 24);
+  let res;
+  for (let i = 0; i < total; i++) {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) form.append(k, v);
+    form.append("upload", id);
+    form.append("index", i);
+    form.append("total", total);
+    form.append("chunk", file.slice(i * chunkSize, (i + 1) * chunkSize), "chunk");
+    res = await api(action, form);
+    onProgress?.((i + 1) / total);
+  }
+  return res;
+}
 
 async function uploadLoop(file, title, onProgress) {
   if (file.size > MAX_LOOP_MB * 1024 * 1024) throw new Error(`Loop ist zu gross (max. ${MAX_LOOP_MB} MB). Kürzer oder kleiner exportieren.`);
@@ -117,20 +138,7 @@ async function uploadLoop(file, title, onProgress) {
   if (!poster) throw new Error("Dieses Video kann der Browser nicht abspielen (z. B. HEVC oder ProRes). Bitte als MP4 mit H.264 exportieren.");
   // MOV/M4V mit H.264 sind technisch MP4 — als .mp4 ablegen, damit jeder Browser sie abspielt
   const name = /\.webm$/i.test(file.name) ? file.name : file.name.replace(/\.\w+$/, "") + ".mp4";
-  const total = Math.max(1, Math.ceil(file.size / chunkSize));
-  const id = [...crypto.getRandomValues(new Uint8Array(12))].map((n) => n.toString(36).padStart(2, "0")).join("").slice(0, 24);
-  let res;
-  for (let i = 0; i < total; i++) {
-    const form = new FormData();
-    form.append("upload", id);
-    form.append("index", i);
-    form.append("total", total);
-    form.append("name", name);
-    form.append("title", title);
-    form.append("chunk", file.slice(i * chunkSize, (i + 1) * chunkSize), "chunk");
-    res = await api("loop-chunk", form);
-    onProgress?.((i + 1) / total);
-  }
+  const res = await uploadChunks("loop-chunk", file, { name, title }, onProgress);
   const form = new FormData();
   form.append("path", res.path);
   form.append("poster", poster, "poster.jpg");
@@ -187,7 +195,7 @@ async function addImages(files) {
 }
 
 const thumb = (p, W = 400, H = 500) =>
-  p.images.length ? `<img src="${esc(isLoop(p.images[0]) ? loopPoster(p.images[0]) : p.images[0])}" alt="" />` : makeArt(p.cat, p.art, W, H, p.title);
+  p.images.length ? `<img src="${esc(stillOf(p.images[0]))}" alt="" />` : makeArt(p.cat, p.art, W, H, p.title);
 
 /* ── UI: Kopfzeile, Hinweise ─────────────────────────────────── */
 function updateStatus(text) {
@@ -292,7 +300,7 @@ function renderEditor() {
         ${p.images.length ? `<div class="images">${p.images.map((src, k) => `
           <div class="img-wrap">
           <div class="img${p.full.includes(src) ? " is-full" : ""}">
-            <img src="${esc(isLoop(src) ? loopPoster(src) : src)}" alt="" />
+            <img src="${esc(stillOf(src))}" alt="" />
             ${isLoop(src) ? `<span class="img__badge mono" style="left:auto;right:8px">▶ Loop</span>` : ""}
             ${k === 0 ? `<span class="img__badge mono">Titelbild</span>` : ""}
             <div class="img__tools">
@@ -326,6 +334,34 @@ function renderEditor() {
         </div>
       </div>`}
     </div>`;
+}
+
+/* ── Ablagefelder: Dateien hineinziehen, anklicken oder per Tastatur öffnen ── */
+// Die Felder werden neu gezeichnet, darum hören die Events auf der umgebenden Ansicht (view)
+function dropZone(view, selector, input, onFiles) {
+  const pick = () => $(input).click();
+  view.addEventListener("click", (e) => { if (e.target.closest(selector)) pick(); });
+  view.addEventListener("keydown", (e) => {
+    if (e.target.matches(selector) && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pick(); }
+  });
+  view.addEventListener("dragover", (e) => {
+    const d = e.target.closest(selector);
+    if (!d) return;
+    e.preventDefault();
+    d.classList.add("is-over");
+  });
+  view.addEventListener("dragleave", (e) => e.target.closest(selector)?.classList.remove("is-over"));
+  view.addEventListener("drop", (e) => {
+    const d = e.target.closest(selector);
+    if (!d) return;
+    e.preventDefault();
+    d.classList.remove("is-over");
+    onFiles(e.dataTransfer.files);
+  });
+  $(input).addEventListener("change", (e) => {
+    onFiles(e.target.files);
+    e.target.value = "";
+  });
 }
 
 /* ── UI: Wer ─────────────────────────────────────────────────── */
@@ -406,7 +442,6 @@ aboutView.addEventListener("click", (e) => {
   const S = state.ABOUT.specs;
   const del = e.target.closest("[data-spec-del]");
   const move = e.target.closest("[data-spec-move]");
-  if (e.target.closest("[data-about-drop]")) return $("[data-about-file]").click();
   if (del) S.splice(+del.dataset.specDel, 1);
   else if (move) { const i = +move.dataset.specMove; if (i > 0) [S[i - 1], S[i]] = [S[i], S[i - 1]]; }
   else if (e.target.closest("[data-spec-add]")) S.push(["", ""]);
@@ -415,21 +450,7 @@ aboutView.addEventListener("click", (e) => {
   markDirty();
   renderAbout();
 });
-aboutView.addEventListener("keydown", (e) => {
-  if (e.target.matches("[data-about-drop]") && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $("[data-about-file]").click(); }
-});
-aboutView.addEventListener("dragover", (e) => {
-  const d = e.target.closest("[data-about-drop]");
-  if (!d) return;
-  e.preventDefault();
-  d.classList.add("is-over");
-});
-aboutView.addEventListener("dragleave", (e) => e.target.closest("[data-about-drop]")?.classList.remove("is-over"));
-aboutView.addEventListener("drop", (e) => {
-  if (!e.target.closest("[data-about-drop]")) return;
-  e.preventDefault();
-  setPortrait(e.dataTransfer.files);
-});
+dropZone(aboutView, "[data-about-drop]", "[data-about-file]", setPortrait);
 
 /* ── UI: Disziplinen & Allgemein ─────────────────────────────── */
 function renderDisciplines() {
@@ -565,10 +586,7 @@ $("[data-items]").addEventListener("click", (e) => {
 });
 
 $("[data-new]").addEventListener("click", () => {
-  state.PROJECTS.unshift({
-    title: "Neues Projekt", cat: filter || "branding", year: new Date().getFullYear(),
-    client: "", role: "", tools: "", desc: "", link: "", video: "", art: 0, images: [], full: [], wide: [],
-  });
+  state.PROJECTS.unshift({ ...blankProject(), title: "Neues Projekt", cat: filter || "branding" });
   current = 0;
   markDirty();
   showEditor("#view-projects", true);
@@ -607,8 +625,6 @@ editor.addEventListener("change", (e) => {
 });
 editor.addEventListener("click", async (e) => {
   const p = state.PROJECTS[current];
-  if (e.target.closest("[data-drop]")) { $("[data-file]").click(); return; }
-
   const art = e.target.closest("[data-art]");
   if (art) { p.art = +art.dataset.art; markDirty(); renderEditor(); renderList(); return; }
 
@@ -648,37 +664,10 @@ editor.addEventListener("click", async (e) => {
     renderEditor();
   }
 });
-editor.addEventListener("keydown", (e) => {
-  if (e.target.matches("[data-drop]") && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $("[data-file]").click(); }
-});
-
-// Drag & Drop
-editor.addEventListener("dragover", (e) => {
-  const d = e.target.closest("[data-drop]");
-  if (!d) return;
-  e.preventDefault();
-  d.classList.add("is-over");
-});
-editor.addEventListener("dragleave", (e) => e.target.closest("[data-drop]")?.classList.remove("is-over"));
-editor.addEventListener("drop", (e) => {
-  const d = e.target.closest("[data-drop]");
-  if (!d) return;
-  e.preventDefault();
-  d.classList.remove("is-over");
-  addImages(e.dataTransfer.files);
-});
+dropZone(editor, "[data-drop]", "[data-file]", addImages);
 // Bilder nicht versehentlich im Browser öffnen, wenn daneben fallen gelassen
 addEventListener("dragover", (e) => e.preventDefault());
 addEventListener("drop", (e) => e.preventDefault());
-
-$("[data-about-file]").addEventListener("change", (e) => {
-  setPortrait(e.target.files);
-  e.target.value = "";
-});
-$("[data-file]").addEventListener("change", (e) => {
-  addImages(e.target.files);
-  e.target.value = "";
-});
 
 $("[data-disciplines]").addEventListener("input", (e) => {
   const t = e.target;
@@ -850,23 +839,13 @@ async function saveGallery() {
   }
 }
 
-// Eine Datei in Stücken hochladen (umgeht Upload-Limits des Servers, zeigt Fortschritt)
+// Galerie-Datei in Stücken hochladen, mit Fortschritt in der Zeile
 async function uploadGalleryFile(slug, file, row) {
-  const total = Math.max(1, Math.ceil(file.size / chunkSize));
-  const id = [...crypto.getRandomValues(new Uint8Array(12))].map((n) => n.toString(36).padStart(2, "0")).join("").slice(0, 24);
-  for (let i = 0; i < total; i++) {
-    const form = new FormData();
-    form.append("slug", slug);
-    form.append("upload", id);
-    form.append("index", i);
-    form.append("total", total);
-    form.append("name", file.name);
-    form.append("chunk", file.slice(i * chunkSize, (i + 1) * chunkSize), "chunk");
-    const res = await api("chunk", form);
-    row.querySelector("progress").value = (i + 1) / total;
-    row.querySelector("[data-pct]").textContent = `${Math.round(((i + 1) / total) * 100)} %`;
-    if (res.name) return res.name;
-  }
+  const res = await uploadChunks("chunk", file, { slug, name: file.name }, (x) => {
+    row.querySelector("progress").value = x;
+    row.querySelector("[data-pct]").textContent = `${Math.round(x * 100)} %`;
+  });
+  return res.name;
 }
 
 // Standbild aus einem Video ziehen (bei ca. 10 % der Länge, max. 1 s) — dient als Vorschau in der Galerie.
@@ -964,8 +943,6 @@ gEditor.addEventListener("click", async (e) => {
     $('[data-gf="password"]').value = gallery.password;
     return;
   }
-  if (e.target.closest("[data-g-drop]")) return $("[data-gallery-file]").click();
-
   const copy = e.target.closest("[data-g-copy]");
   if (copy) {
     const saved = galleryList.find((g) => g.slug === gallery.slug);
@@ -995,27 +972,7 @@ gEditor.addEventListener("click", async (e) => {
     } catch (err) { toast(err.message); }
   }
 });
-gEditor.addEventListener("keydown", (e) => {
-  if (e.target.matches("[data-g-drop]") && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $("[data-gallery-file]").click(); }
-});
-gEditor.addEventListener("dragover", (e) => {
-  const d = e.target.closest("[data-g-drop]");
-  if (!d) return;
-  e.preventDefault();
-  d.classList.add("is-over");
-});
-gEditor.addEventListener("dragleave", (e) => e.target.closest("[data-g-drop]")?.classList.remove("is-over"));
-gEditor.addEventListener("drop", (e) => {
-  const d = e.target.closest("[data-g-drop]");
-  if (!d) return;
-  e.preventDefault();
-  d.classList.remove("is-over");
-  addGalleryFiles(e.dataTransfer.files);
-});
-$("[data-gallery-file]").addEventListener("change", (e) => {
-  addGalleryFiles(e.target.files);
-  e.target.value = "";
-});
+dropZone(gEditor, "[data-g-drop]", "[data-gallery-file]", addGalleryFiles);
 
 /* ── Start ───────────────────────────────────────────────────── */
 async function start() {

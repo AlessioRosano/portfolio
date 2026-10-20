@@ -1,10 +1,10 @@
 /* ==========================================================================
    Alessio Rosano — Portfolio
-   Gemeinsames Script für Startseite und Disziplin-Unterseiten.
+   Gemeinsames Script für alle Seiten der Website.
    Inhalte (Texte, Projekte, Kontakt) kommen vom CMS über api/data.php.
    ========================================================================== */
 
-/* ── Helpers ($, $$, pad, esc, projectIds: js/utils.js) ───────── */
+/* ── Helpers ($, $$, pad, esc, isLoop, loopPoster, stillOf, projectIds: js/utils.js) ── */
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // Handy/Tablet: natives Scrollen mit Schwung statt Smooth-Scroll, leichtere Animationen
 const TOUCH = matchMedia("(hover: none), (pointer: coarse)").matches;
@@ -28,19 +28,17 @@ window.scrollTo(0, 0);
 
 // <img> mit srcset: der Browser lädt nur die WebP-Variante, die zur Anzeigegrösse passt
 // (Varianten erzeugt der Server, siehe IMAGES aus api/data.php). sizes = ungefähre Anzeigebreite.
+const variant = (src, w) => src.replace(/\.\w+$/, `.w${w}.webp`);   // wie variantFile() in api/lib.php
+
 function img(src, alt, sizes, { eager = false } = {}) {
   const v = IMAGES[src];
-  const srcset = v ? ` srcset="${v.sizes.map((w) => `${esc(src.replace(/\.\w+$/, `.w${w}.webp`))} ${w}w`).join(", ")}" sizes="${sizes}" width="${v.w}" height="${v.h}"` : "";
+  const srcset = v ? ` srcset="${v.sizes.map((w) => `${esc(variant(src, w))} ${w}w`).join(", ")}" sizes="${sizes}" width="${v.w}" height="${v.h}"` : "";
   const load = eager ? ` fetchpriority="high"` : ` loading="lazy"`;
   return `<img src="${esc(src)}"${srcset} alt="${esc(alt)}"${load} decoding="async" />`;
 }
 
 // Titelbild = erstes Bild; ohne Bilder wird eine Platzhalter-Grafik generiert
-// Video-Loops (MP4/WebM) stehen in derselben Liste wie Bilder. Abgespielt werden sie nur auf der
-// Projektseite (play), in Übersichten erscheint ihr Standbild — das hält die Startseite leicht.
-const isLoop = (src) => /\.(mp4|webm)$/i.test(src);
-const loopPoster = (src) => src.replace(/\.\w+$/, ".jpg");
-
+// Video-Loops spielen nur auf der Projektseite (play), in Übersichten erscheint ihr Standbild.
 function mediaItem(src, alt, sizes, { play = false, eager = false } = {}) {
   if (!isLoop(src)) return img(src, alt, sizes, { eager });
   if (!play) return `<img src="${esc(loopPoster(src))}" alt="${esc(alt)}" loading="lazy" decoding="async" />`;
@@ -86,6 +84,25 @@ const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 
 // Fotos: in der Übersicht schwarz-weiss, auf der Projektseite farbig (siehe CSS)
 const mediaClass = (p) => (p.images?.length || p.filmThumb ? " is-photo" : "");
+
+// Ist das Titelbild ein Loop, merkt sich die Karte das Video; geladen wird es erst bei Bedarf (loopVideo)
+const loopAttr = (p) => (p.images?.[0] && isLoop(p.images[0]) && !reduced ? ` data-loop="${esc(p.images[0])}"` : "");
+
+// «04 Projekte» und «, 2023–2026» (Jahre der Projekte)
+const countText = (n) => `${pad(n)} ${n === 1 ? "Projekt" : "Projekte"}`;
+function yearSpan(list) {
+  const years = list.map((p) => p.year).filter(Boolean);
+  return years.length ? `, ${Math.min(...years)}–${Math.max(...years)}` : "";
+}
+
+// Steckbrief-Zeilen [Bezeichnung, HTML] für <dl class="specs">
+const specRows = (rows) => rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+
+// Unterseiten: grosser Titel im Loader und Hero (der Name im Footer bleibt)
+function setPageName(name) {
+  $$("[data-name]").forEach((el) => { if (!el.closest(".footer")) el.dataset.name = name; });
+  $("h1.hero__name").setAttribute("aria-label", name);
+}
 
 /* ── Grosse Namen / Titel (Loader, Hero, Footer) ─────────────── */
 function buildNames() {
@@ -161,11 +178,9 @@ SLIDER_MQ.addEventListener("change", () => buildSlider());
 // Projektkarte für Slider und «Zeig mal»: nur das Bild; beim Hover farbig, Titel in der Mitte, Loop läuft an.
 // Als Link (<a>) in Rastern, als <div> im Slider (dort entscheidet das Ziehen, ob ein Klick zählt).
 function projectCard(p, { W, H, sizes, link = false }) {
-  const first = p.images?.[0];
-  const loop = first && isLoop(first) && !reduced ? ` data-loop="${esc(first)}"` : "";
   const open = link ? `<a class="card" href="${projectUrl(p)}" aria-label="${esc(p.title)}"` : `<div class="card" data-href="${projectUrl(p)}"`;
   return `
-      ${open} data-cat="${esc(p.cat)}"${loop}>
+      ${open} data-cat="${esc(p.cat)}"${loopAttr(p)}>
         <div class="media${mediaClass(p)}">${media(p, W, H, sizes)}</div>
         <div class="card__title" aria-hidden="true">${esc(p.title)}</div>
       </${link ? "a" : "div"}>`;
@@ -173,8 +188,7 @@ function projectCard(p, { W, H, sizes, link = false }) {
 
 function buildSlider() {
   const track = $("[data-track]");
-  if (!track) return;
-  if (!PROJECTS?.length) return;
+  if (!track || !PROJECTS?.length) return;
   // Desktop: grosse Querformate, Mobile: Hochformat
   const [W, H] = SLIDER_MQ.matches ? [400, 500] : [750, 500];
   const cards = [];
@@ -281,16 +295,21 @@ function initMenu() {
   matchMedia("(min-width: 861px)").addEventListener("change", (e) => e.matches && setOpen(false));
 }
 
-/* ── Video-Loops: laufen, solange die Karte im Bild ist, und pausieren ausserhalb.
-   Das Video wird erst geladen, wenn die Karte zum ersten Mal sichtbar wird. ── */
+/* ── Video-Loops in Karten (data-loop): das Video kommt erst in die Karte, wenn es gebraucht wird ── */
+function loopVideo(c) {
+  let video = $("video", c);
+  if (!video) {
+    video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
+    $(".media", c).appendChild(video);
+  }
+  return video;
+}
+
+// Laufen, solange die Karte im Bild ist, und pausieren ausserhalb
 function playInView(items) {
   if (reduced || !items.length || !("IntersectionObserver" in window)) return;
   const io = new IntersectionObserver((entries) => entries.forEach(({ target: c, isIntersecting }) => {
-    let video = $("video", c);
-    if (isIntersecting && !video) {
-      video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
-      $(".media", c).appendChild(video);
-    }
+    const video = isIntersecting ? loopVideo(c) : $("video", c);
     if (!video) return;
     c.classList.toggle("is-playing", isIntersecting);
     if (isIntersecting) video.play().catch(() => {}); else video.pause();
@@ -298,18 +317,13 @@ function playInView(items) {
   items.forEach((c) => io.observe(c));
 }
 
-/* ── Video-Loops in Karten: beim Hover laden und abspielen, beim Verlassen anhalten ── */
+// Beim Hover laden und abspielen, beim Verlassen anhalten
 function initLoopHover() {
   document.addEventListener("pointerover", (e) => {
     const c = e.target.closest?.(".card[data-loop]");
     if (!c || c.contains(e.relatedTarget)) return;
-    let video = $("video", c);
-    if (!video) {
-      video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
-      $(".media", c).appendChild(video);
-    }
     c.classList.add("is-playing");
-    video.play().catch(() => {});
+    loopVideo(c).play().catch(() => {});
   });
   document.addEventListener("pointerout", (e) => {
     const c = e.target.closest?.(".card[data-loop]");
@@ -324,11 +338,9 @@ function buildWorks() {
   if (PAGE !== "works") return;
   const grid = $("[data-works]");
   const filter = $("[data-w-filter]");
-  const years = PROJECTS.map((p) => p.year).filter(Boolean);
-  const count = (n) => `${pad(n)} ${n === 1 ? "Projekt" : "Projekte"}`;
 
   setMeta(`Zeig mal — ${NAME}`, `Alle Arbeiten von ${NAME}: ${Object.values(CATS).join(", ")}.`, "arbeiten.html");
-  $("[data-w-span]").textContent = `${count(PROJECTS.length)}${years.length ? `, ${Math.min(...years)}–${Math.max(...years)}` : ""}`;
+  $("[data-w-span]").textContent = countText(PROJECTS.length) + yearSpan(PROJECTS);
   $("[data-w-empty]").hidden = PROJECTS.length > 0;
   grid.innerHTML = PROJECTS.map((p) => projectCard(p, { W: 400, H: 300, sizes: "(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 33vw", link: true })).join("");
 
@@ -339,7 +351,7 @@ function buildWorks() {
   const apply = (cat) => {
     $$("[data-w-cat]", filter).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wCat === cat)));
     $$(".card", grid).forEach((c) => c.classList.toggle("is-hidden", !!cat && c.dataset.cat !== cat));
-    $("[data-w-count]").textContent = cat ? `${CATS[cat]}: ${count(PROJECTS.filter((p) => p.cat === cat).length)}` : "Alle Arbeiten";
+    $("[data-w-count]").textContent = cat ? `${CATS[cat]}: ${countText(PROJECTS.filter((p) => p.cat === cat).length)}` : "Alle Arbeiten";
     history.replaceState(null, "", cat ? `?d=${encodeURIComponent(cat)}` : location.pathname);
     if (window.ScrollTrigger) ScrollTrigger.refresh();
   };
@@ -364,7 +376,7 @@ function buildAbout() {
 
   const rows = (ABOUT.specs || []).filter(([k, v]) => k || v).map(([k, v]) => [esc(k), esc(v)]);
   if (ABOUT.status) rows.push(["Status", `<span class="dot"></span> ${esc(ABOUT.status)}`]);
-  $("[data-about-specs]").innerHTML = rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  $("[data-about-specs]").innerHTML = specRows(rows);
 }
 
 /* ── Suchmaschinen: Titel, Beschreibung, Canonical, strukturierte Daten ── */
@@ -449,25 +461,22 @@ function buildSub() {
   const d = DISCIPLINES[i];
   const name = CATS[SUB];
   const ps = PROJECTS.filter((p) => p.cat === SUB);
-  const years = ps.map((p) => p.year).filter(Boolean);
 
   setMeta(`${name} — ${NAME}`, d.lead);
-  $$("[data-name]").forEach((el) => { if (!el.closest(".footer")) el.dataset.name = name; });
-  $("h1.hero__name").setAttribute("aria-label", name);
+  setPageName(name);
   $("[data-d-loader]").textContent = `AR / ${name.toUpperCase()}`;
   $("[data-d-route]").textContent = SUB;
   $$("[data-d-index]").forEach((el) => (el.textContent = `Disziplin ${pad(i + 1)} / ${pad(DISCIPLINES.length)}`));
 
   $("[data-d-lead]").textContent = d.lead;
-  const span = years.length ? `, ${Math.min(...years)}–${Math.max(...years)}` : "";
-  $("[data-d-count]").textContent = `${pad(ps.length)} ${ps.length === 1 ? "Projekt" : "Projekte"}${span}`;
+  $("[data-d-count]").textContent = countText(ps.length) + yearSpan(ps);
   $("[data-d-tags]").innerHTML = d.tags.map((t) => `<span>${esc(t)}</span>`).join("");
   $("[data-d-steps]").innerHTML = d.steps.map(([t, x], n) => `
     <div class="step"><span class="mono">Schritt ${pad(n + 1)}</span><h3>${esc(t)}</h3><p>${esc(x)}</p></div>`).join("");
-  $("[data-d-specs]").innerHTML = [
+  $("[data-d-specs]").innerHTML = specRows([
     ["Disziplin", esc(name)], ["Tools", esc(d.tools)], ["Projekte", pad(ps.length)],
     ["Kontakt", `<a href="mailto:${esc(CONTACT_EMAIL)}">${esc(CONTACT_EMAIL)} ↗</a>`],
-  ].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  ]);
 
   const ni = (i + 1) % DISCIPLINES.length;
   const next = $("[data-d-next]");
@@ -484,10 +493,8 @@ function buildWork(list) {
   grid.innerHTML = list.map((p, j) => {
     const land = j % 4 === 1 || j % 4 === 2;
     const [W, H] = land ? [500, 400] : [400, 500];
-    const first = p.images?.[0];
-    const loop = first && isLoop(first) ? ` data-loop="${esc(first)}"` : "";
     return `
-      <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen"${loop}>
+      <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen"${loopAttr(p)}>
         <div class="work__frame"><div class="media${mediaClass(p)}" style="aspect-ratio:${W} / ${H}">${media(p, W, H, "(max-width: 760px) 100vw, 50vw")}</div></div>
         <div class="work__meta">
           <span class="mono">[${pad(j + 1)}]</span>
@@ -517,12 +524,11 @@ function buildProject() {
     description: p.desc,
     genre: CATS[p.cat],
     dateCreated: String(p.year || ""),
-    image: p.images?.[0] ? absoluteUrl(isLoop(p.images[0]) ? loopPoster(p.images[0]) : p.images[0]) : undefined,
+    image: p.images?.[0] ? absoluteUrl(stillOf(p.images[0])) : undefined,
     url: location.href,
     creator: { "@type": "Person", name: NAME, url: absoluteUrl("") },
   });
-  $$("[data-name]").forEach((el) => { if (!el.closest(".footer")) el.dataset.name = p.title; });
-  $("h1.hero__name").setAttribute("aria-label", p.title);
+  setPageName(p.title);
 
   const back = $("[data-p-back]");
   back.href = disciplineUrl(p.cat);
@@ -547,10 +553,9 @@ function buildProject() {
   filmBox.hidden = !film;
   if (film) {
     // Vorschaubild des Films (vom eigenen Server), sonst das erste Bild des Projekts
-    const first = p.images?.[0];
-    const base = p.filmThumb || (first && (isLoop(first) ? loopPoster(first) : first));
+    const base = p.filmThumb || (p.images?.[0] && stillOf(p.images[0]));
     const v = base && IMAGES[base];
-    const still = v ? base.replace(/\.\w+$/, `.w${v.sizes.filter((w) => w <= 1600).pop() || v.sizes[0]}.webp`) : base;
+    const still = v ? variant(base, v.sizes.filter((w) => w <= 1600).pop() || v.sizes[0]) : base;
     filmBox.innerHTML = `
       <div class="pfilm__frame">
         <button class="pfilm__play" type="button" data-cursor="Abspielen"${still ? ` style="background-image:url('${esc(still)}')"` : ""}>
@@ -567,7 +572,7 @@ function buildProject() {
   $("[data-p-desc]").textContent = p.desc;
   const specs = [["Kunde", esc(p.client)], ["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
   if (p.link) specs.push(["Link", `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))} ↗</a>`]);
-  $("[data-p-specs]").innerHTML = specs.filter(([, v]) => v).map(([k2, v]) => `<div><dt>${k2}</dt><dd>${v}</dd></div>`).join("");
+  $("[data-p-specs]").innerHTML = specRows(specs.filter(([, v]) => v));
 
   // Galerie: Querformat = ganze Breite, Hochformat = halbe Breite, zwei nebeneinander
   // (im CMS pro Bild wählbar; ältere Projekte ohne Wahl: jedes dritte Bild breit)
@@ -722,7 +727,7 @@ function initProgress() {
 /* ── Cursor ──────────────────────────────────────────────────── */
 const cursor = $(".cursor");
 function initCursor() {
-  if (matchMedia("(hover: none), (pointer: coarse)").matches) return;
+  if (TOUCH) return;
   const label = $(".cursor__label");
   const xTo = gsap.quickTo(cursor, "x", { duration: 0.35, ease: "power3" });
   const yTo = gsap.quickTo(cursor, "y", { duration: 0.35, ease: "power3" });
@@ -839,11 +844,12 @@ function intro() {
   // Seitenwechsel: nur Vorhang auf + Titel kurz hochschieben
   if (QUICK) {
     const hChars = $$(".hero__name .c");
+    const items = ".hero .card, .hero__tags > *, .pfilm, .pcover";
     if (hashTarget) { unlock(); jumpTo(hashTarget); }
     else {
       gsap.set(hChars, { yPercent: 110 });
       gsap.set(".hero .reveal-up", { yPercent: 120 });
-      gsap.set(".hero .card, .hero__tags > *, .pfilm, .pcover", { opacity: 0, y: 40 });
+      gsap.set(items, { opacity: 0, y: 40 });
     }
     const tl = gsap.timeline();
     tl.to(loader, { autoAlpha: 0, duration: 0.35, ease: "power2.out" })
@@ -851,7 +857,7 @@ function intro() {
     if (!hashTarget) {
       tl.to(hChars, { yPercent: 0, duration: 0.9, ease: "expo.out", stagger: 0.015 }, 0.1)
         .to(".hero .reveal-up", { yPercent: 0, duration: 0.9, ease: "expo.out", stagger: 0.05 }, 0.25)
-        .to(".hero .card, .hero__tags > *, .pfilm, .pcover", { opacity: 1, y: 0, duration: 0.9, ease: "expo.out", stagger: 0.03 }, 0.3);
+        .to(items, { opacity: 1, y: 0, duration: 0.9, ease: "expo.out", stagger: 0.03 }, 0.3);
     }
     return;
   }

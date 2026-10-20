@@ -5,12 +5,7 @@ require __DIR__ . '/lib.php';
 
 $slug = (string) ($_GET['g'] ?? '');
 $name = basename((string) ($_GET['f'] ?? ''));
-$gallery = validSlug($slug) ? (galleries()[$slug] ?? null) : null;
-
-if (!$gallery || !canViewGallery($slug) || (galleryExpired($gallery) && !isAdmin())) {
-    http_response_code(403);
-    exit('Kein Zugriff');
-}
+galleryOrDeny($slug);
 
 $path = galleryDir($slug) . "/$name";
 if ($name === '' || !is_file($path)) {

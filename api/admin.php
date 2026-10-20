@@ -46,6 +46,25 @@ switch ($action) {
 }
 
 requireAdmin();
+// Lesen geht per GET, jede Änderung nur per POST (mit CSRF-Token, siehe oben)
+if (!$isPost && !in_array($action, ['data', 'export', 'galleries'], true)) fail('POST erwartet', 405);
+
+// Galerie aus dem CMS-Aufruf, sonst Abbruch
+function requireGallery(string $slug): array
+{
+    $all = galleries();
+    if (!validSlug($slug) || !isset($all[$slug])) fail('Galerie nicht gefunden', 404);
+    return $all;
+}
+
+// Standbild (im Browser erzeugt) aus dem Upload «poster»: nur JPG bis 3 MB. Gibt die Temp-Datei zurück.
+function uploadedPoster(): string
+{
+    $poster = $_FILES['poster'] ?? null;
+    if (!$poster || $poster['error'] !== UPLOAD_ERR_OK || $poster['size'] > 3 * 1024 * 1024) fail('Standbild fehlt oder ist zu gross');
+    if (mimeOf($poster['tmp_name']) !== 'image/jpeg') fail('Standbild muss ein JPG sein');
+    return $poster['tmp_name'];
+}
 
 // Prüft und bereinigt alles, was das CMS speichern will. Was nicht ins Schema passt, wird abgelehnt —
 // so können nie Script-Links, fremde Bildpfade oder kaputte Daten auf die Website gelangen.
@@ -92,6 +111,7 @@ function cleanData(array $d): array
         foreach ($images as $img) {
             if (!is_string($img) || !preg_match(MEDIA_PATH, $img)) fail('Ungültiger Bild- oder Videopfad');
         }
+        $ofImages = fn ($list) => array_values(array_intersect($images, array_filter((array) $list, 'is_string')));
         $year = $p['year'] ?? '';
         if ($year !== '' && (!is_int($year) || $year < 1900 || $year > 2100)) fail('Ungültiges Jahr');
         return [
@@ -107,9 +127,9 @@ function cleanData(array $d): array
             'art' => (int) ($p['art'] ?? 0) % 2,
             'images' => $images,
             // Bilder, die nicht beschnitten werden dürfen (nur solche, die auch im Projekt sind)
-            'full' => array_values(array_intersect($images, array_filter((array) ($p['full'] ?? []), 'is_string'))),
+            'full' => $ofImages($p['full'] ?? []),
             // Galeriebilder in ganzer Breite (Querformat); alle anderen halbe Breite
-            'wide' => array_values(array_intersect($images, array_filter((array) ($p['wide'] ?? []), 'is_string'))),
+            'wide' => $ofImages($p['wide'] ?? []),
         ];
     }, array_values($d['PROJECTS']));
 
@@ -146,7 +166,6 @@ switch ($action) {
         respond(readJson(CONTENT . '/data.json'));
 
     case 'save':
-        if (!$isPost) fail('POST erwartet', 405);
         $data = cleanData(jsonBody());
         // Vorschaubild jedes Films einmalig holen (danach liegt es auf dem eigenen Server)
         foreach ($data['PROJECTS'] as &$project) {
@@ -162,11 +181,10 @@ switch ($action) {
         respond(['ok' => true]);
 
     case 'upload':
-        if (!$isPost) fail('POST erwartet', 405);
         $file = $_FILES['file'] ?? null;
         if (!$file || $file['error'] !== UPLOAD_ERR_OK) fail('Upload fehlgeschlagen');
         $ext = extensionOf($file['name']);
-        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        $mime = mimeOf($file['tmp_name']);
         if (!isset(IMAGE_TYPES[$ext]) || !in_array($mime, IMAGE_TYPES, true)) fail('Nur Bilder (JPG, PNG, WebP, GIF) erlaubt');
         if ($file['size'] > MAX_IMAGE_BYTES) fail('Bild ist zu gross (max. 25 MB)');
         $dir = CONTENT . '/img';
@@ -195,7 +213,6 @@ switch ($action) {
         respond($list);
 
     case 'gallery-save':
-        if (!$isPost) fail('POST erwartet', 405);
         $in = jsonBody();
         $all = galleries();
         $title = trim((string) ($in['title'] ?? ''));
@@ -222,10 +239,8 @@ switch ($action) {
         respond(['slug' => $slug]);
 
     case 'gallery-delete':
-        if (!$isPost) fail('POST erwartet', 405);
         $slug = (string) (jsonBody()['slug'] ?? '');
-        $all = galleries();
-        if (!validSlug($slug) || !isset($all[$slug])) fail('Galerie nicht gefunden', 404);
+        $all = requireGallery($slug);
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(galleryDir($slug), FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($it as $f) $f->isDir() ? rmdir($f->getPathname()) : unlink($f->getPathname());
         rmdir(galleryDir($slug));
@@ -234,11 +249,10 @@ switch ($action) {
         respond(['ok' => true]);
 
     case 'gallery-file-delete':
-        if (!$isPost) fail('POST erwartet', 405);
         $in = jsonBody();
         $slug = (string) ($in['slug'] ?? '');
         $name = basename((string) ($in['name'] ?? ''));
-        if (!validSlug($slug) || !isset(galleries()[$slug])) fail('Galerie nicht gefunden', 404);
+        requireGallery($slug);
         $path = galleryDir($slug) . "/$name";
         if (!is_file($path)) fail('Datei nicht gefunden', 404);
         unlink($path);
@@ -248,25 +262,21 @@ switch ($action) {
 
     // Standbild eines Videos (erzeugt im Browser beim Upload) als Vorschau speichern
     case 'gallery-poster':
-        if (!$isPost) fail('POST erwartet', 405);
         $slug = (string) ($_POST['slug'] ?? '');
         $name = basename((string) ($_POST['name'] ?? ''));
-        $poster = $_FILES['poster'] ?? null;
-        if (!validSlug($slug) || !isset(galleries()[$slug])) fail('Galerie nicht gefunden', 404);
-        $video = galleryDir($slug) . "/$name";
-        if (!is_file($video) || !str_starts_with(GALLERY_TYPES[extensionOf($name)] ?? '', 'video/')) fail('Video nicht gefunden', 404);
-        if (!$poster || $poster['error'] !== UPLOAD_ERR_OK || $poster['size'] > 3 * 1024 * 1024) fail('Standbild fehlt oder ist zu gross');
-        if ((new finfo(FILEINFO_MIME_TYPE))->file($poster['tmp_name']) !== 'image/jpeg') fail('Standbild muss ein JPG sein');
-        if (!is_dir(galleryDir($slug) . '/thumbs')) mkdir(galleryDir($slug) . '/thumbs', 0755);
-        move_uploaded_file($poster['tmp_name'], galleryDir($slug) . "/thumbs/$name.jpg");
+        requireGallery($slug);
+        $dir = galleryDir($slug);
+        if (!is_file("$dir/$name") || !str_starts_with(GALLERY_TYPES[extensionOf($name)] ?? '', 'video/')) fail('Video nicht gefunden', 404);
+        $poster = uploadedPoster();
+        if (!is_dir("$dir/thumbs")) mkdir("$dir/thumbs", 0755);
+        move_uploaded_file($poster, "$dir/thumbs/$name.jpg");
         respond(['ok' => true]);
 
     // Grosse Dateien kommen in Stücken: jedes Stück wird angehängt, beim letzten wird geprüft und abgelegt
     case 'chunk':
-        if (!$isPost) fail('POST erwartet', 405);
         $slug = (string) ($_POST['slug'] ?? '');
         $name = (string) ($_POST['name'] ?? '');
-        if (!validSlug($slug) || !isset(galleries()[$slug])) fail('Galerie nicht gefunden', 404);
+        requireGallery($slug);
         $ext = extensionOf($name);
         if (!isset(GALLERY_TYPES[$ext])) fail('Dateityp nicht erlaubt (Bilder: JPG, PNG, WebP, GIF, HEIC — Videos: MP4, MOV, M4V, WebM)');
         $part = receiveChunk(MAX_GALLERY_BYTES);
@@ -285,13 +295,12 @@ switch ($action) {
 
     // Kurzer Video-Loop fürs Portfolio (MP4/WebM, in Stücken) → content/video/
     case 'loop-chunk':
-        if (!$isPost) fail('POST erwartet', 405);
         $ext = extensionOf((string) ($_POST['name'] ?? ''));
         if (!isset(LOOP_TYPES[$ext])) fail('Für Loops nur MP4 oder WebM');
         $part = receiveChunk(MAX_LOOP_BYTES);
         if (!$part) respond(['ok' => true]);
         // MP4-Exporte melden sich teils als QuickTime (gleicher Container) — beides ist in Ordnung
-        if (!in_array((string) (new finfo(FILEINFO_MIME_TYPE))->file($part), ['video/mp4', 'video/webm', 'application/mp4', 'video/x-m4v', 'video/quicktime'], true)) {
+        if (!in_array(mimeOf($part), ['video/mp4', 'video/webm', 'application/mp4', 'video/x-m4v', 'video/quicktime'], true)) {
             unlink($part);
             fail('Datei ist kein MP4- oder WebM-Video');
         }
@@ -302,13 +311,9 @@ switch ($action) {
 
     // Standbild eines Loops (im Browser erzeugt): Vorschau in Übersichten und solange das Video lädt
     case 'loop-poster':
-        if (!$isPost) fail('POST erwartet', 405);
         $path = (string) ($_POST['path'] ?? '');
-        $poster = $_FILES['poster'] ?? null;
         if (!preg_match('#^content/video/([a-z0-9-]+)\.(mp4|webm)$#', $path, $m) || !is_file(ROOT . "/$path")) fail('Video nicht gefunden', 404);
-        if (!$poster || $poster['error'] !== UPLOAD_ERR_OK || $poster['size'] > 3 * 1024 * 1024) fail('Standbild fehlt oder ist zu gross');
-        if ((new finfo(FILEINFO_MIME_TYPE))->file($poster['tmp_name']) !== 'image/jpeg') fail('Standbild muss ein JPG sein');
-        move_uploaded_file($poster['tmp_name'], CONTENT . "/video/{$m[1]}.jpg");
+        move_uploaded_file(uploadedPoster(), CONTENT . "/video/{$m[1]}.jpg");
         respond(['ok' => true]);
 }
 

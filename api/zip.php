@@ -4,12 +4,7 @@
 require __DIR__ . '/lib.php';
 
 $slug = (string) ($_GET['g'] ?? '');
-$gallery = validSlug($slug) ? (galleries()[$slug] ?? null) : null;
-
-if (!$gallery || !canViewGallery($slug) || (galleryExpired($gallery) && !isAdmin())) {
-    http_response_code(403);
-    exit('Kein Zugriff');
-}
+$gallery = galleryOrDeny($slug);
 
 $files = galleryFiles($slug);
 if (!$files) {

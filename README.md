@@ -151,6 +151,18 @@ Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie
 - **Navigation:** «Zeig mal» steht jetzt an dritter Stelle: Was, Wer, Zeig mal, Kontakt.
 - **Unterlängen nicht mehr abgeschnitten:** Beim «g» in „richtig gut.“ fehlte unten ein Stück. Die Zeilen der animierten Titel blenden mit `overflow: hidden` ein und hatten unten zu wenig Platz für die tiefen Unterlängen der Serifenschrift. Jetzt haben sie mehr Raum, ohne dass sich der Zeilenabstand ändert. Nachgemessen habe ich das im Browser: Vorher lag der Bogen vom «g» knapp 2 px unter der Kante, jetzt bleiben gut 6 px Luft.
 
+### 14. Aufräumen
+
+Nach vielen kleinen Erweiterungen stand einiges doppelt im Code. Ich habe es zusammengelegt, ohne dass sich an der Website oder am CMS etwas ändert:
+
+- **Website (`main.js`):** Das Video für Loops in Karten entsteht an einer Stelle (`loopVideo`), egal ob es beim Hover oder beim Scrollen startet. Dazu je eine gemeinsame Funktion für Steckbrief-Zeilen, «04 Projekte, 2023–2026» und den Seitentitel der Unterseiten.
+- **Website und CMS:** `isLoop`, `loopPoster` und `stillOf` (Standbild statt Loop) liegen jetzt nur noch in `js/utils.js`.
+- **CMS (`admin.js`):** Uploads in Stücken laufen für Loops und Galerien über dieselbe Funktion, die drei Ablagefelder (Projektbilder, Portrait, Galerie) über einen gemeinsamen Helfer, und die Standardwerte eines Projekts stehen nur noch einmal.
+- **Server (PHP):** Die Zugriffsprüfung für Galerie-Downloads steht einmal in `lib.php` statt in `file.php` und `zip.php`. In `admin.php` prüfe ich «nur per POST» einmal statt zehnmal, dazu je ein Helfer für «Galerie vorhanden?» und für hochgeladene Standbilder.
+- **Kleinkram:** doppelte CSS-Regeln zusammengeführt, ungenutzte Regeln und ein toter Fall für die alte Disziplin «Gestaltung» entfernt, veraltete Kommentare korrigiert.
+
+Unter dem Strich sind es nur rund 20 Zeilen weniger (218 gelöscht, 198 neu), weil die neuen Helfer kurz erklärt sind. Wichtiger ist: Jede Regel steht nur noch an einer Stelle. Geprüft habe ich das, indem ich die alte und die neue Version nebeneinander laufen liess und die fertig aufgebauten Seiten verglichen habe. Sie sind identisch, auch mit Loop und Film.
+
 ---
 
 ## Was die Website kann

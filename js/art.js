@@ -1,6 +1,6 @@
 /* ==========================================================================
    Generierte Platzhalter-Artworks (SVG) — monochrom in Akzentfarbe/Weiss.
-   Werden nur angezeigt, solange ein Projekt noch keine Bilder hat (admin.html).
+   Werden nur angezeigt, solange ein Projekt noch keine Bilder hat (Website und CMS).
    ========================================================================== */
 
 // Farben sind CSS-Variablen (css/style.css) — beim Farbwechsel färben sich die Grafiken von selbst um
@@ -257,8 +257,7 @@ function makeArt(type, variant = 0, W = 400, H = 500, title = "") {
     case "architektur": return v ? artSection(W, H) : artPlan(W, H);
     case "branding": return v ? artPalette(W, H, title || "Atelier") : artMark(W, H, title || "Nordwand");
     case "video": return v ? artTimeline(W, H, variant + 7) : artFrame(W, H, variant + 3);
-    case "kampagnen":
-    case "gestaltung": return v ? artSwiss(W, H, variant + 3) : artPoster(W, H, title || "Form");
+    case "kampagnen": return v ? artSwiss(W, H, variant + 3) : artPoster(W, H, title || "Form");
     default: return artPortrait(W, H);
   }
 }

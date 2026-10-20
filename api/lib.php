@@ -220,11 +220,17 @@ function requireAdmin(): void
 const MAX_ATTEMPTS = 5;
 const ATTEMPT_WINDOW = 15 * 60;
 
-// Zählt Fehlversuche pro Zweck und IP im Zeitfenster; mit $add wird einer dazugezählt
+// Fehlversuche werden pro Zweck und IP gezählt (die IP nur als Hash)
+function attemptKey(string $scope): string
+{
+    return hash('sha256', $scope . '|' . ($_SERVER['REMOTE_ADDR'] ?? ''));
+}
+
+// Zählt Fehlversuche im Zeitfenster; mit $add wird einer dazugezählt
 function failedAttempts(string $scope, bool $add = false): int
 {
     $file = STORAGE . '/attempts.json';
-    $key = hash('sha256', $scope . '|' . ($_SERVER['REMOTE_ADDR'] ?? ''));
+    $key = attemptKey($scope);
     $all = readJson($file);
     $since = time() - ATTEMPT_WINDOW;
     foreach ($all as $k => $times) $all[$k] = array_values(array_filter($times, fn ($t) => $t > $since));
@@ -242,7 +248,7 @@ function clearAttempts(string $scope): void
 {
     $file = STORAGE . '/attempts.json';
     $all = readJson($file);
-    unset($all[hash('sha256', $scope . '|' . ($_SERVER['REMOTE_ADDR'] ?? ''))]);
+    unset($all[attemptKey($scope)]);
     writeJson($file, $all);
 }
 
@@ -259,10 +265,15 @@ function extensionOf(string $name): string
     return str_replace('jpeg', 'jpg', strtolower(pathinfo($name, PATHINFO_EXTENSION)));
 }
 
-// Prüft den echten Inhalt, nicht nur die Endung
+// Echter Dateityp, erkannt am Inhalt (nicht an der Endung)
+function mimeOf(string $path): string
+{
+    return (string) (new finfo(FILEINFO_MIME_TYPE))->file($path);
+}
+
 function contentAllowed(string $path): bool
 {
-    return in_array((string) (new finfo(FILEINFO_MIME_TYPE))->file($path), MIME_OK, true);
+    return in_array(mimeOf($path), MIME_OK, true);
 }
 
 function uniqueName(string $dir, string $base, string $ext): string
@@ -393,6 +404,17 @@ function canViewGallery(string $slug): bool
     return isAdmin() || !empty($_SESSION['galleries'][$slug]);
 }
 
+// Für Downloads (api/file.php, api/zip.php): Galerie nur mit Passwort, abgelaufene nur noch im CMS
+function galleryOrDeny(string $slug): array
+{
+    $gallery = validSlug($slug) ? (galleries()[$slug] ?? null) : null;
+    if (!$gallery || !canViewGallery($slug) || (galleryExpired($gallery) && !isAdmin())) {
+        http_response_code(403);
+        exit('Kein Zugriff');
+    }
+    return $gallery;
+}
+
 function galleryFiles(string $slug): array
 {
     $dir = galleryDir($slug);
@@ -400,11 +422,12 @@ function galleryFiles(string $slug): array
     foreach (glob("$dir/*") ?: [] as $path) {
         if (!is_file($path)) continue;
         $name = basename($path);
+        $ext = extensionOf($name);
         $files[] = [
             'name' => $name,
             'size' => filesize($path),
-            'kind' => str_starts_with(GALLERY_TYPES[extensionOf($name)] ?? '', 'video/') ? 'video' : 'image',
-            'thumb' => isset(IMAGE_TYPES[extensionOf($name)]) || is_file("$dir/thumbs/$name.jpg"),
+            'kind' => str_starts_with(GALLERY_TYPES[$ext] ?? '', 'video/') ? 'video' : 'image',
+            'thumb' => isset(IMAGE_TYPES[$ext]) || is_file("$dir/thumbs/$name.jpg"),
         ];
     }
     usort($files, fn ($a, $b) => strnatcasecmp($a['name'], $b['name']));
