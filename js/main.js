@@ -229,6 +229,21 @@ function initSlider() {
 
   if (lenis) lenis.on("scroll", (l) => { boost = Math.min(Math.abs(l.velocity) * 0.6, 24); });
 
+  // Am Handy gibt es kein Hover: Loops laufen, solange sie im Bild sind, und pausieren ausserhalb
+  if (TOUCH && !reduced && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => entries.forEach(({ target: c, isIntersecting }) => {
+      let video = $("video", c);
+      if (isIntersecting && !video) {
+        video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
+        $(".media", c).appendChild(video);
+      }
+      if (!video) return;
+      c.classList.toggle("is-playing", isIntersecting);
+      if (isIntersecting) video.play().catch(() => {}); else video.pause();
+    }), { threshold: 0.2 });
+    $$(".card[data-loop]", track).forEach((c) => io.observe(c));
+  }
+
   // Pfeile < >: um genau eine Karte weiter, weich ausgleitend; das automatische Laufen geht weiter
   $$("[data-slide]").forEach((btn) => btn.addEventListener("click", () => {
     const card = $(".card", track);

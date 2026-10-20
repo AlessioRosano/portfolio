@@ -145,7 +145,7 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 **Startseite (`index.html`)**
 - Intro-Animation (nur beim ersten Besuch, danach ein kurzer Übergang)
-- endloser Projekt-Slider zum Ziehen, der beim Scrollen beschleunigt: Bilder ohne Rahmen, schwarz-weiss. Beim Hover werden sie farbig und leicht grösser, der Projekttitel erscheint in der Mitte, und Video-Loops laufen an. Mit den Pfeilen `<` `>` darunter springt man ein Projekt weiter oder zurück.
+- endloser Projekt-Slider zum Ziehen, der beim Scrollen beschleunigt: Bilder ohne Rahmen, schwarz-weiss. Beim Hover werden sie farbig und leicht grösser, der Projekttitel erscheint in der Mitte, und Video-Loops laufen an. Mit den Pfeilen `<` `>` darunter springt man ein Projekt weiter oder zurück. Am Handy gibt es kein Hover: Dort sind die Bilder gleich farbig, und Loops laufen, solange sie im Bild sind (ausserhalb pausieren sie und werden erst bei Bedarf geladen).
 - **Was:** die vier Disziplinen mit Hover-Details und Vorschaubildern
 - **Wer:** Text, der beim Scrollen Wort für Wort erscheint, mit Portrait und Steckbrief
 - Kontaktformular (öffnet das Mail-Programm, es braucht keinen Server-Versand)
@@ -160,7 +160,7 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 - Jeder Besuch bekommt zufällig eine Farbe: Orange, Pink oder Blau. Sie bleibt während des Besuchs gleich, Favicon und Browserfarbe passen sich an. Der frühere Farbschalter ist im Code noch vorhanden, aber ausgeblendet.
 - Im Header steht das AR-Zeichen statt des Namens. Die Navigation: Was, Zeig mal, Wer, Kontakt. Am Handy öffnet ein Burger dieselben Punkte als Vollbild-Menü.
 - Am Handy: natives Scrollen mit Schwung, leichtere Animationen
-- Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**
+- Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G** (nur am Desktop; am Handy ist der Hinweis ausgeblendet)
 - Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen: keine automatisch laufenden Loops
 
 Fotos erscheinen in den Übersichten schwarz-weiss und auf der Projektseite in Farbe.

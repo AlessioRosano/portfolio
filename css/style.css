@@ -285,8 +285,9 @@ body.menu-open .nav__logo text { fill: var(--bx); }
   .card:hover .media::after { opacity: 1; }
   .card:hover .card__title { opacity: 1; transform: none; }
 }
-/* Touch: kein Hover — Titel klein unten links, damit man weiss, was man antippt */
+/* Touch: kein Hover — Bilder im Slider gleich farbig, Titel klein unten links */
 @media (hover: none) {
+  .hero__slider .media.is-photo img { filter: none; }
   .card .media::after { opacity: 1; background: linear-gradient(transparent 55%, rgba(0, 0, 0, 0.45)); }
   .card__title { place-items: end start; text-align: left; font-size: clamp(22px, 6vw, 32px); opacity: 1; transform: none; }
 }
@@ -646,6 +647,10 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 /* ── Raster-Overlay (Taste G) ────────────────────────────────── */
 .grid-overlay { position: fixed; inset: 0; z-index: 80; pointer-events: none; opacity: 0; transition: opacity 0.4s; }
 .grid-overlay.is-on { opacity: 1; }
+/* Raster-Gimmick (Taste G) gibt es nur mit Tastatur: am Handy/Tablet ausblenden */
+@media (hover: none), (pointer: coarse), (max-width: 860px) {
+  .desktop-only, .grid-overlay { display: none !important; }
+}
 .grid-overlay .wrap { height: 100%; padding: 0 var(--pad); display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(8px, 1vw, 16px); }
 .grid-overlay i { background: color-mix(in srgb, var(--bx) 7%, transparent); border-inline: 1px solid color-mix(in srgb, var(--bx) 18%, transparent); }
 
