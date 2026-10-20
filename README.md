@@ -139,6 +139,15 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 - **CMS fürs Handy:** Liste und Bearbeiten sind dort zwei Ansichten („← Alle Projekte“ führt zurück). Die Kopfzeile ist zweireihig mit wischbaren Tabs, und die Felder lösen beim Antippen keinen Zoom aus. Bilder und Videos lade ich direkt aus der Kamerarolle hoch.
 - **Nichts ragt mehr über den Rand:** Die grosse Überschrift zur nächsten Disziplin war am Handy zu breit, dadurch liess sich die ganze Seite seitlich verschieben. Die Schrift skaliert jetzt mit, lange Titel brechen um, und ein Sicherheitsnetz (`overflow-x: clip` auf `html`) verhindert seitliches Verschieben grundsätzlich.
 
+### 13. Weniger Text
+
+Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie aus. So kann ich sie jederzeit zurückholen.
+
+- **Disziplin-Seiten:** Einleitung, Stichworte und der Abschnitt «So gehe ich vor» sind ausgeblendet. Übrig bleiben Titel, Projekte und der Link zur nächsten Disziplin. Auf der Startseite erscheinen Einleitung und Stichworte weiterhin beim Hover über eine Disziplin.
+- **Kein Stern mehr** unter den Seitentiteln (Disziplin- und Projektseiten)
+- **Navigation:** «Zeig mal» steht jetzt an dritter Stelle: Was, Wer, Zeig mal, Kontakt.
+- **Unterlängen nicht mehr abgeschnitten:** Beim «g» in „richtig gut.“ fehlte unten ein Stück. Die Zeilen der animierten Titel blenden mit `overflow: hidden` ein und hatten unten zu wenig Platz für die tiefen Unterlängen der Serifenschrift. Jetzt haben sie mehr Raum, ohne dass sich der Zeilenabstand ändert. Nachgemessen habe ich das im Browser: Vorher lag der Bogen vom «g» knapp 2 px unter der Kante, jetzt bleiben gut 6 px Luft.
+
 ---
 
 ## Was die Website kann
@@ -152,13 +161,13 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 **Zeig mal (`arbeiten.html`)**: alle Arbeiten in einem Raster, Filter nach Disziplin (auch als Link teilbar, z.B. `arbeiten.html?d=video`). Beim Hover werden die Bilder farbig, der Titel erscheint, und Loops laufen an.
 
-**Disziplin-Seite (`disziplin.html?d=video`)**: Einleitung, Stichworte, Projekte, Arbeitsweise in drei Schritten, Link zur nächsten Disziplin
+**Disziplin-Seite (`disziplin.html?d=video`)**: grosser Titel, Anzahl Projekte, die Projekte und ein Link zur nächsten Disziplin. Einleitung, Stichworte und «So gehe ich vor» sind im Code noch da, aber ausgeblendet (eine CSS-Regel in `style.css`). Auf der Startseite stehen Einleitung und Stichworte weiterhin im Hover bei «Was».
 
 **Projektseite (`projekt.html?p=…`)**: zuoberst der Film (falls vorhanden, Player lädt erst beim Klick), dann ein grosses Titelbild oder ein Video-Loop mit Zoom beim Scrollen, Beschreibung, Steckbrief, Galerie aus Bildern und Loops, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 
 **Überall**
 - Jeder Besuch bekommt zufällig eine Farbe: Orange, Pink oder Blau. Sie bleibt während des Besuchs gleich, Favicon und Browserfarbe passen sich an. Der frühere Farbschalter ist im Code noch vorhanden, aber ausgeblendet.
-- Im Header steht das AR-Zeichen statt des Namens. Die Navigation: Was, Zeig mal, Wer, Kontakt. Am Handy öffnet ein Burger dieselben Punkte als Vollbild-Menü.
+- Im Header steht das AR-Zeichen statt des Namens. Die Navigation: Was, Wer, Zeig mal, Kontakt. Am Handy öffnet ein Burger dieselben Punkte als Vollbild-Menü.
 - Am Handy: natives Scrollen mit Schwung, leichtere Animationen
 - Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G** (nur am Desktop; am Handy ist der Hinweis ausgeblendet)
 - Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen: keine automatisch laufenden Loops

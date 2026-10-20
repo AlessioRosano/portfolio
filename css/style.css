@@ -239,14 +239,10 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 }
 .hero__meta p { margin: 0; }
 .hero__meta .serif { font-size: 1.12em; }
-.hero__star-wrap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-.hero__star { display: block; width: clamp(26px, 2vw, 44px); transition: transform 0.7s var(--ease); }
-.hero__star:hover { transform: rotate(180deg); }
 @media (max-width: 760px) {
   /* Handy: «Video, Branding …» links, «Weniger Lärm …» rechts */
   .hero__meta { flex-direction: column; align-items: stretch; text-align: left; gap: 6px; }
   .hero__meta:not(.hero__meta--sub) > :last-child { text-align: right; }
-  .hero__star-wrap { display: none; }
 }
 
 .hero__slider {
@@ -338,7 +334,8 @@ body.menu-open .nav__logo text { fill: var(--bx); }
   max-width: 14ch;
 }
 .title em { font-size: 1.08em; letter-spacing: -0.02em; }
-.split .line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+/* Genug Platz unten, damit Unterlängen (g, p, y) der Serifenschrift nicht abgeschnitten werden */
+.split .line { display: block; overflow: hidden; padding-bottom: 0.2em; margin-bottom: -0.2em; }
 .split .line > span { display: inline-block; }
 
 /* ── Work ────────────────────────────────────────────────────── */
@@ -505,8 +502,13 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .hero__crumb a:hover { opacity: 0.6; }
 .hero__meta--sub { align-items: flex-start; }
 .hero__meta--sub p:not(.serif) { max-width: 30ch; }
-.hero__meta--sub .hero__star-wrap { top: 0.6em; }
 .hero__tags { margin-top: clamp(28px, 3vw, 48px); }
+/* Disziplin-Seite schlanker: Einleitung, Stichworte und «So gehe ich vor» sind nur ausgeblendet.
+   Auf der Startseite (Hover bei «Was») bleiben Einleitung und Stichworte sichtbar.
+   Wieder einblenden: diese Regel löschen und im HTML das Kontakt-Label zurück auf (03) setzen. */
+[data-page="discipline"] .hero__meta--sub > .mask:has([data-d-lead]),
+[data-page="discipline"] .hero__tags,
+[data-page="discipline"] .process { display: none; }
 @media (max-width: 760px) {
   .hero__meta--sub { text-align: left; align-items: flex-start; gap: 10px; }
 }
