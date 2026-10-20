@@ -60,12 +60,18 @@ header('Referrer-Policy: same-origin');
   <title><?= $state === 'open' ? $h($gallery['title']) . ' — ' : '' ?>Galerie — Alessio Rosano</title>
   <meta name="theme-color" content="#ff6600" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6600'/%3E%3Ctext x='16' y='21.5' text-anchor='middle' font-family='Arial' font-weight='700' font-size='14' fill='%23fff'%3EAR%3C/text%3E%3C/svg%3E" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bx: #ff6600;
+    }
+    /* Gleiche Besuchsfarbe wie auf der Website (js/theme.js) */
+    :root[data-theme="pink"] { --bx: #fa51e1; }
+    :root[data-theme="blue"] { --bx: #1f3fff; }
+    :root {
       --bx-15: color-mix(in srgb, var(--bx) 15%, white);
       --bx-08: color-mix(in srgb, var(--bx) 8%, white);
       --white: #fff;
@@ -84,7 +90,10 @@ header('Referrer-Policy: same-origin');
     .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 400; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
     .serif { font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; }
     .bar { display: flex; justify-content: space-between; align-items: center; padding: 14px var(--pad); }
-    .bar b { font-weight: 700; letter-spacing: -0.02em; }
+    .logo { display: inline-flex; width: 30px; }
+    .logo svg { width: 100%; height: auto; }
+    .logo rect { fill: var(--bx); }
+    .logo text { fill: var(--white); font: 700 14px Arial, Helvetica, sans-serif; }
     main { flex: 1; padding: 0 var(--pad) var(--pad); }
     h1 {
       margin: clamp(32px, 6vw, 96px) 0 18px; font-size: clamp(44px, 8vw, 150px); font-weight: 800;
@@ -141,7 +150,7 @@ header('Referrer-Policy: same-origin');
 </head>
 <body>
   <header class="bar">
-    <b>Alessio Rosano</b>
+    <a class="logo" href="index.html" aria-label="Alessio Rosano, zur Website"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6"/><text x="16" y="21.5" text-anchor="middle">AR</text></svg></a>
     <span class="mono">Galerie<?= $state === 'open' ? ' — ' . count($files) . ' Dateien' : '' ?></span>
   </header>
 

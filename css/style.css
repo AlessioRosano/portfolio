@@ -24,8 +24,9 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-/* Pinke Variante — Schalter im Header. Alle Töne leiten sich von --bx ab. */
+/* Farbvarianten Pink und Blau — pro Besuch zufällig (js/theme.js). Alle Töne leiten sich von --bx ab. */
 :root[data-theme="pink"] { --bx: #fa51e1; }
+:root[data-theme="blue"] { --bx: #1f3fff; }
 
 /* Sanfter Farbwechsel beim Umschalten */
 html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
@@ -141,7 +142,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 .nav.is-scrolled { background: color-mix(in srgb, white 82%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .nav.is-dark { color: var(--white); background: color-mix(in srgb, var(--bx) 80%, transparent); }
-.nav__logo { font-weight: 700; letter-spacing: -0.02em; }
+/* Logo = das AR-Zeichen aus dem Browser-Tab, in der Besuchsfarbe */
+.nav__logo { display: inline-flex; width: 30px; justify-self: start; }
+.nav__logo svg { width: 100%; height: auto; transition: transform 0.5s var(--ease-out); }
+.nav__logo rect { fill: currentColor; }
+.nav__logo text { fill: var(--white); font: 700 14px Arial, Helvetica, sans-serif; }
+.nav__logo:hover svg { transform: rotate(-8deg); }
+/* Über dem farbigen Kontaktbereich: weisses Zeichen mit farbiger Schrift */
+.nav.is-dark .nav__logo text { fill: var(--bx); }
 .nav__links { display: flex; gap: clamp(12px, 2vw, 32px); }
 .nav__links a { position: relative; display: inline-flex; gap: 6px; align-items: baseline; }
 .nav__links a .mono { font-size: 0.6rem; opacity: 0.55; }
@@ -153,6 +161,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .nav__meta { display: flex; gap: 20px; align-items: center; justify-content: flex-end; font-variant-numeric: tabular-nums; }
 
 .theme-toggle { display: inline-flex; align-items: center; gap: 8px; }
+/* Farbschalter vorerst ausgeblendet: die Farbe wird pro Besuch zufällig gewählt (js/theme.js) */
+[data-theme-toggle] { display: none !important; }
 .theme-toggle__track {
   position: relative; width: 30px; height: 16px; border-radius: 999px;
   border: 1.5px solid currentColor;

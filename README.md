@@ -130,7 +130,7 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 **Projektseite (`projekt.html?p=…`)**: grosses Titelbild mit Zoom beim Scrollen, Beschreibung, Steckbrief, Bildgalerie, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 
-**Überall**: Farbschalter Orange/Pink (wird gespeichert), Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**, Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen
+**Überall**: Jeder Besuch bekommt zufällig eine Farbe, Orange, Pink oder Blau. Sie bleibt während des Besuchs gleich, und Favicon und Browserfarbe passen sich an (der frühere Farbschalter ist ausgeblendet). Im Header steht das AR-Zeichen statt des Namens, Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**, Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen
 
 Fotos erscheinen in den Übersichten schwarz-weiss und auf der Projektseite in Farbe.
 
