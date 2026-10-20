@@ -196,12 +196,48 @@
     }
     .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
+    .editor__back { display: none; }
+    /* Touch: Knöpfe auf Bildern und Listen immer sichtbar (es gibt kein Hover) */
+    @media (hover: none) {
+      .img__tools, .item__move, .file__del { opacity: 1; }
+    }
+
+    /* ── Handy/Tablet: eine Spalte, Liste und Bearbeiten als eigene Ansichten ── */
     @media (max-width: 900px) {
-      #view-projects { grid-template-columns: 1fr; }
-      .list { max-height: 40vh; border-right: 0; border-bottom: 1.5px solid var(--bx-15); }
+      html, body { height: auto; }
+      body { display: block; }
+      .bar { flex-wrap: wrap; gap: 8px 10px; padding: 10px 14px; }
+      .bar > .mono.muted { display: none; }
+      .tabs {
+        order: 3; flex: 1 0 100%; margin: 0 -14px; padding: 2px 14px 0; gap: 2px;
+        overflow-x: auto; scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tabs button { flex: none; }
+      .bar__right { gap: 8px; }
+      .bar__right .status, .bar__right .btn .mono { display: none; }
+      .bar .btn { padding: 8px 12px; font-size: 14px; }
+
+      #view-projects, #view-galleries { grid-template-columns: 1fr; }
+      .list { max-height: none; overflow: visible; border: 0; }
+      .list__top { position: static; }
+      .view.is-editing .list { display: none; }
+      .view:not(.is-editing) .editor { display: none; }
+      .editor, .pane { overflow: visible; padding: 18px 16px 96px; }
+      .editor__back { display: inline-flex; margin-bottom: 16px; }
+      .editor__head { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+      .editor__head .actions { margin-left: 0; flex-wrap: wrap; }
+      .editor__head h1, .pane h1 { font-size: 34px; }
+
       .field--2, .field--3, .field--4 { grid-column: span 6; }
       .steps { grid-template-columns: 1fr; }
-      .bar { flex-wrap: wrap; }
+      /* 16 px verhindert, dass iOS beim Antippen eines Feldes hineinzoomt */
+      input[type="text"], input[type="number"], input[type="url"], input[type="email"], input[type="password"], input[type="date"], textarea, select { font-size: 16px; }
+      .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+      .chips button { flex: none; }
+      .images, .files { grid-template-columns: repeat(2, 1fr); }
+      .share code { flex-basis: 100%; }
+      .toast { bottom: calc(16px + env(safe-area-inset-bottom)); max-width: calc(100% - 32px); text-align: center; }
     }
   </style>
 </head>

@@ -135,6 +135,8 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 - **Burger-Menü** auf dem Handy: ein farbiges Vollbild mit allen Menüpunkten
 - **Startscreen am Handy:** Der Name ist etwas niedriger, „Video, Branding …“ steht links und „Weniger Lärm …“ rechts.
 - **Galerie-Layout pro Bild:** Im CMS wähle ich für jedes Galeriebild **Quer** (ganze Breite) oder **Hoch** (halbe Breite, zwei nebeneinander). Neue Bilder bekommen die Einstellung automatisch nach ihrem Seitenverhältnis.
+- **CMS fürs Handy:** Liste und Bearbeiten sind dort zwei Ansichten („← Alle Projekte“ führt zurück). Die Kopfzeile ist zweireihig mit wischbaren Tabs, und die Felder lösen beim Antippen keinen Zoom aus. Bilder und Videos lade ich direkt aus der Kamerarolle hoch.
+- **Nichts ragt mehr über den Rand:** Die grosse Überschrift zur nächsten Disziplin war am Handy zu breit, dadurch liess sich die ganze Seite seitlich verschieben. Die Schrift skaliert jetzt mit, lange Titel brechen um, und ein Sicherheitsnetz (`overflow-x: clip` auf `html`) verhindert seitliches Verschieben grundsätzlich.
 
 ---
 
@@ -206,7 +208,7 @@ storage/   Galerien, Vorschauen, Backups, Login-Sperren          (von aussen ges
 
 ## Das CMS
 
-Erreichbar unter `/admin`, geschützt mit einem Passwort.
+Erreichbar unter `/admin`, geschützt mit einem Passwort. Es funktioniert am Desktop und am Handy.
 
 | Tab | Was ich dort pflege |
 |---|---|
@@ -413,6 +415,8 @@ Für jeden grösseren Schritt gibt es einen eigenen Commit mit Beschreibung.
 **Google und JavaScript.** Weil die Inhalte erst per JavaScript geladen werden, muss Google die Daten-API lesen dürfen. Eine zu strenge `robots.txt` („alles unter `/api/` sperren“) hätte die Seite für Google leer gemacht. Ausserdem müssen die Projekt-Adressen in der Sitemap (PHP) exakt gleich berechnet werden wie auf der Website (JavaScript), auch bei Umlauten und Akzenten. Das habe ich mit Grenzfällen wie „Café Côte — Grösse & Ñandú“ in beiden Sprachen getestet.
 
 **Loops, die stillschweigend nicht hochgeladen wurden.** Mein erster Loop-Import nahm nur MP4 und WebM an und ignorierte alles andere ohne Meldung. Eine MOV-Datei aus Premiere oder vom iPhone verschwand also einfach. Heute prüft das CMS vor dem Upload, ob der Browser das Video abspielen kann, nimmt MOV/M4V an und sagt klar, wenn etwas nicht geht (z.B. HEVC oder ProRes). Die Lehre: Nie etwas still verwerfen, immer erklären.
+
+**Seite am Handy seitlich verschiebbar.** Ein einziges Element war am Handy breiter als der Bildschirm: die grosse Überschrift zur nächsten Disziplin mit einer festen Mindestgrösse von 56 px. Dadurch liess sich die ganze Seite seitlich wischen. Gefunden habe ich es, indem ich jede Seite in Handy-Breite gezielt nach überstehenden Elementen durchsucht habe. Die Lehre: Schriften mit Mindestgrössen immer mit dem längsten möglichen Text testen.
 
 **Kurzer Ausfall nach vielen Abfragen.** Nach einer Reihe von Deploys mit automatischen Prüfungen war die Seite einige Minuten nicht erreichbar, obwohl das DNS stimmte und der Code in Ordnung war. Wahrscheinlich hat Infomaniak meinen Anschluss wegen der vielen Abfragen kurz gesperrt. Seither prüfe ich nach einem Deploy mit weniger und langsameren Abfragen.
 

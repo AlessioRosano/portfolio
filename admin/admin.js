@@ -245,6 +245,7 @@ function renderEditor() {
   }
   const catOpts = Object.entries(state.CATS).map(([k, v]) => `<option value="${esc(k)}"${p.cat === k ? " selected" : ""}>${esc(v)}</option>`).join("");
   ed.innerHTML = `
+    <button class="btn btn--sm editor__back" type="button" data-back>← Alle Projekte</button>
     <div class="editor__head">
       <div>
         <p class="mono muted" style="margin:0 0 8px">Projekt ${pad(current + 1)} / ${pad(state.PROJECTS.length)} — erscheint auf ${esc(state.CATS[p.cat])}</p>
@@ -509,6 +510,16 @@ function renderAll() {
   updateStatus();
 }
 
+/* ── Handy: Liste und Bearbeiten sind zwei Ansichten (auf dem Desktop nebeneinander) ── */
+function showEditor(view, on) {
+  $(view).classList.toggle("is-editing", on);
+  if (matchMedia("(max-width: 900px)").matches) scrollTo(0, 0);
+}
+document.addEventListener("click", (e) => {
+  const back = e.target.closest("[data-back]");
+  if (back) showEditor(`#${back.closest(".view").id}`, false);
+});
+
 /* ── Events ──────────────────────────────────────────────────── */
 $("[data-tabs]").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tab]");
@@ -545,6 +556,7 @@ $("[data-items]").addEventListener("click", (e) => {
     markDirty();
   } else {
     current = i;
+    showEditor("#view-projects", true);
   }
   renderList();
   renderEditor();
@@ -557,6 +569,7 @@ $("[data-new]").addEventListener("click", () => {
   });
   current = 0;
   markDirty();
+  showEditor("#view-projects", true);
   renderList();
   renderEditor();
   const t = $('[data-f="title"]');
@@ -769,6 +782,7 @@ function renderGalleryEditor() {
   const files = g.files || [];
   const size = files.reduce((sum, f) => sum + f.size, 0);
   ed.innerHTML = `
+    <button class="btn btn--sm editor__back" type="button" data-back>← Alle Galerien</button>
     <div class="editor__head">
       <div>
         <p class="mono muted" style="margin:0 0 8px">${g.slug ? `${files.length} Dateien · ${fmtBytes(size)}` : "Neue Galerie — noch nicht gespeichert"}</p>
@@ -923,12 +937,14 @@ $("[data-galleries]").addEventListener("click", (e) => {
   const li = e.target.closest("[data-g]");
   if (!li) return;
   gallery = structuredClone(galleryList.find((g) => g.slug === li.dataset.g));
+  showEditor("#view-galleries", true);
   renderGalleryList();
   renderGalleryEditor();
 });
 
 $("[data-gallery-new]").addEventListener("click", () => {
   gallery = { slug: "", title: "", date: new Date().toISOString().slice(0, 10), password: newPassword(), expires: "", files: [] };
+  showEditor("#view-galleries", true);
   renderGalleryList();
   renderGalleryEditor();
   $('[data-gf="title"]').focus();
