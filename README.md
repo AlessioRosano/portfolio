@@ -145,6 +145,7 @@ Die Seiten waren mir noch zu textlastig. Statt Texte zu löschen, blende ich sie
 
 - **Disziplin-Seiten:** Einleitung, Stichworte, die Überschrift „Ein paar Beispiele.“ und der Abschnitt «So gehe ich vor» sind ausgeblendet. Übrig bleiben Titel, Projekte und der Link zur nächsten Disziplin. Die Projekte folgen jetzt direkt auf den Titel. Auf der Startseite erscheinen Einleitung und Stichworte weiterhin beim Hover über eine Disziplin.
 - **Kein Stern mehr** unter den Seitentiteln (Disziplin- und Projektseiten)
+- **Kein farbiger Rahmen** mehr um die Projektbilder auf den Disziplin-Seiten. Sie stehen jetzt frei, wie im Slider auf der Startseite.
 - **Navigation:** «Zeig mal» steht jetzt an dritter Stelle: Was, Wer, Zeig mal, Kontakt.
 - **Unterlängen nicht mehr abgeschnitten:** Beim «g» in „richtig gut.“ fehlte unten ein Stück. Die Zeilen der animierten Titel blenden mit `overflow: hidden` ein und hatten unten zu wenig Platz für die tiefen Unterlängen der Serifenschrift. Jetzt haben sie mehr Raum, ohne dass sich der Zeilenabstand ändert. Nachgemessen habe ich das im Browser: Vorher lag der Bogen vom «g» knapp 2 px unter der Kante, jetzt bleiben gut 6 px Luft.
 
