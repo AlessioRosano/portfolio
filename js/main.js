@@ -682,10 +682,12 @@ function initScroll() {
   // Über-mich-Text: Wort für Wort beim Scrollen
   const st = $("[data-words]");
   if (st) {
-    // Leerzeile im CMS = neuer Absatz; jedes Wort einzeln, damit es beim Scrollen aufleuchten kann
-    st.innerHTML = st.textContent.trim().split(/\n\s*\n/).map((para) =>
-      para.trim().split(/\s+/).map((w) => `<span class="w">${esc(w)}</span>`).join(" ")
-    ).join(`<span class="para-break"></span>`);
+    // Leerzeile im CMS = neuer Absatz; jedes Wort einzeln, damit es beim Scrollen aufleuchten kann.
+    // Die letzten zwei Wörter hängen mit einem geschützten Leerzeichen zusammen: kein Wort steht allein auf der letzten Zeile.
+    st.innerHTML = st.textContent.trim().split(/\n\s*\n/).map((para) => {
+      const ws = para.trim().split(/\s+/).map((w) => `<span class="w">${esc(w)}</span>`);
+      return ws.length > 2 ? `${ws.slice(0, -2).join(" ")} ${ws.slice(-2).join("&nbsp;")}` : ws.join("&nbsp;");
+    }).join(`<span class="para-break"></span>`);
     const words = $$(".w", st);
     ScrollTrigger.create({
       trigger: st,
