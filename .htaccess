@@ -12,8 +12,13 @@
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
-  # Sitemap für Suchmaschinen wird aus den CMS-Inhalten erzeugt
+  # Sitemap für Suchmaschinen und Kurzfassung für KI-Systeme werden aus den CMS-Inhalten erzeugt
   RewriteRule ^sitemap\.xml$ sitemap.php [L]
+  RewriteRule ^llms\.txt$ llms.php [L]
+
+  # Seiten mit fertigem Inhalt für Crawler ohne JavaScript (render.php, Parameter wie ?p= bleiben)
+  RewriteRule ^(index\.html)?$ render.php?page=index [QSA,L]
+  RewriteRule ^(arbeiten|disziplin|projekt)\.html$ render.php?page=$1 [QSA,L]
 </IfModule>
 
 # Interne Dateien sind nie von aussen abrufbar: .htaccess, .user.ini, README, Workflow-Dateien

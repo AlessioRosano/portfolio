@@ -1,9 +1,11 @@
-# Suchmaschinen dürfen die Website lesen — nicht aber CMS, Schnittstellen und Kunden-Galerien.
-# api/data.php bleibt erlaubt: Daraus baut die Seite ihre Inhalte auf (auch für Google).
+# Suchmaschinen und KI-Crawler dürfen die Website lesen, nicht aber CMS, Schnittstellen und Kunden-Galerien.
+# api/data.php bleibt erlaubt: Daraus baut die Seite ihre Inhalte im Browser auf.
+# Eine Kurzfassung für KI-Systeme liegt unter https://alessiorosano.ch/llms.txt
 User-agent: *
 Allow: /api/data.php
 Disallow: /admin/
 Disallow: /api/
 Disallow: /galerie.php
+Disallow: /render.php
 
 Sitemap: https://alessiorosano.ch/sitemap.xml

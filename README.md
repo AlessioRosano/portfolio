@@ -31,7 +31,9 @@ Mein Portfolio für **Video, Branding/Web, Kampagnen und Architektur**, entstand
 portfolio/
 ├── index.html, arbeiten.html, disziplin.html, projekt.html   Website (Inhalte per JS aus der API)
 ├── galerie.php          Galerie-Seite für Kund:innen
-├── sitemap.php          Sitemap aus den CMS-Inhalten (/sitemap.xml)
+├── render.php           liefert die Seiten mit fertigem Inhalt für Crawler ohne JavaScript
+├── sitemap.php          Sitemap mit Bildern aus den CMS-Inhalten (/sitemap.xml)
+├── llms.php             Kurzfassung für KI-Systeme (/llms.txt)
 ├── css/style.css        Gestaltung; alle Farben aus einer Variable --bx
 ├── js/
 │   ├── main.js          Inhalte laden, Seiten aufbauen, animieren
@@ -44,6 +46,7 @@ portfolio/
 ├── api/
 │   ├── lib.php          Session, CSRF, Login-Sperre, Dateien, Bildvarianten, Daten-Umstellung
 │   ├── data.php         öffentlich: Inhalte + Bildvarianten als JSON
+│   ├── seo.php          gemeinsame Helfer für render.php, Sitemap und llms.txt (Meta, schema.org)
 │   ├── admin.php        CMS-Schnittstelle (Login, Speichern, Uploads, Galerien, Backup)
 │   ├── file.php, zip.php   Galerie-Dateien, nur mit Passwort
 ├── setup/               Startinhalte für einen leeren Server
@@ -85,7 +88,12 @@ Bilder lädt der Browser als WebP-Varianten mit `srcset` (480 bis 2400 px), pass
 
 ### SEO
 
-Sitemap aus den CMS-Inhalten, `robots.txt`, eine einzige Adresse (`https://` ohne `www`, plus Canonical), Titel und Beschreibung pro Seite, Vorschaubild für geteilte Links, Favicon als echte Dateien und strukturierte Daten (schema.org `Person` und `CreativeWork`). Die Domain ist in der Google Search Console bestätigt.
+Google führt JavaScript aus, die meisten KI-Crawler (ChatGPT, Claude, Perplexity) und Link-Vorschauen tun das nicht. Für sie wären die Seiten leer gewesen. Darum laufen die vier Seiten über `render.php`: Der Server setzt Titel, Beschreibung, Canonical, Vorschaubild und strukturierte Daten direkt ins HTML, dazu Überschrift, Texte und Links zu allen Disziplinen und Projekten. Danach baut `main.js` die Seite wie gewohnt auf, sichtbar ändert sich nichts. Unbekannte Projekte melden einen echten 404.
+
+- **Strukturierte Daten (schema.org):** `WebSite`, `ProfilePage` und `Person` (Fachgebiete aus den Disziplinen und Stichworten, Sprachen, Social-Links), `CollectionPage` für «Zeig mal» und die Disziplinen, `CreativeWork` pro Projekt (mit Kunde, Bild, Rolle und Tools) und Breadcrumbs.
+- **`/llms.txt`:** eine Kurzfassung für KI-Systeme nach llmstxt.org: wer ich bin, Steckbrief, Disziplinen, alle Projekte mit Link, Kontakt. Sie baut sich wie die Sitemap aus den CMS-Inhalten.
+- **Sitemap mit Bildern**, eine einzige Adresse (`https://` ohne `www`, Canonical fest auf `alessiorosano.ch`), `robots.txt`, Favicon als echte Dateien, Sprache `de-CH`. Die Domain ist in der Google Search Console bestätigt.
+- **Sicherheitsnetz:** Klappt in `render.php` etwas nicht, kommt die unveränderte HTML-Datei. Die Seite fällt nie aus.
 
 ### Sicherheit
 
@@ -128,6 +136,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 14. **Aufräumen, zweite Runde:** Doppelter Code in Website, CMS und PHP ist zusammengelegt (z. B. `loopVideo`, `galleryOrDeny()`). Jede Regel steht nur noch an einer Stelle. Getestet habe ich das, indem ich alte und neue Version nebeneinander laufen liess und die fertigen Seiten verglichen habe.
 15. **Mehr Film, weniger Doppeltes:** mehrere Filme pro Projekt, Textlinks in der Beschreibung und der Tab «Medien» im CMS. Das Titelbild ist jetzt nur noch Vorschau und wiederholt sich auf der Projektseite nicht mehr. Filme stehen direkt als Player da, statt hinter einem Abspiel-Overlay.
 16. **Bilder mit Rollen:** Für «Zeig mal» und die Disziplin-Seite braucht es mal Quer-, mal Hochformate. Darum kann ich pro Projekt eigene Vorschaubilder (für «Zeig mal», die Disziplin-Seite und die Startseite) und ein Keyvisual für die Projektseite wählen. Schwarz-weiss sind Fotos nur noch im Slider und auf «Zeig mal». Und im Über-mich-Text steht kein Wort mehr allein auf der letzten Zeile: Die letzten zwei Wörter jedes Absatzes hängen mit einem geschützten Leerzeichen zusammen. Das CMS sagt mir dabei, welches Format die Disziplin-Seite an dieser Stelle braucht.
+17. **SEO und GEO:** Die Seiten kommen jetzt mit fertigem Inhalt vom Server (`render.php`), dazu mehr strukturierte Daten, eine Sitemap mit Bildern und `/llms.txt` für KI-Systeme.
 
 ---
 
@@ -146,6 +155,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Grenzen von Webhosting.** Es gibt kein `ffmpeg`. Video-Standbilder erzeugt deshalb der Browser beim Upload, und die Upload-Limits meldet der Server dem CMS selbst.
 
 **Google und JavaScript.** Die Inhalte kommen per JavaScript aus der API. Eine zu strenge `robots.txt` hätte die Seite für Google leer gemacht. Und die Projekt-Adressen müssen in PHP (Sitemap) und JavaScript exakt gleich berechnet werden, auch bei Umlauten.
+
+**KI-Suchen sehen kein JavaScript.** Google kam mit meiner Seite klar, KI-Crawler und Link-Vorschauen sahen aber nur leere Hüllen mit dem Titel «Projekt». Statt die ganze Seite umzubauen, füllt jetzt `render.php` die bestehenden HTML-Dateien vor. Heikel daran: Läuft sie für alle Seiten, darf sie nie abstürzen. Darum fällt sie bei jedem Fehler auf die normale Datei zurück, und die Adresse im Canonical kommt fest aus dem Code, nicht aus der Anfrage. Sonst könnte jemand eine fremde Domain unterschieben.
 
 **Loops, die still verschwanden.** Der erste Loop-Import ignorierte MOV-Dateien ohne Meldung. Heute prüft das CMS vorher, ob der Browser das Video abspielen kann, und sagt klar, wenn nicht. Die Lehre: Nie etwas still verwerfen.
 
@@ -172,6 +183,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 - **Performance hängt an den Bildern.** `srcset` hat mehr gebracht als jede Code-Optimierung.
 - **Weniger ist mehr, auch im Code.** Eine Vorlage statt vier Seiten, eine Funktion statt drei Kopien. Und auf der Seite selbst: weniger Text, mehr Wirkung.
 - **Ton ist Gestaltung.** Ein einheitlicher Ton bis in die Fehlermeldungen macht die Seite so stimmig wie Farbe und Schrift.
+- **Gefunden werden heisst heute auch: von KI gelesen werden.** Was nur im Browser entsteht, existiert für viele Crawler nicht. Inhalte gehören ins HTML, das der Server schickt.
 - **Live prüfen, aber mit Mass.** Manche Fehler zeigten sich erst online. Zu viele Abfragen schaden aber auch.
 - **Kleine Schritte, klare Commits.** So weiss ich bei jedem Problem, woher es kommt.
 

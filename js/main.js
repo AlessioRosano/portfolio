@@ -125,6 +125,7 @@ function buildNames() {
     const text = el.dataset.name || NAME;
     const inner = document.createElement("span");
     inner.className = "name-inner";
+    el.textContent = "";   // Text vom Server (render.php) weicht den animierten Buchstaben
     inner.innerHTML = text.split(" ").map((w) =>
       `<span class="word">${[...w].map((ch) => `<span class="m"><span class="c">${esc(ch)}</span></span>`).join("")}</span>`
     ).join(" ");   // Leerzeichen zwischen den Wörtern: Google und Screenreader lesen «Alessio Rosano»
@@ -411,6 +412,7 @@ function setMeta(title, description, canonicalPath) {
 
 // schema.org als JSON-LD — wird nicht ausgeführt, darum mit der Content-Security-Policy vereinbar
 function structuredData(data) {
+  if ($('script[type="application/ld+json"][data-ssr]')) return;   // hat render.php schon geliefert
   const el = document.createElement("script");
   el.type = "application/ld+json";
   el.textContent = JSON.stringify({ "@context": "https://schema.org", ...data });
