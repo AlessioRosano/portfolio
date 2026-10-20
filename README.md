@@ -115,6 +115,19 @@ Damit die Seite in der Google-Suche auftaucht, habe ich sie für Suchmaschinen v
 
 Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem Augenzwinkern und nah an den Menschen. Diesen Ton habe ich auf die ganze Website übertragen, von den Titeln („Das hier mache ich richtig gut.“, „Zusammen wird’s besser.“) über die Disziplin-Texte bis zu den Meldungen im Kontaktformular und in den Galerien. Lange Gedankenstriche habe ich dabei konsequent durch Punkte und Doppelpunkte ersetzt. Die Texte im CMS hat wieder eine automatische Umstellung angepasst, die nur ersetzt, was noch dem alten Stand entsprach.
 
+### 10. Videos und Bilder, die nicht beschnitten werden
+
+- **Filme** von YouTube oder Vimeo binde ich per Link ein. Auf der Projektseite stehen sie zuoberst, mit ihrem echten Vorschaubild. Der Player lädt erst beim Klick, vorher fliessen keine Daten zu YouTube oder Vimeo.
+- **Kurze Video-Loops** (MP4, MOV, WebM) lade ich direkt ins CMS. Auf der Projektseite laufen sie automatisch und stumm.
+- **„Nicht beschneiden“ pro Bild:** Plakate oder Bilder mit Text erscheinen auf der Projektseite vollständig, ohne Zuschnitt und Zoom. Fotos dürfen weiterhin zugeschnitten werden und zoomen beim Scrollen.
+
+### 11. Feinschliff am Look
+
+- **Slider:** Bilder ohne Rahmen und Bildunterschrift. Beim Hover werden sie farbig, zoomen leicht, und der Projekttitel erscheint in der Mitte. Loops starten beim Hover. Darunter sitzen mittig zwei Pfeile `<` `>` zum Blättern.
+- **Zufällige Farbe pro Besuch:** Statt eines Farbschalters würfelt die Seite bei jedem Besuch Orange, Pink oder Blau. Die Farbe bleibt während des Besuchs gleich, Favicon und Browserfarbe passen sich an.
+- **AR-Zeichen statt Name** im Header, dasselbe Zeichen wie im Browser-Tab
+- Den Stern im Header der Startseite habe ich entfernt, damit der Kopf ruhiger wirkt.
+
 ---
 
 ## Was die Website kann
@@ -128,9 +141,13 @@ Zum Schluss habe ich meinen Über-mich-Text neu geschrieben: direkt, mit einem A
 
 **Disziplin-Seite (`disziplin.html?d=video`)**: Einleitung, Stichworte, Projekte, Arbeitsweise in drei Schritten, Link zur nächsten Disziplin
 
-**Projektseite (`projekt.html?p=…`)**: grosses Titelbild mit Zoom beim Scrollen, Beschreibung, Steckbrief, Bildgalerie, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
+**Projektseite (`projekt.html?p=…`)**: zuoberst der Film (falls vorhanden, Player lädt erst beim Klick), dann ein grosses Titelbild oder ein Video-Loop mit Zoom beim Scrollen, Beschreibung, Steckbrief, Galerie aus Bildern und Loops, Link zum nächsten Projekt. Pro Bild lässt sich im CMS festlegen, dass es nicht beschnitten wird. Plakate oder Bilder mit Text erscheinen dann vollständig, ohne Zuschnitt und Zoom.
 
-**Überall**: Jeder Besuch bekommt zufällig eine Farbe, Orange, Pink oder Blau. Sie bleibt während des Besuchs gleich, und Favicon und Browserfarbe passen sich an (der frühere Farbschalter ist ausgeblendet). Im Header steht das AR-Zeichen statt des Namens, Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**, Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen
+**Überall**
+- Jeder Besuch bekommt zufällig eine Farbe: Orange, Pink oder Blau. Sie bleibt während des Besuchs gleich, Favicon und Browserfarbe passen sich an. Der frühere Farbschalter ist im Code noch vorhanden, aber ausgeblendet.
+- Im Header steht das AR-Zeichen statt des Namens.
+- Live-Uhr, Scroll-Fortschritt, eigener Cursor, Seitenübergänge, Raster-Overlay mit Taste **G**
+- Rücksicht auf „Bewegung reduzieren“ in den Systemeinstellungen: keine automatisch laufenden Loops
 
 Fotos erscheinen in den Übersichten schwarz-weiss und auf der Projektseite in Farbe.
 
@@ -150,7 +167,7 @@ portfolio/
 │   ├── art.js         Platzhalter-Grafiken als SVG
 │   ├── utils.js       gemeinsame Helfer (Website + CMS)
 │   ├── galerie.js     Grossansicht der Galerie
-│   ├── theme.js       Farbschalter vor dem ersten Zeichnen
+│   ├── theme.js       zufällige Besuchsfarbe, vor dem ersten Zeichnen (auch Favicon)
 │   └── vendor/        GSAP, ScrollTrigger, Lenis (lokal statt CDN)
 ├── admin/             CMS (index.html + admin.js)
 ├── api/
@@ -383,6 +400,10 @@ Für jeden grösseren Schritt gibt es einen eigenen Commit mit Beschreibung.
 **Grenzen von normalem Webhosting.** Ich kenne die Upload-Limits des Servers nicht genau, darum meldet der Server sie dem CMS, und das CMS passt die Stückgrösse an. Kleinere Videoversionen würden `ffmpeg` brauchen, und das gibt es dort nicht. Die Video-Standbilder erzeugt deshalb der Browser beim Upload. Bei manchen iPhone-Formaten (HEVC) klappt das in Chrome nicht.
 
 **Google und JavaScript.** Weil die Inhalte erst per JavaScript geladen werden, muss Google die Daten-API lesen dürfen. Eine zu strenge `robots.txt` („alles unter `/api/` sperren“) hätte die Seite für Google leer gemacht. Ausserdem müssen die Projekt-Adressen in der Sitemap (PHP) exakt gleich berechnet werden wie auf der Website (JavaScript), auch bei Umlauten und Akzenten. Das habe ich mit Grenzfällen wie „Café Côte — Grösse & Ñandú“ in beiden Sprachen getestet.
+
+**Loops, die stillschweigend nicht hochgeladen wurden.** Mein erster Loop-Import nahm nur MP4 und WebM an und ignorierte alles andere ohne Meldung. Eine MOV-Datei aus Premiere oder vom iPhone verschwand also einfach. Heute prüft das CMS vor dem Upload, ob der Browser das Video abspielen kann, nimmt MOV/M4V an und sagt klar, wenn etwas nicht geht (z.B. HEVC oder ProRes). Die Lehre: Nie etwas still verwerfen, immer erklären.
+
+**Kurzer Ausfall nach vielen Abfragen.** Nach einer Reihe von Deploys mit automatischen Prüfungen war die Seite einige Minuten nicht erreichbar, obwohl das DNS stimmte und der Code in Ordnung war. Wahrscheinlich hat Infomaniak meinen Anschluss wegen der vielen Abfragen kurz gesperrt. Seither prüfe ich nach einem Deploy mit weniger und langsameren Abfragen.
 
 **Repository für den Dozenten freigeben.** Zuerst dachte ich, ich lade ihn einfach als Collaborator ins private Repository ein. Bei persönlichen GitHub-Konten bekommen Collaborators aber automatisch Schreibrechte. Damit könnten sie einen Deploy auslösen und über einen geänderten Workflow sogar die Secrets auslesen. Ein öffentliches Repository ist für reines Anschauen die sicherere Lösung. Beim Hochladen hat GitHub dann einen Push blockiert, weil meine private E-Mail-Adresse in den Commits stand. Seither verwende ich die anonyme GitHub-Adresse (`…@users.noreply.github.com`).
 
