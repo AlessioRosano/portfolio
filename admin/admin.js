@@ -33,7 +33,7 @@ function normalize(d) {
   d.SOCIAL ??= [];
   d.ABOUT = { statement: "", portrait: "", caption: "", specs: [], status: "", ...d.ABOUT };
   d.PROJECTS = d.PROJECTS.map((p) => ({
-    title: "", cat: "branding", year: new Date().getFullYear(), role: "", tools: "", desc: "",
+    title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
     link: "", video: "", art: 0, images: [], full: [], ...p,
     // Galerie-Layout: Projekte ohne eigene Wahl behalten ihr bisheriges Muster (jedes dritte Bild breit)
     wide: Array.isArray(p.wide) ? p.wide : (p.images || []).filter((_, i) => i > 0 && (i - 1) % 3 === 0),
@@ -268,7 +268,9 @@ function renderEditor() {
       <label class="field field--3"><span class="mono">Rolle / Leistung</span>
         <input type="text" data-f="role" value="${esc(p.role)}" placeholder="z. B. Identität, Logo, Guidelines" /></label>
 
-      <label class="field"><span class="mono">Tools</span>
+      <label class="field field--3"><span class="mono">Kunde</span>
+        <input type="text" data-f="client" value="${esc(p.client)}" placeholder="z. B. Bäckerei Müller (leer = nicht anzeigen)" /></label>
+      <label class="field field--3"><span class="mono">Tools</span>
         <input type="text" data-f="tools" value="${esc(p.tools)}" placeholder="z. B. Illustrator, Figma" /></label>
 
       <label class="field"><span class="mono">Beschreibung</span>
@@ -565,7 +567,7 @@ $("[data-items]").addEventListener("click", (e) => {
 $("[data-new]").addEventListener("click", () => {
   state.PROJECTS.unshift({
     title: "Neues Projekt", cat: filter || "branding", year: new Date().getFullYear(),
-    role: "", tools: "", desc: "", link: "", video: "", art: 0, images: [], full: [], wide: [],
+    client: "", role: "", tools: "", desc: "", link: "", video: "", art: 0, images: [], full: [], wide: [],
   });
   current = 0;
   markDirty();

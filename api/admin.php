@@ -98,6 +98,7 @@ function cleanData(array $d): array
             'title' => $text($p['title'] ?? '', 120),
             'cat' => $p['cat'],
             'year' => $year,
+            'client' => $text($p['client'] ?? '', 120),
             'role' => $text($p['role'] ?? '', 200),
             'tools' => $text($p['tools'] ?? '', 300),
             'desc' => $text($p['desc'] ?? ''),

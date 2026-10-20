@@ -556,7 +556,7 @@ function buildProject() {
   }
 
   $("[data-p-desc]").textContent = p.desc;
-  const specs = [["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
+  const specs = [["Kunde", esc(p.client)], ["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
   if (p.link) specs.push(["Link", `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))} ↗</a>`]);
   $("[data-p-specs]").innerHTML = specs.filter(([, v]) => v).map(([k2, v]) => `<div><dt>${k2}</dt><dd>${v}</dd></div>`).join("");
 
