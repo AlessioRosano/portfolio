@@ -37,8 +37,12 @@ function img(src, alt, sizes, { eager = false } = {}) {
   return `<img src="${esc(src)}"${srcset} alt="${esc(alt)}"${load} decoding="async" />`;
 }
 
-// Titelbild = erstes Bild; ohne Bilder wird eine Platzhalter-Grafik generiert
+// Titelbild = erstes Bild (Vorschau im Slider); ohne Bilder wird eine Platzhalter-Grafik generiert.
+// Für «Zeig mal» und die Disziplin-Seite kann im CMS ein eigenes Vorschaubild gesetzt sein (Rolle).
 // Video-Loops spielen nur auf der Projektseite (play), in Übersichten erscheint ihr Standbild.
+const ROLES = ["previewWorks", "previewDiscipline", "keyvisual"];
+const imageFor = (p, role) => (role && p[role] && p.images?.includes(p[role]) ? p[role] : p.images?.[0]);
+
 function mediaItem(src, alt, sizes, { play = false, eager = false } = {}) {
   if (!isLoop(src)) return img(src, alt, sizes, { eager });
   if (!play) return `<img src="${esc(loopPoster(src))}" alt="${esc(alt)}" loading="lazy" decoding="async" />`;
@@ -47,8 +51,8 @@ function mediaItem(src, alt, sizes, { play = false, eager = false } = {}) {
   return `<video src="${esc(src)}" poster="${esc(loopPoster(src))}" ${autoplay} playsinline preload="${eager ? "auto" : "metadata"}" aria-label="${esc(alt)}"></video>`;
 }
 
-function media(p, W, H, sizes, opts) {
-  const src = p.images?.[0] || p.filmThumb;   // ohne Bilder: Vorschaubild des Films
+function media(p, W, H, sizes, opts = {}) {
+  const src = imageFor(p, opts.role) || p.filmThumb;   // ohne Bilder: Vorschaubild des Films
   if (src) return mediaItem(src, p.title, sizes, opts);
   return makeArt(p.cat, p.art, W, H, p.title);
 }
@@ -93,8 +97,11 @@ const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 // Fotos: in der Übersicht schwarz-weiss, auf der Projektseite farbig (siehe CSS)
 const mediaClass = (p) => (p.images?.length || p.filmThumb ? " is-photo" : "");
 
-// Ist das Titelbild ein Loop, merkt sich die Karte das Video; geladen wird es erst bei Bedarf (loopVideo)
-const loopAttr = (p) => (p.images?.[0] && isLoop(p.images[0]) && !reduced ? ` data-loop="${esc(p.images[0])}"` : "");
+// Ist das Vorschaubild ein Loop, merkt sich die Karte das Video; geladen wird es erst bei Bedarf (loopVideo)
+const loopAttr = (p, role) => {
+  const src = imageFor(p, role);
+  return src && isLoop(src) && !reduced ? ` data-loop="${esc(src)}"` : "";
+};
 
 // «04 Projekte» und «, 2023–2026» (Jahre der Projekte)
 const countText = (n) => `${pad(n)} ${n === 1 ? "Projekt" : "Projekte"}`;
@@ -185,11 +192,11 @@ const SLIDER_MQ = matchMedia("(max-width: 760px)");
 SLIDER_MQ.addEventListener("change", () => buildSlider());
 // Projektkarte für Slider und «Zeig mal»: nur das Bild; beim Hover farbig, Titel in der Mitte, Loop läuft an.
 // Als Link (<a>) in Rastern, als <div> im Slider (dort entscheidet das Ziehen, ob ein Klick zählt).
-function projectCard(p, { W, H, sizes, link = false }) {
+function projectCard(p, { W, H, sizes, link = false, role }) {
   const open = link ? `<a class="card" href="${projectUrl(p)}" aria-label="${esc(p.title)}"` : `<div class="card" data-href="${projectUrl(p)}"`;
   return `
-      ${open} data-cat="${esc(p.cat)}"${loopAttr(p)}>
-        <div class="media${mediaClass(p)}">${media(p, W, H, sizes)}</div>
+      ${open} data-cat="${esc(p.cat)}"${loopAttr(p, role)}>
+        <div class="media${mediaClass(p)}">${media(p, W, H, sizes, { role })}</div>
         <div class="card__title" aria-hidden="true">${esc(p.title)}</div>
       </${link ? "a" : "div"}>`;
 }
@@ -350,7 +357,7 @@ function buildWorks() {
   setMeta(`Zeig mal — ${NAME}`, `Alle Arbeiten von ${NAME}: ${Object.values(CATS).join(", ")}.`, "arbeiten.html");
   $("[data-w-span]").textContent = countText(PROJECTS.length) + yearSpan(PROJECTS);
   $("[data-w-empty]").hidden = PROJECTS.length > 0;
-  grid.innerHTML = PROJECTS.map((p) => projectCard(p, { W: 400, H: 300, sizes: "(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 33vw", link: true })).join("");
+  grid.innerHTML = PROJECTS.map((p) => projectCard(p, { W: 400, H: 300, sizes: "(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 33vw", link: true, role: "previewWorks" })).join("");
 
   const cats = [["", "Alle", PROJECTS.length], ...DISCIPLINES.map((d) => [d.cat, CATS[d.cat], PROJECTS.filter((p) => p.cat === d.cat).length])];
   filter.innerHTML = cats.map(([cat, name, n]) =>
@@ -502,8 +509,8 @@ function buildWork(list) {
     const land = j % 4 === 1 || j % 4 === 2;
     const [W, H] = land ? [500, 400] : [400, 500];
     return `
-      <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen"${loopAttr(p)}>
-        <div class="work__frame"><div class="media${mediaClass(p)}" style="aspect-ratio:${W} / ${H}">${media(p, W, H, "(max-width: 760px) 100vw, 50vw")}</div></div>
+      <a class="work__item" href="${projectUrl(p)}" data-pos="${j % 4}" data-cursor="Ansehen"${loopAttr(p, "previewDiscipline")}>
+        <div class="work__frame"><div class="media${mediaClass(p)}" style="aspect-ratio:${W} / ${H}">${media(p, W, H, "(max-width: 760px) 100vw, 50vw", { role: "previewDiscipline" })}</div></div>
         <div class="work__meta">
           <span class="mono">[${pad(j + 1)}]</span>
           <h3>${esc(p.title)}<em class="serif">${esc(p.role)}</em></h3>
@@ -546,17 +553,22 @@ function buildProject() {
   $("[data-p-role]").textContent = p.role;
   $("[data-p-meta]").textContent = `${CATS[p.cat]}, ${p.year}`;
 
-  // Das Titelbild (erstes Bild oder Loop) ist die Vorschau in Slider und Übersichten. Auf der Projektseite
-  // erscheinen nur Filme und die übrigen Bilder. Hat ein Projekt sonst nichts, springt es als Titelbild ein.
+  // Aufbau: zuoberst die Filme, sonst das Keyvisual. Dann der Text, dann die Galerie.
+  // Bilder mit einer Rolle (Titelbild = Vorschau im Slider, Vorschauen, Keyvisual) stehen nicht in der Galerie.
   const cover = $("[data-p-cover]");
   const [W, H] = SLIDER_MQ.matches ? [800, 1000] : [1600, 900];
   // Bilder, die im CMS auf «Nicht beschneiden» stehen, erscheinen vollständig (Plakate, Bilder mit Text)
   const full = new Set(p.full || []);
   const films = projectFilms(p).map(filmEmbed).filter(Boolean);
-  cover.hidden = films.length > 0 || (p.images?.length || 0) > 1;
+  const images = p.images || [];
+  const roles = new Set([images[0], ...ROLES.map((r) => p[r])]);
+  const gallery = images.filter((src) => !roles.has(src));
+  const keyvisual = p.keyvisual && images.includes(p.keyvisual) ? p.keyvisual : "";
+  // Ohne Film und Keyvisual: Hat das Projekt sonst nichts, springt das Titelbild (bzw. die Grafik) ein
+  cover.hidden = films.length > 0 || (!keyvisual && gallery.length > 0);
   if (!cover.hidden) {
-    cover.classList.toggle("is-full", full.has(p.images?.[0]));
-    cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true })}</div>`;
+    cover.classList.toggle("is-full", full.has(keyvisual || images[0]));
+    cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true, role: "keyvisual" })}</div>`;
   }
 
   // Filme: Player von YouTube/Vimeo direkt eingebettet, datensparsam (nocookie / dnt).
@@ -573,9 +585,9 @@ function buildProject() {
 
   // Galerie: Querformat = ganze Breite, Hochformat = halbe Breite, zwei nebeneinander
   // (im CMS pro Bild wählbar; ältere Projekte ohne Wahl: jedes dritte Bild breit)
-  $("[data-p-gallery]").innerHTML = (p.images || []).slice(1).map((src, n) => {
+  $("[data-p-gallery]").innerHTML = gallery.map((src, n) => {
       const wide = Array.isArray(p.wide) ? p.wide.includes(src) : n % 3 === 0;
-      return `<figure class="pgallery__item${wide ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${mediaItem(src, `${p.title}, Bild ${n + 2}`, wide ? "100vw" : "(max-width: 760px) 100vw, 50vw", { play: true })}</div></figure>`;
+      return `<figure class="pgallery__item${wide ? " is-wide" : ""}${full.has(src) ? " is-full" : ""}"><div class="media${mediaClass(p)}">${mediaItem(src, `${p.title}, Bild ${n + 1}`, wide ? "100vw" : "(max-width: 760px) 100vw, 50vw", { play: true })}</div></figure>`;
     }).join("");
 
   // Nächstes Projekt: innerhalb der Disziplin, sonst das nächste insgesamt

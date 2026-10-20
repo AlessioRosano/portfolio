@@ -33,7 +33,12 @@ async function api(action, body) {
 const blankProject = () => ({
   title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
   link: "", videos: [], art: 0, images: [], full: [], wide: [],
+  previewWorks: "", previewDiscipline: "", keyvisual: "",
 });
+
+// Bildrollen pro Projekt (je ein Bild): eigene Vorschauen und Keyvisual. Ohne Wahl gilt das Titelbild.
+const IMAGE_USES = { keyvisual: "Keyvisual", previewWorks: "Vorschau «Zeig mal»", previewDiscipline: "Vorschau Disziplin" };
+const usesOf = (p, src) => Object.keys(IMAGE_USES).filter((u) => p[u] === src);
 
 function normalize(d) {
   d.SOCIAL ??= [];
@@ -254,6 +259,9 @@ function renderEditor() {
     return;
   }
   const catOpts = Object.entries(state.CATS).map(([k, v]) => `<option value="${esc(k)}"${p.cat === k ? " selected" : ""}>${esc(v)}</option>`).join("");
+  // Die Disziplin-Seite wechselt Hoch- und Querformat ab (wie buildWork in js/main.js): Positionen 2 und 3 von 4 sind quer
+  const pos = state.PROJECTS.filter((q) => q.cat === p.cat).indexOf(p) % 4;
+  const discFormat = pos === 1 || pos === 2 ? "Querformat (5:4)" : "Hochformat (4:5)";
   ed.innerHTML = `
     <button class="btn btn--sm editor__back" type="button" data-back>← Alle Projekte</button>
     <div class="editor__head">
@@ -310,7 +318,7 @@ function renderEditor() {
           <div class="img${p.full.includes(src) ? " is-full" : ""}">
             <img src="${esc(stillOf(src))}" alt="" />
             ${isLoop(src) ? `<span class="img__badge mono" style="left:auto;right:8px">▶ Loop</span>` : ""}
-            ${k === 0 ? `<span class="img__badge mono">Titelbild</span>` : ""}
+            ${k === 0 || usesOf(p, src).length ? `<span class="img__badge mono">${[k === 0 ? "Titelbild" : "", ...usesOf(p, src).map((u) => IMAGE_USES[u])].filter(Boolean).join(" · ")}</span>` : ""}
             <div class="img__tools">
               <span>
                 <button data-img="left" data-k="${k}" title="Nach vorne">←</button>
@@ -322,13 +330,19 @@ function renderEditor() {
               </span>
             </div>
           </div>
-          ${k ? `<div class="seg img__layout mono" role="group" aria-label="Breite in der Galerie">
+          ${k && !usesOf(p, src).length ? `<div class="seg img__layout mono" role="group" aria-label="Breite in der Galerie">
             <button type="button" data-layout="half" data-src="${esc(src)}" class="${p.wide.includes(src) ? "" : "is-active"}" title="Halbe Breite, zwei nebeneinander">Hoch</button>
             <button type="button" data-layout="wide" data-src="${esc(src)}" class="${p.wide.includes(src) ? "is-active" : ""}" title="Ganze Breite">Quer</button>
-          </div>` : `<span class="img__layout mono muted">Nur Vorschau</span>`}
+          </div>` : `<span class="img__layout mono muted">Nicht in der Galerie</span>`}
           <label class="check img__full mono"><input type="checkbox" data-full="${esc(src)}"${p.full.includes(src) ? " checked" : ""} /> Nicht beschneiden</label>
+          ${Object.entries(IMAGE_USES).map(([u, label]) => `
+          <label class="check img__full mono"><input type="checkbox" data-use="${u}" data-src="${esc(src)}"${p[u] === src ? " checked" : ""} /> ${label}</label>`).join("")}
           </div>`).join("")}</div>
-          <small class="muted" style="margin-top:6px">Das erste Bild ist das Titelbild: Es erscheint als Vorschau im Slider und in den Übersichten, auf der Projektseite aber nicht (ausser das Projekt hat sonst keine Bilder und keinen Film). Die übrigen bilden dort die Galerie.
+          <small class="muted" style="margin-top:6px">
+          <b>Titelbild</b> (★, das erste Bild): Vorschau im Slider, und überall dort, wo keine eigene Vorschau gesetzt ist.<br />
+          <b>Vorschau «Zeig mal»</b>: erscheint im Raster als Querformat (4:3). <b>Vorschau Disziplin</b>: Dieses Projekt steht auf der Disziplin-Seite im <b>${discFormat}</b>.<br />
+          <b>Keyvisual</b>: gross zuoberst auf der Projektseite, vor dem Text${p.videos.some(Boolean) ? " (wird nicht gezeigt, solange ein Film eingetragen ist: dann steht der Film zuoberst)" : ""}.<br />
+          Bilder mit einer dieser Rollen stehen nicht noch einmal in der Galerie. Alle anderen bilden die Galerie, in dieser Reihenfolge.<br />
           «Nicht beschneiden» für Plakate oder Bilder mit Text: Auf der Projektseite erscheint das Bild dann vollständig, ohne Zuschnitt und Zoom.</small>` : ""}
       </div>
 
@@ -552,7 +566,7 @@ function mediaUsage() {
   const add = (path, label) => (use[path] ??= []).push(label);
   state.PROJECTS.forEach((p) => {
     const name = p.title || "Ohne Titel";
-    p.images.forEach((src, k) => add(src, k ? name : `${name} (Titelbild)`));
+    p.images.forEach((src, k) => add(src, `${name}${[k ? "" : "Titelbild", ...usesOf(p, src).map((u) => IMAGE_USES[u])].filter(Boolean).map((l) => ` (${l})`).join("")}`));
     (p.filmThumbs || []).forEach((src) => src && add(src, `${name} (Film)`));
   });
   if (state.ABOUT.portrait) add(state.ABOUT.portrait, "Wer: Portrait");
@@ -680,6 +694,13 @@ editor.addEventListener("input", (e) => {
 editor.addEventListener("change", (e) => {
   const f = e.target.dataset.f;
   const p = state.PROJECTS[current];
+  const use = e.target.dataset.use;
+  if (use) {   // eine Rolle gibt es pro Projekt nur einmal
+    p[use] = e.target.checked ? e.target.dataset.src : "";
+    markDirty();
+    renderEditor();
+    return;
+  }
   const fullSrc = e.target.dataset.full;
   if (fullSrc) {
     p.full = e.target.checked ? [...new Set([...p.full, fullSrc])] : p.full.filter((s) => s !== fullSrc);
@@ -727,6 +748,7 @@ editor.addEventListener("click", async (e) => {
       const gone = A.splice(k, 1)[0];
       p.full = p.full.filter((s) => s !== gone);
       p.wide = p.wide.filter((s) => s !== gone);
+      usesOf(p, gone).forEach((u) => (p[u] = ""));
     }
     markDirty();
     renderEditor();

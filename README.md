@@ -64,7 +64,8 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 ### Website
 
 - **Seiten:** Startseite mit Intro, endlosem Slider und den Bereichen Was, Wer und Kontakt. Dazu «Zeig mal» (alle Arbeiten, filterbar), je eine Disziplin-Seite (`disziplin.html?d=…`) und Projektseiten (`projekt.html?p=…`). Für vier Disziplinen gibt es eine einzige Vorlage.
-- **Titelbild nur als Vorschau:** Das erste Bild (oder der erste Loop) eines Projekts erscheint im Slider und in den Übersichten. Auf der Projektseite stehen nur die Filme und die übrigen Bilder. Hat ein Projekt sonst nichts, springt das Titelbild dort ein.
+- **Bilder mit Rollen:** Das Titelbild (erstes Bild oder Loop) ist die Vorschau im Slider. Für «Zeig mal» (Querformat) und die Disziplin-Seite (abwechselnd Hoch- und Querformat) kann ich im CMS eigene Vorschaubilder setzen, sonst gilt das Titelbild.
+- **Projektseite:** zuoberst die Filme, bei Projekten ohne Film das **Keyvisual**. Dann der Text, dann die Galerie. Bilder mit einer Rolle stehen nicht noch einmal in der Galerie. Hat ein Projekt sonst nichts, springt das Titelbild ein.
 - **Look:** Pro Besuch würfelt die Seite eine Farbe (Orange, Pink oder Blau), Favicon inklusive. Fotos sind in Übersichten schwarz-weiss und werden beim Hover farbig.
 - **Desktop vs. Handy:** Am Desktop gibt es Smooth-Scroll mit Lenis, Hover-Effekte und einen eigenen Cursor. Am Handy scrollt die Seite nativ, Bilder sind gleich farbig, und es gibt ein Burger-Menü.
 - **Videos:** Pro Projekt gehen beliebig viele Filme von YouTube oder Vimeo (bis 20). Der Player ist direkt eingebettet, ohne eigenes Overlay davor, und lädt erst, wenn er ins Bild scrollt (`youtube-nocookie.com`, Vimeo mit `dnt=1`). Das Vorschaubild für die Übersichten holt der Server einmalig und legt es selbst ab. Eigene kurze Loops (MP4/WebM) laufen stumm, solange sie im Bild sind (`playInView`). In Übersichten erscheint nur ihr Standbild, damit die Startseite kein Video lädt.
@@ -72,7 +73,7 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 
 ### CMS
 
-Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ich Projekte (Texte, Kunde, mehrere Film-Links, Bilder und Loops per Drag & Drop, pro Bild «Nicht beschneiden» und Quer/Hoch in der Galerie), Disziplinen, den Wer-Bereich, Social-Links und die Kunden-Galerien. In der Beschreibung lege ich mit `[Wort](https://…)` einen Link hinter ein Wort. Der Tab **Medien** zeigt alle hochgeladenen Fotos, Loops und Film-Vorschauen auf einen Blick, mit dem Projekt, in dem sie stecken. Was nirgends mehr verwendet wird, ist markiert. **Speichern** (oder ⌘S) stellt alles sofort live. Der Server prüft dabei jedes Feld (`cleanData()`) und hebt die letzten 30 Stände als Backup auf. Grosse Dateien lädt das CMS in Stücken hoch, die Stückgrösse richtet sich nach dem Upload-Limit, das der Server meldet.
+Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ich Projekte (Texte, Kunde, mehrere Film-Links, Bilder und Loops per Drag & Drop, pro Bild «Nicht beschneiden», Quer/Hoch in der Galerie und die Rollen Keyvisual, Vorschau «Zeig mal» und Vorschau Disziplin), Disziplinen, den Wer-Bereich, Social-Links und die Kunden-Galerien. In der Beschreibung lege ich mit `[Wort](https://…)` einen Link hinter ein Wort. Der Tab **Medien** zeigt alle hochgeladenen Fotos, Loops und Film-Vorschauen auf einen Blick, mit dem Projekt, in dem sie stecken. Was nirgends mehr verwendet wird, ist markiert. **Speichern** (oder ⌘S) stellt alles sofort live. Der Server prüft dabei jedes Feld (`cleanData()`) und hebt die letzten 30 Stände als Backup auf. Grosse Dateien lädt das CMS in Stücken hoch, die Stückgrösse richtet sich nach dem Upload-Limit, das der Server meldet.
 
 ### Galerien
 
@@ -126,6 +127,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 13. **Weniger Text:** Auf den Disziplin-Seiten sind Einleitung, Stichworte und «So gehe ich vor» ausgeblendet, nicht gelöscht (eine CSS-Regel). Dazu Loops, die auch dort laufen, und ein neues Feld «Kunde».
 14. **Aufräumen, zweite Runde:** Doppelter Code in Website, CMS und PHP ist zusammengelegt (z. B. `loopVideo`, `galleryOrDeny()`). Jede Regel steht nur noch an einer Stelle. Getestet habe ich das, indem ich alte und neue Version nebeneinander laufen liess und die fertigen Seiten verglichen habe.
 15. **Mehr Film, weniger Doppeltes:** mehrere Filme pro Projekt, Textlinks in der Beschreibung und der Tab «Medien» im CMS. Das Titelbild ist jetzt nur noch Vorschau und wiederholt sich auf der Projektseite nicht mehr. Filme stehen direkt als Player da, statt hinter einem Abspiel-Overlay.
+16. **Bilder mit Rollen:** Für «Zeig mal» und die Disziplin-Seite braucht es mal Quer-, mal Hochformate. Darum kann ich pro Projekt eigene Vorschaubilder und ein Keyvisual für die Projektseite wählen. Das CMS sagt mir dabei, welches Format die Disziplin-Seite an dieser Stelle braucht.
 
 ---
 

@@ -117,6 +117,7 @@ function cleanData(array $d): array
             if (!is_string($img) || !preg_match(MEDIA_PATH, $img)) fail('Ungültiger Bild- oder Videopfad');
         }
         $ofImages = fn ($list) => array_values(array_intersect($images, array_filter((array) $list, 'is_string')));
+        $oneOfImages = fn ($v) => is_string($v) && in_array($v, $images, true) ? $v : '';
         $year = $p['year'] ?? '';
         if ($year !== '' && (!is_int($year) || $year < 1900 || $year > 2100)) fail('Ungültiges Jahr');
         return [
@@ -135,6 +136,10 @@ function cleanData(array $d): array
             'full' => $ofImages($p['full'] ?? []),
             // Galeriebilder in ganzer Breite (Querformat); alle anderen halbe Breite
             'wide' => $ofImages($p['wide'] ?? []),
+            // Eigene Bilder für Vorschau in «Zeig mal», Vorschau auf der Disziplin-Seite und Keyvisual der Projektseite
+            'previewWorks' => $oneOfImages($p['previewWorks'] ?? ''),
+            'previewDiscipline' => $oneOfImages($p['previewDiscipline'] ?? ''),
+            'keyvisual' => $oneOfImages($p['keyvisual'] ?? ''),
         ];
     }, array_values($d['PROJECTS']));
 
