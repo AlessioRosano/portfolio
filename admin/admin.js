@@ -33,11 +33,11 @@ async function api(action, body) {
 const blankProject = () => ({
   title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
   link: "", videos: [], art: 0, images: [], full: [], wide: [],
-  previewWorks: "", previewDiscipline: "", keyvisual: "",
+  previewWorks: "", previewDiscipline: "", previewHome: "", keyvisual: "",
 });
 
 // Bildrollen pro Projekt (je ein Bild): eigene Vorschauen und Keyvisual. Ohne Wahl gilt das Titelbild.
-const IMAGE_USES = { keyvisual: "Keyvisual", previewWorks: "Vorschau «Zeig mal»", previewDiscipline: "Vorschau Disziplin" };
+const IMAGE_USES = { keyvisual: "Keyvisual", previewWorks: "Vorschau «Zeig mal»", previewDiscipline: "Vorschau Disziplin", previewHome: "Vorschau Startseite" };
 const usesOf = (p, src) => Object.keys(IMAGE_USES).filter((u) => p[u] === src);
 
 function normalize(d) {
@@ -341,13 +341,14 @@ function renderEditor() {
           <small class="muted" style="margin-top:6px">
           <b>Titelbild</b> (★, das erste Bild): Vorschau im Slider, und überall dort, wo keine eigene Vorschau gesetzt ist.<br />
           <b>Vorschau «Zeig mal»</b>: erscheint im Raster als Querformat (4:3). <b>Vorschau Disziplin</b>: Dieses Projekt steht auf der Disziplin-Seite im <b>${discFormat}</b>.<br />
+          <b>Vorschau Startseite</b>: kleines Hochformat (4:5) beim Hover über die Disziplin bei «Was». Dort erscheinen die ersten zwei Projekte der Disziplin (Reihenfolge wie in der Liste links)${pos < 2 ? ", dieses gehört dazu" : ", dieses gehört gerade nicht dazu"}.<br />
           <b>Keyvisual</b>: gross zuoberst auf der Projektseite, vor dem Text${p.videos.some(Boolean) ? " (wird nicht gezeigt, solange ein Film eingetragen ist: dann steht der Film zuoberst)" : ""}.<br />
           Bilder mit einer dieser Rollen stehen nicht noch einmal in der Galerie. Alle anderen bilden die Galerie, in dieser Reihenfolge.<br />
           «Nicht beschneiden» für Plakate oder Bilder mit Text: Auf der Projektseite erscheint das Bild dann vollständig, ohne Zuschnitt und Zoom.</small>` : ""}
       </div>
 
       ${p.images.length ? `
-      <p class="field muted" style="margin:0">Bilder erscheinen in der Übersicht schwarz-weiss und auf der Projektseite in Originalfarben.</p>` : `
+      <p class="field muted" style="margin:0">Bilder erscheinen überall in Originalfarben. Nur im Slider der Startseite sind sie schwarz-weiss, bis man mit der Maus darüberfährt (am Handy gleich farbig).</p>` : `
       <div class="field">
         <span class="mono">Platzhalter, solange keine Bilder da sind</span>
         <div class="placeholder">

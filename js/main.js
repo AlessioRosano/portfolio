@@ -40,7 +40,7 @@ function img(src, alt, sizes, { eager = false } = {}) {
 // Titelbild = erstes Bild (Vorschau im Slider); ohne Bilder wird eine Platzhalter-Grafik generiert.
 // Für «Zeig mal» und die Disziplin-Seite kann im CMS ein eigenes Vorschaubild gesetzt sein (Rolle).
 // Video-Loops spielen nur auf der Projektseite (play), in Übersichten erscheint ihr Standbild.
-const ROLES = ["previewWorks", "previewDiscipline", "keyvisual"];
+const ROLES = ["previewWorks", "previewDiscipline", "previewHome", "keyvisual"];
 const imageFor = (p, role) => (role && p[role] && p.images?.includes(p[role]) ? p[role] : p.images?.[0]);
 
 function mediaItem(src, alt, sizes, { play = false, eager = false } = {}) {
@@ -94,7 +94,7 @@ async function loadContent() {
 const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
 const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 
-// Fotos: in der Übersicht schwarz-weiss, auf der Projektseite farbig (siehe CSS)
+// Fotos: farbig, nur im Slider schwarz-weiss bis zum Hover (siehe CSS)
 const mediaClass = (p) => (p.images?.length || p.filmThumb ? " is-photo" : "");
 
 // Ist das Vorschaubild ein Loop, merkt sich die Karte das Video; geladen wird es erst bei Bedarf (loopVideo)
@@ -461,7 +461,7 @@ function buildDisciplines() {
             <span></span>
             <p>${esc(d.lead)}</p>
             <div class="tags mono">${d.tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
-            <div class="svc__thumbs">${ps.slice(0, 2).map((p) => `<div class="media${mediaClass(p)}">${media(p, 400, 500, "120px")}</div>`).join("")}</div>
+            <div class="svc__thumbs">${ps.slice(0, 2).map((p) => `<div class="media${mediaClass(p)}">${media(p, 400, 500, "120px", { role: "previewHome" })}</div>`).join("")}</div>
           </div>
         </div></div>
       </a>`;

@@ -136,9 +136,11 @@ function cleanData(array $d): array
             'full' => $ofImages($p['full'] ?? []),
             // Galeriebilder in ganzer Breite (Querformat); alle anderen halbe Breite
             'wide' => $ofImages($p['wide'] ?? []),
-            // Eigene Bilder für Vorschau in «Zeig mal», Vorschau auf der Disziplin-Seite und Keyvisual der Projektseite
+            // Eigene Bilder für die Vorschau in «Zeig mal», auf der Disziplin-Seite und auf der Startseite (Hover bei «Was»)
+            // sowie das Keyvisual der Projektseite
             'previewWorks' => $oneOfImages($p['previewWorks'] ?? ''),
             'previewDiscipline' => $oneOfImages($p['previewDiscipline'] ?? ''),
+            'previewHome' => $oneOfImages($p['previewHome'] ?? ''),
             'keyvisual' => $oneOfImages($p['keyvisual'] ?? ''),
         ];
     }, array_values($d['PROJECTS']));
