@@ -71,7 +71,7 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 - **Projektseite:** zuoberst die Filme, bei Projekten ohne Film das **Keyvisual**. Dann der Text, dann die Galerie. Bilder mit einer Rolle stehen nicht noch einmal in der Galerie. Hat ein Projekt sonst nichts, springt das Titelbild ein.
 - **Look:** Pro Besuch würfelt die Seite eine Farbe (Orange, Pink oder Blau), Favicon inklusive. Fotos sind farbig. Nur im Slider der Startseite und auf «Zeig mal» sind sie schwarz-weiss und werden beim Hover farbig, am Handy sind sie dort gleich farbig.
 - **Desktop vs. Handy:** Am Desktop gibt es Smooth-Scroll mit Lenis, Hover-Effekte und einen eigenen Cursor. Am Handy scrollt die Seite nativ, Bilder sind gleich farbig, und es gibt ein Burger-Menü.
-- **Videos:** Pro Projekt gehen beliebig viele Filme von YouTube oder Vimeo (bis 20). Der Player ist direkt eingebettet, ohne eigenes Overlay davor, und lädt erst, wenn er ins Bild scrollt (`youtube-nocookie.com`, Vimeo mit `dnt=1`). Das Vorschaubild für die Übersichten holt der Server einmalig und legt es selbst ab. Eigene kurze Loops (MP4/WebM) laufen stumm, solange sie im Bild sind (`playInView`). In Übersichten erscheint nur ihr Standbild, damit die Startseite kein Video lädt.
+- **Videos:** Pro Projekt gehen beliebig viele Filme von YouTube oder Vimeo (bis 20). Der Player ist direkt eingebettet, ohne eigenes Overlay davor, und lädt erst, wenn er ins Bild scrollt (`youtube-nocookie.com`, Vimeo mit `dnt=1`). Das Vorschaubild für die Übersichten holt der Server einmalig und legt es selbst ab. Eigene kurze Loops (MP4/WebM) laufen stumm: am Desktop im Slider und auf «Zeig mal» beim Hover, auf den Disziplin-Seiten solange sie im Bild sind (`playInView`). Am Handy laufen sie überall immer (`playAlways`). In Übersichten erscheint nur ihr Standbild, damit die Startseite kein Video lädt.
 - **Rücksicht:** Wer «Bewegung reduzieren» eingestellt hat, bekommt keine automatisch laufenden Loops.
 
 ### CMS
@@ -168,6 +168,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Textlinks ohne HTML.** In der Beschreibung darf kein HTML stehen, sonst könnte jemand Script einschleusen. Darum escapt die Website zuerst den ganzen Text und wandelt danach nur das Muster `[Wort](https://…)` in einen Link um. `javascript:`-Links und HTML bleiben so harmloser Text.
 
 **Entwürfe, die nicht durchsickern.** Ausblenden per JavaScript wäre nur Fassade gewesen: Die Daten hätte trotzdem jeder abrufen können, sogar direkt als `content/data.json`. Darum filtert der Server, und die Rohdatei ist gesperrt. Damit die Projektadressen nicht springen, wenn ich etwas aus- oder einblende, berechnet der Server sie über alle Projekte.
+
+**Loops, die beim Antippen stoppten.** Am Handy liefen die Videos im Slider nur, solange ich ihn nicht berührte. Der Grund: Antippen und Wischen lösen dieselben Ereignisse aus wie das Verlassen mit der Maus, und die Hover-Logik hielt das Video an. Jetzt hört sie nur noch auf die Maus.
 
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 

@@ -264,8 +264,8 @@ function initSlider() {
 
   if (lenis) lenis.on("scroll", (l) => { boost = Math.min(Math.abs(l.velocity) * 0.6, 24); });
 
-  // Am Handy gibt es kein Hover: Loops laufen, solange sie im Bild sind
-  if (TOUCH) playInView($$(".card[data-loop]", track));
+  // Am Handy gibt es kein Hover: Loops laufen dort immer
+  if (TOUCH) playAlways($$(".card[data-loop]", track));
 
   // Pfeile < >: um genau eine Karte weiter, weich ausgleitend; das automatische Laufen geht weiter
   $$("[data-slide]").forEach((btn) => btn.addEventListener("click", () => {
@@ -320,10 +320,19 @@ function initMenu() {
 function loopVideo(c) {
   let video = $("video", c);
   if (!video) {
-    video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, preload: "auto" });
+    video = Object.assign(document.createElement("video"), { src: c.dataset.loop, muted: true, defaultMuted: true, loop: true, playsInline: true, autoplay: true, preload: "auto" });
     $(".media", c).appendChild(video);
   }
   return video;
+}
+
+// Am Handy laufen Loops immer, egal ob sie gerade im Bild sind (es gibt kein Hover, das sie startet)
+function playAlways(items) {
+  if (reduced) return;
+  items.forEach((c) => {
+    c.classList.add("is-playing");
+    loopVideo(c).play().catch(() => {});
+  });
 }
 
 // Laufen, solange die Karte im Bild ist, und pausieren ausserhalb
@@ -338,15 +347,18 @@ function playInView(items) {
   items.forEach((c) => io.observe(c));
 }
 
-// Beim Hover laden und abspielen, beim Verlassen anhalten
+// Beim Hover laden und abspielen, beim Verlassen anhalten. Nur mit der Maus: Antippen und Wischen
+// lösen am Handy dieselben Ereignisse aus und hätten die immer laufenden Loops angehalten.
 function initLoopHover() {
   document.addEventListener("pointerover", (e) => {
+    if (e.pointerType !== "mouse") return;
     const c = e.target.closest?.(".card[data-loop]");
     if (!c || c.contains(e.relatedTarget)) return;
     c.classList.add("is-playing");
     loopVideo(c).play().catch(() => {});
   });
   document.addEventListener("pointerout", (e) => {
+    if (e.pointerType !== "mouse") return;
     const c = e.target.closest?.(".card[data-loop]");
     if (!c || c.contains(e.relatedTarget)) return;
     c.classList.remove("is-playing");
@@ -364,6 +376,7 @@ function buildWorks() {
   $("[data-w-span]").textContent = countText(PROJECTS.length) + yearSpan(PROJECTS);
   $("[data-w-empty]").hidden = PROJECTS.length > 0;
   grid.innerHTML = PROJECTS.map((p) => projectCard(p, { W: 400, H: 300, sizes: "(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 33vw", link: true, role: "previewWorks" })).join("");
+  if (TOUCH) playAlways($$(".card[data-loop]", grid));   // am Handy laufen Loops immer, am Desktop beim Hover
 
   const cats = [["", "Alle", PROJECTS.length], ...DISCIPLINES.map((d) => [d.cat, CATS[d.cat], PROJECTS.filter((p) => p.cat === d.cat).length])];
   filter.innerHTML = cats.map(([cat, name, n]) =>
@@ -525,8 +538,8 @@ function buildWork(list) {
         </div>
       </a>`;
   }).join("");
-  // Disziplin-Seite: Loops laufen automatisch, solange sie im Bild sind (auch am Desktop)
-  playInView($$(".work__item[data-loop]", grid));
+  // Disziplin-Seite: Loops laufen automatisch, am Desktop solange sie im Bild sind, am Handy immer
+  (TOUCH ? playAlways : playInView)($$(".work__item[data-loop]", grid));
 }
 
 /* ── Projektseite (vollflächig) ──────────────────────────────── */
