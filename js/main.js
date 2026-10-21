@@ -80,7 +80,7 @@ function filmEmbed(url) {
 }
 
 // Inhalte aus dem CMS — werden beim Start geladen (siehe Boot)
-let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, IMAGES, PROJECT_IDS;
+let CONTACT_EMAIL, NAME, CATS, DISCIPLINES, PROJECTS, SOCIAL, ABOUT, IMAGES, ALL_PROJECTS;
 
 async function loadContent() {
   const res = await fetch("api/data.php", { cache: "no-store" });
@@ -89,9 +89,14 @@ async function loadContent() {
   SOCIAL ??= [];
   IMAGES ??= {};
   ABOUT ??= {};
-  PROJECT_IDS = projectIds(PROJECTS);
+  // Adressen kommen vom Server (api/data.php); Entwürfe sind nur dabei, wenn man im CMS angemeldet ist,
+  // und erscheinen dann nur auf ihrer eigenen Projektseite, nie in Slider und Übersichten
+  const ids = projectIds(PROJECTS);
+  PROJECTS.forEach((p, i) => (p.id ??= ids[i]));
+  ALL_PROJECTS = PROJECTS;
+  PROJECTS = PROJECTS.filter((p) => !p.hidden);
 }
-const projectUrl = (p) => `projekt.html?p=${PROJECT_IDS[PROJECTS.indexOf(p)]}`;
+const projectUrl = (p) => `projekt.html?p=${p.id}`;
 const disciplineUrl = (cat) => `disziplin.html?d=${encodeURIComponent(cat)}`;
 
 // Fotos: farbig, nur im Slider und auf «Zeig mal» schwarz-weiss bis zum Hover (siehe CSS)
@@ -528,9 +533,9 @@ function buildWork(list) {
 function buildProject() {
   if (PAGE !== "project") return;
   const id = new URLSearchParams(location.search).get("p");
-  const i = PROJECT_IDS.indexOf(id);
-  if (i < 0) { location.replace("index.html#was"); return; }
-  const p = PROJECTS[i];
+  const p = ALL_PROJECTS.find((x) => x.id === id);
+  if (!p) { location.replace("index.html#was"); return; }
+  const i = Math.max(0, PROJECTS.indexOf(p));
   const siblings = PROJECTS.filter((x) => x.cat === p.cat);
   const k = siblings.indexOf(p);
 
@@ -550,7 +555,7 @@ function buildProject() {
   const back = $("[data-p-back]");
   back.href = disciplineUrl(p.cat);
   back.textContent = `← ${CATS[p.cat]}`;
-  $("[data-p-count]").textContent = `Projekt ${pad(k + 1)} / ${pad(siblings.length)}`;
+  $("[data-p-count]").textContent = p.hidden ? "Entwurf · nur für dich sichtbar" : `Projekt ${pad(k + 1)} / ${pad(siblings.length)}`;
   $("[data-p-crumb-loader]").textContent = `${CATS[p.cat]} — ${p.year}`;
   $("[data-p-role]").textContent = p.role;
   $("[data-p-meta]").textContent = `${CATS[p.cat]}, ${p.year}`;
@@ -595,6 +600,8 @@ function buildProject() {
   // Nächstes Projekt: innerhalb der Disziplin, sonst das nächste insgesamt
   const next = siblings.length > 1 ? siblings[(k + 1) % siblings.length] : PROJECTS[(i + 1) % PROJECTS.length];
   const nextEl = $("[data-p-next]");
+  nextEl.hidden = !next;   // nur möglich, wenn alle anderen Projekte ausgeblendet sind
+  if (!next) return;
   nextEl.href = projectUrl(next);
   $("[data-p-next-label]").textContent = `Nächstes Projekt — ${CATS[next.cat]}`;
   $("[data-p-next-title]").textContent = next.title;

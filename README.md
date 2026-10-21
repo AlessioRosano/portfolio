@@ -76,7 +76,7 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 
 ### CMS
 
-Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ich Projekte (Texte, Kunde, mehrere Film-Links, Bilder und Loops per Drag & Drop, pro Bild «Nicht beschneiden», Quer/Hoch in der Galerie und die Rollen Keyvisual, Vorschau «Zeig mal» und Vorschau Disziplin), Disziplinen, den Wer-Bereich, Social-Links und die Kunden-Galerien. In der Beschreibung lege ich mit `[Wort](https://…)` einen Link hinter ein Wort. Der Tab **Medien** zeigt alle hochgeladenen Fotos, Loops und Film-Vorschauen auf einen Blick, mit dem Projekt, in dem sie stecken. Was nirgends mehr verwendet wird, ist markiert. **Speichern** (oder ⌘S) stellt alles sofort live. Der Server prüft dabei jedes Feld (`cleanData()`) und hebt die letzten 30 Stände als Backup auf. Grosse Dateien lädt das CMS in Stücken hoch, die Stückgrösse richtet sich nach dem Upload-Limit, das der Server meldet.
+Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ich Projekte (Texte, Kunde, mehrere Film-Links, Bilder und Loops per Drag & Drop, pro Bild «Nicht beschneiden», Quer/Hoch in der Galerie und die Rollen Keyvisual, Vorschau «Zeig mal» und Vorschau Disziplin), Disziplinen, den Wer-Bereich, Social-Links und die Kunden-Galerien. In der Beschreibung lege ich mit `[Wort](https://…)` einen Link hinter ein Wort. Projekte kann ich **ausblenden** statt löschen: Neue Projekte starten als Entwurf und erscheinen erst, wenn ich sie einblende. Angemeldet sehe ich Entwürfe trotzdem über «Projekt ansehen», mit dem Hinweis «Entwurf». Der Tab **Medien** zeigt alle hochgeladenen Fotos, Loops und Film-Vorschauen auf einen Blick, mit dem Projekt, in dem sie stecken. Was nirgends mehr verwendet wird, ist markiert. **Speichern** (oder ⌘S) stellt alles sofort live. Der Server prüft dabei jedes Feld (`cleanData()`) und hebt die letzten 30 Stände als Backup auf. Grosse Dateien lädt das CMS in Stücken hoch, die Stückgrösse richtet sich nach dem Upload-Limit, das der Server meldet.
 
 ### Galerien
 
@@ -101,7 +101,7 @@ Die Sicherheit beruht nicht darauf, dass der Code geheim ist. Darum ist das Repo
 
 - **Zugang:** keine Zugangsdaten in Git, auf dem Server nur ein Hash des CMS-Passworts. Nach 5 Fehlversuchen ist 15 Minuten Pause. Sichere Session-Cookies und ein CSRF-Token bei jeder Änderung.
 - **Uploads:** Geprüft wird der echte Dateiinhalt, nicht die Endung. SVG und HTML sind nie erlaubt. Ausgeliefert wird mit fester Dateiart, `nosniff` und einer Sandbox-CSP.
-- **Inhalte:** nur `https://`-Links und eigene Bildpfade, alle Texte werden escaped.
+- **Inhalte:** nur `https://`-Links und eigene Bildpfade, alle Texte werden escaped. Ausgeblendete Projekte filtert der Server heraus, bevor etwas öffentlich wird (Website, Sitemap, `llms.txt`), und die Rohdatei `content/data.json` ist von aussen gesperrt.
 - **Server:** strenge Content-Security-Policy (nur eigene Scripts, als fremde Frames nur YouTube und Vimeo), HTTPS mit HSTS, interne Dateien gesperrt, keine PHP-Fehler im Browser.
 - **Geprüft durch nachgestellte Angriffe:** SVG als Foto, HTML als Video, `javascript:`-Links, direkter Zugriff auf Galerie-Dateien, Brute Force. Alle werden abgewehrt.
 
@@ -137,6 +137,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 15. **Mehr Film, weniger Doppeltes:** mehrere Filme pro Projekt, Textlinks in der Beschreibung und der Tab «Medien» im CMS. Das Titelbild ist jetzt nur noch Vorschau und wiederholt sich auf der Projektseite nicht mehr. Filme stehen direkt als Player da, statt hinter einem Abspiel-Overlay.
 16. **Bilder mit Rollen:** Für «Zeig mal» und die Disziplin-Seite braucht es mal Quer-, mal Hochformate. Darum kann ich pro Projekt eigene Vorschaubilder (für «Zeig mal», die Disziplin-Seite und die Startseite) und ein Keyvisual für die Projektseite wählen. Schwarz-weiss sind Fotos nur noch im Slider und auf «Zeig mal». Und im Über-mich-Text steht kein Wort mehr allein auf der letzten Zeile: Die letzten zwei Wörter jedes Absatzes hängen mit einem geschützten Leerzeichen zusammen. Das CMS sagt mir dabei, welches Format die Disziplin-Seite an dieser Stelle braucht.
 17. **SEO und GEO:** Die Seiten kommen jetzt mit fertigem Inhalt vom Server (`render.php`), dazu mehr strukturierte Daten, eine Sitemap mit Bildern und `/llms.txt` für KI-Systeme.
+18. **Entwürfe:** Projekte lassen sich im CMS ausblenden, ohne sie zu löschen. So kann ich in Ruhe an einem Beitrag arbeiten, bevor er online geht.
 
 ---
 
@@ -165,6 +166,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Aus einem Film werden viele.** Online liegen Projekte mit einem einzelnen Feld `video`. Statt die Live-Daten umzubauen, liest die Website beide Formen, und das CMS macht beim nächsten Speichern daraus eine Liste. So geht beim Deploy nichts verloren, und es braucht keine eigene Daten-Umstellung.
 
 **Textlinks ohne HTML.** In der Beschreibung darf kein HTML stehen, sonst könnte jemand Script einschleusen. Darum escapt die Website zuerst den ganzen Text und wandelt danach nur das Muster `[Wort](https://…)` in einen Link um. `javascript:`-Links und HTML bleiben so harmloser Text.
+
+**Entwürfe, die nicht durchsickern.** Ausblenden per JavaScript wäre nur Fassade gewesen: Die Daten hätte trotzdem jeder abrufen können, sogar direkt als `content/data.json`. Darum filtert der Server, und die Rohdatei ist gesperrt. Damit die Projektadressen nicht springen, wenn ich etwas aus- oder einblende, berechnet der Server sie über alle Projekte.
 
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 

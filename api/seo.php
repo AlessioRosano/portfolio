@@ -49,14 +49,13 @@ function stillOf(string $src): string
     return preg_match('/\.(mp4|webm)$/i', $src) ? (string) preg_replace('/\.\w+$/', '.jpg', $src) : $src;
 }
 
-// Alle Inhalte plus die Adresse (Slug) jedes Projekts
+// Alle öffentlichen Inhalte plus die Adresse (Slug) jedes Projekts
 function siteData(): array
 {
     $data = readJson(CONTENT . '/data.json');
     if (!is_array($data) || !isset($data['PROJECTS'], $data['CATS'])) throw new RuntimeException('Inhalte fehlen');
     $data['NAME'] ??= 'Alessio Rosano';
-    $ids = projectSlugs($data['PROJECTS']);
-    foreach ($data['PROJECTS'] as $i => &$p) $p['id'] = $ids[$i];
+    $data['PROJECTS'] = publicProjects($data['PROJECTS']);   // ohne ausgeblendete Projekte
     return $data;
 }
 

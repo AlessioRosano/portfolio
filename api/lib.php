@@ -299,6 +299,16 @@ function projectSlugs(array $projects): array
     }, $projects);
 }
 
+// Projekte für die Website: jedes mit seiner Adresse (id, berechnet über alle Projekte, damit sie stabil bleibt),
+// ausgeblendete (Entwürfe) nur, wenn ausdrücklich gewünscht (Vorschau für die angemeldete Person im CMS)
+function publicProjects(array $projects, bool $withDrafts = false): array
+{
+    $ids = projectSlugs($projects);
+    foreach ($projects as $i => &$p) $p['id'] = $ids[$i];
+    unset($p);
+    return array_values(array_filter($projects, fn ($p) => $withDrafts || empty($p['hidden'])));
+}
+
 /* ── Filme (YouTube/Vimeo): Vorschaubild auf den eigenen Server holen ── */
 // Besucher sehen das echte Thumbnail sofort, laden dafür aber nichts von YouTube oder Vimeo.
 

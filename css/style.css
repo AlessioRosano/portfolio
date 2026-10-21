@@ -523,6 +523,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 @media (max-width: 760px) { .process__grid { grid-template-columns: 1fr; gap: 40px; } }
 
 /* ── Unterseite: Nächste Disziplin ───────────────────────────── */
+.next[hidden] { display: none; }
 .next {
   position: relative;
   display: block;

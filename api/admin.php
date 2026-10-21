@@ -124,6 +124,7 @@ function cleanData(array $d): array
             'title' => $text($p['title'] ?? '', 120),
             'cat' => $p['cat'],
             'year' => $year,
+            'hidden' => !empty($p['hidden']),   // ausgeblendet (Entwurf): nirgends öffentlich
             'client' => $text($p['client'] ?? '', 120),
             'role' => $text($p['role'] ?? '', 200),
             'tools' => $text($p['tools'] ?? '', 300),

@@ -31,7 +31,7 @@ async function api(action, body) {
 
 // Leeres Projekt: Standardwerte für neue Projekte und für Felder, die ältere Projekte noch nicht haben
 const blankProject = () => ({
-  title: "", cat: "branding", year: new Date().getFullYear(), client: "", role: "", tools: "", desc: "",
+  title: "", cat: "branding", year: new Date().getFullYear(), hidden: false, client: "", role: "", tools: "", desc: "",
   link: "", videos: [], art: 0, images: [], full: [], wide: [],
   previewWorks: "", previewDiscipline: "", previewHome: "", keyvisual: "",
 });
@@ -237,10 +237,10 @@ function renderList() {
   renderFilter();
   const list = visible();
   $("[data-items]").innerHTML = list.length ? list.map(({ p, i }) => `
-    <li class="item${i === current ? " is-active" : ""}" data-i="${i}">
+    <li class="item${i === current ? " is-active" : ""}${p.hidden ? " is-hidden" : ""}" data-i="${i}">
       <div class="item__thumb">${thumb(p)}</div>
       <div>
-        <div class="item__title">${esc(p.title || "Ohne Titel")}</div>
+        <div class="item__title">${esc(p.title || "Ohne Titel")}${p.hidden ? ` <span class="item__draft mono">Entwurf</span>` : ""}</div>
         <div class="mono muted">${esc(state.CATS[p.cat])} · ${esc(p.year)} · ${p.images.length} Bild${p.images.length === 1 ? "" : "er"}</div>
       </div>
       <div class="item__move">
@@ -270,7 +270,9 @@ function renderEditor() {
         <h1 data-title-view>${esc(p.title || "Ohne Titel")}</h1>
       </div>
       <div class="actions">
-        <a class="btn btn--sm" href="projekt.html?p=${projectIds(state.PROJECTS)[current]}" target="_blank" rel="noopener" title="Erst speichern, dann ansehen">Projekt ansehen ↗</a>
+        <label class="check visibility mono" title="Ausgeblendete Projekte erscheinen nirgends auf der Website, auch nicht in Sitemap und Suche">
+          <input type="checkbox" data-f="hidden"${p.hidden ? " checked" : ""} /> Ausgeblendet (Entwurf)</label>
+        <a class="btn btn--sm" href="projekt.html?p=${projectIds(state.PROJECTS)[current]}" target="_blank" rel="noopener" title="${p.hidden ? "Erst speichern, dann ansehen. Als Entwurf nur für dich sichtbar, solange du angemeldet bist." : "Erst speichern, dann ansehen"}">Projekt ansehen ↗</a>
         <button class="btn btn--sm btn--danger" data-delete>Löschen</button>
       </div>
     </div>
@@ -665,7 +667,8 @@ $("[data-items]").addEventListener("click", (e) => {
 });
 
 $("[data-new]").addEventListener("click", () => {
-  state.PROJECTS.unshift({ ...blankProject(), title: "Neues Projekt", cat: filter || "branding" });
+  // Neue Projekte starten ausgeblendet: erst sichtbar, wenn ich sie einblende
+  state.PROJECTS.unshift({ ...blankProject(), title: "Neues Projekt", cat: filter || "branding", hidden: true });
   current = 0;
   markDirty();
   showEditor("#view-projects", true);
@@ -707,6 +710,12 @@ editor.addEventListener("change", (e) => {
     p.full = e.target.checked ? [...new Set([...p.full, fullSrc])] : p.full.filter((s) => s !== fullSrc);
     markDirty();
     renderEditor();
+    return;
+  }
+  if (f === "hidden") {
+    p.hidden = e.target.checked;
+    markDirty();
+    renderList();
     return;
   }
   if (f !== "cat") return;

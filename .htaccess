@@ -28,6 +28,8 @@
 
 # Interne Ordner: Startinhalte, gesperrter Speicher, Git- und Editor-Ordner
 RedirectMatch 404 /(setup|storage|\.git|\.github|\.vscode)(/|$)
+# Rohdaten mit ausgeblendeten Projekten (Entwürfen): Die Website liest nur gefiltert über api/data.php
+RedirectMatch 404 ^/content/data\.json$
 
 # Favicon mit korrektem Dateityp (für Google und Browser)
 <IfModule mod_mime.c>
