@@ -131,12 +131,26 @@ function buildNames() {
     const inner = document.createElement("span");
     inner.className = "name-inner";
     el.textContent = "";   // Text vom Server (render.php) weicht den animierten Buchstaben
-    inner.innerHTML = text.split(" ").map((w) =>
-      `<span class="word">${[...w].map((ch) => `<span class="m"><span class="c">${esc(ch)}</span></span>`).join("")}</span>`
-    ).join(" ");   // Leerzeichen zwischen den Wörtern: Google und Screenreader lesen «Alessio Rosano»
+    // Kurze Wörter (1–2 Buchstaben, z. B. «im») hängen am nächsten Wort: am Handy, wo jedes Wort
+    // eine eigene Zeile bekommt, steht so kein «IM» allein da
+    const words = text.split(/\s+/).filter(Boolean);
+    const groups = [];
+    for (let i = 0; i < words.length; i++) {
+      const g = [words[i]];
+      while (g[g.length - 1].length <= 2 && i + 1 < words.length) g.push(words[++i]);
+      groups.push(g);
+    }
+    const letters = (w) => [...w].map((ch) => `<span class="m"><span class="c">${esc(ch)}</span></span>`).join("");
+    inner.innerHTML = groups.map((g) => `<span class="word">${g.map(letters).join('<span class="sp"> </span>')}</span>`)
+      .join(" ");   // Leerzeichen zwischen den Wörtern: Google und Screenreader lesen «Alessio Rosano»
+    // Umlaut oder Akzent ab der zweiten Zeile: am Handy etwas mehr Zeilenabstand, damit die Punkte nicht anstossen
+    el.classList.toggle("has-accent", groups.slice(1).some((g) => /[\u0300-\u036f]/.test(g.join("").normalize("NFD"))));
     el.appendChild(inner);
   });
 }
+
+// Startlage der Buchstaben vor dem Einfliegen: tief genug, dass auch Umlaut-Punkte ganz in der Maske verschwinden
+const NAME_HIDDEN = 135;
 
 function fitNames() {
   $$("[data-name]").forEach((el) => {
@@ -726,7 +740,7 @@ function initScroll() {
 
   // Footer-Name steigt Buchstabe für Buchstabe
   const fc = $$(".footer__name .c");
-  gsap.set(fc, { yPercent: 110 });
+  gsap.set(fc, { yPercent: NAME_HIDDEN });
   revealOnEnter($(".footer__name"), fc, { yPercent: 0, duration: 1, ease: "expo.out", stagger: 0.03 });
 
   // Hero-Name leichter Parallax beim Rausscrollen (nicht am Handy: ruckelt dort mit der Adressleiste)
@@ -881,7 +895,7 @@ function intro() {
     const items = ".hero .card, .hero__tags > *, .pfilm, .pcover";
     if (hashTarget) { unlock(); jumpTo(hashTarget); }
     else {
-      gsap.set(hChars, { yPercent: 110 });
+      gsap.set(hChars, { yPercent: NAME_HIDDEN });
       gsap.set(".hero .reveal-up", { yPercent: 120 });
       gsap.set(items, { opacity: 0, y: 40 });
     }
@@ -898,7 +912,7 @@ function intro() {
 
   const count = { v: 0 };
   const tl = gsap.timeline({ delay: 0.1 });
-  gsap.set(lChars, { yPercent: 110 });
+  gsap.set(lChars, { yPercent: NAME_HIDDEN });
   tl.to(lChars, { yPercent: 0, duration: fast ? 0.8 : 1.1, ease: "expo.out", stagger: fast ? 0.025 : 0.035 }, 0)
     .to(".loader__log li", { opacity: 1, duration: 0.01, stagger: D / 6 }, 0.1)
     .to(count, { v: 100, duration: D, ease: "power2.inOut", onUpdate: () => (countEl.textContent = pad(Math.round(count.v), 3)) }, 0.1)

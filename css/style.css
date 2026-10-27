@@ -82,13 +82,17 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   letter-spacing: -0.045em;
   line-height: 0.8;
 }
-.name-line .m { display: inline-block; overflow: hidden; padding: 0.06em 0 0.02em; }
+/* Maske pro Buchstabe für die Animation: oben genug Platz für Umlaut-Punkte und Akzente (Ä, Ö, Ü, É reichen bis 0,95em),
+   der negative Rand gleicht das aus, damit Zeilenhöhe und Abstände gleich bleiben */
+.name-line .m { display: inline-block; overflow: hidden; padding: 0.22em 0 0.04em; margin: -0.16em 0 -0.02em; }
 .name-line .c { display: inline-block; will-change: transform; }
 .name-inner { display: inline-flex; gap: 0.26em; align-items: center; }
 .name-line .word { display: inline-flex; }
 .name-line .word > .m:last-child { letter-spacing: 0; }
+.name-line .sp { display: inline-block; width: 0.26em; }   /* Wortabstand innerhalb einer Gruppe, wie gap von .name-inner */
 @media (max-width: 640px) {
   .name-inner { flex-direction: column; gap: 0; }
+  .name-line.has-accent .name-inner { gap: 0.12em; }
 }
 
 /* ── Loader ──────────────────────────────────────────────────── */
@@ -544,8 +548,8 @@ body.menu-open .nav__logo text { fill: var(--bx); }
   display: flex; justify-content: space-between; align-items: center; gap: 0.15em;
   font-size: clamp(34px, 11vw, 220px); font-weight: 800; letter-spacing: -0.05em; line-height: 0.85;
 }
-/* Lange Namen (z. B. Projekttitel) brechen um, statt über den Rand zu ragen */
-.next__title > span { min-width: 0; overflow-wrap: anywhere; }
+/* Lange Namen (z. B. Projekttitel) brechen um, statt über den Rand zu ragen: an Silbengrenzen (Sprache de-CH), nur im Notfall mitten im Wort */
+.next__title > span { min-width: 0; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
 .next__title i { flex: none; font-style: normal; font-weight: 400; transform: rotate(-45deg); transition: transform 0.7s var(--ease); }
 .next:hover .next__title i { transform: rotate(0deg); }
 @media (hover: none) { .next, .svc { cursor: pointer; } }

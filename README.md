@@ -171,6 +171,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 
 **Loops, die beim Antippen stoppten.** Am Handy liefen die Videos im Slider nur, solange ich ihn nicht berührte. Der Grund: Antippen und Wischen lösen dieselben Ereignisse aus wie das Verlassen mit der Maus, und die Hover-Logik hielt das Video an. Jetzt hört sie nur noch auf die Maus.
 
+**Umlaute mit abgeschnittenen Punkten.** Die grossen Titel fliegen Buchstabe für Buchstabe ein, jeder in einer eigenen Maske. Die war oben zu knapp: Ein «Ä» reicht bis 0,95 Schriftgrössen über die Grundlinie, die Maske nur bis 0,82. Die Punkte schwebten abgehackt über dem Buchstaben. Jetzt hat die Maske oben mehr Platz, ein negativer Rand gleicht das aus, und die Buchstaben starten tiefer, damit vor dem Einfliegen nichts herausblitzt. Am Handy hängen Kurzwörter wie «im» am nächsten Wort, und Zeilen mit Umlaut bekommen etwas mehr Abstand.
+
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 
 **Gesperrt nach vielen Abfragen.** Nach einer Reihe von Deploys mit automatischen Prüfungen war die Seite zweimal einige Minuten nicht erreichbar. Wahrscheinlich hat Infomaniak meinen Anschluss wegen der vielen Abfragen kurz gesperrt. Seither prüfe ich nach einem Deploy einmal, nach etwa einer Minute.

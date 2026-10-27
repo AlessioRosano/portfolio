@@ -93,7 +93,6 @@ function renderPage(string $page, string $html): string
 
     foreach ($fill as $marker => $content) $html = str_replace($marker, $content, $html);
     if ($meta) $html = setMeta($html, $meta);
-    $html = str_replace('<html lang="de">', '<html lang="de-CH">', $html);
     return str_replace('</head>', '  ' . jsonLd($graph) . "\n</head>", $html);
 }
 
