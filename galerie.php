@@ -64,9 +64,11 @@ header('Referrer-Policy: same-origin');
   <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <script src="js/theme.js"></script>
+  <link rel="preconnect" href="https://use.typekit.net" crossorigin />
+  <link rel="stylesheet" href="https://use.typekit.net/fip2xll.css" />   <!-- Neue Haas Grotesk Display (Adobe Fonts) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bx: #ff6600;
@@ -85,7 +87,7 @@ header('Referrer-Policy: same-origin');
     body {
       margin: 0; min-height: 100svh; display: flex; flex-direction: column;
       background: var(--white); color: var(--bx);
-      font: 600 clamp(15px, 1.05vw, 18px)/1.45 "Inter Tight", system-ui, sans-serif;
+      font: 500 clamp(15px, 1.05vw, 18px)/1.45 "neue-haas-grotesk-display", "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
     a { color: inherit; text-decoration: none; }
@@ -99,8 +101,8 @@ header('Referrer-Policy: same-origin');
     .logo text { fill: var(--white); font: 700 14px Arial, Helvetica, sans-serif; }
     main { flex: 1; padding: 0 var(--pad) var(--pad); }
     h1 {
-      margin: clamp(32px, 6vw, 96px) 0 18px; font-size: clamp(44px, 8vw, 150px); font-weight: 800;
-      letter-spacing: -0.05em; line-height: 0.88; text-transform: uppercase;
+      margin: clamp(32px, 6vw, 96px) 0 18px; font-size: clamp(44px, 8vw, 150px); font-weight: 700;
+      letter-spacing: -0.035em; word-spacing: 0.05em; line-height: 0.88; text-transform: uppercase;
     }
     .btn {
       display: inline-flex; align-items: center; gap: 12px; padding: 14px 24px; border-radius: 999px;

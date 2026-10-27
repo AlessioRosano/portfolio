@@ -19,7 +19,20 @@
   --ease: cubic-bezier(0.7, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --sans: "Inter Tight", system-ui, sans-serif;
+  /* Neue Haas Grotesk Display (Adobe Fonts), Ersatz: Helvetica/Arial mit ähnlichen Proportionen */
+  --sans: "neue-haas-grotesk-display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Gewichte: Text, Hervorhebung, Überschriften, grosse Namen. Neue Haas Grotesk Display hat 200–700 und 900 (kein 800). */
+  --w-text: 500;
+  --w-strong: 600;
+  --w-head: 700;
+  --w-display: 700;
+  /* Laufweite in Stufen nach Grösse. Neue Haas Grotesk hat engere Wortabstände als Inter Tight
+     und verträgt weniger Negativ-Laufweite: sonst kleben grosse Wörter aneinander. */
+  --track-display: -0.035em;   /* grosse Namen in Versalien */
+  --track-head: -0.025em;      /* Überschriften */
+  --track-sub: -0.012em;       /* grosse Lesetexte (Über mich, Projekttext) */
+  --track-text: 0.006em;       /* Fliesstext: Display-Schnitt klein mit etwas mehr Luft */
+  --word-head: 0.05em;         /* etwas mehr Wortabstand in grossen Überschriften */
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
 }
@@ -44,7 +57,8 @@ body {
   background: var(--white);
   color: var(--bx);
   font-family: var(--sans);
-  font-weight: 600;
+  font-weight: var(--w-text);
+  letter-spacing: var(--track-text);
   font-size: clamp(15px, 1.05vw, 18px);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
@@ -77,19 +91,19 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: flex;
   justify-content: center;
   white-space: nowrap;
-  font-weight: 800;
+  font-weight: var(--w-display);
   text-transform: uppercase;
-  letter-spacing: -0.045em;
+  letter-spacing: var(--track-display);
   line-height: 0.8;
 }
 /* Maske pro Buchstabe für die Animation: oben genug Platz für Umlaut-Punkte und Akzente (Ä, Ö, Ü, É reichen bis 0,95em),
    der negative Rand gleicht das aus, damit Zeilenhöhe und Abstände gleich bleiben */
 .name-line .m { display: inline-block; overflow: hidden; padding: 0.22em 0 0.04em; margin: -0.16em 0 -0.02em; }
 .name-line .c { display: inline-block; will-change: transform; }
-.name-inner { display: inline-flex; gap: 0.26em; align-items: center; }
+.name-inner { display: inline-flex; gap: 0.24em; align-items: center; }
 .name-line .word { display: inline-flex; }
 .name-line .word > .m:last-child { letter-spacing: 0; }
-.name-line .sp { display: inline-block; width: 0.26em; }   /* Wortabstand innerhalb einer Gruppe, wie gap von .name-inner */
+.name-line .sp { display: inline-block; width: 0.24em; }   /* Wortabstand innerhalb einer Gruppe, wie gap von .name-inner */
 @media (max-width: 640px) {
   .name-inner { flex-direction: column; gap: 0; }
   .name-line.has-accent .name-inner { gap: 0.12em; }
@@ -123,10 +137,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .loader__log li { opacity: 0; }
 .loader__log b { font-weight: 500; }
 .loader__count {
-  font-weight: 800;
+  font-weight: var(--w-display);
   font-size: clamp(56px, 9vw, 150px);
   line-height: 0.8;
-  letter-spacing: -0.05em;
+  letter-spacing: var(--track-display);
   font-variant-numeric: tabular-nums;
 }
 .loader__count small { font-size: 0.3em; letter-spacing: 0; margin-left: 0.1em; vertical-align: top; }
@@ -208,7 +222,7 @@ body.menu-open { overflow: hidden; }
 .menu__links { display: grid; gap: 4px; }
 .menu__links a {
   display: flex; align-items: baseline; gap: 12px;
-  font-size: clamp(44px, 13vw, 88px); font-weight: 800; letter-spacing: -0.045em; line-height: 1;
+  font-size: clamp(44px, 13vw, 88px); font-weight: var(--w-display); letter-spacing: var(--track-head); word-spacing: var(--word-head); line-height: 1;
   opacity: 0; transform: translateY(24px); transition: opacity 0.5s, transform 0.7s var(--ease-out);
 }
 .menu__links a .mono { font-size: 0.8rem; opacity: 0.6; }
@@ -275,7 +289,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .card__title {
   position: absolute; inset: 0; display: grid; place-items: center; padding: 24px;
   color: var(--white); text-align: center; pointer-events: none;
-  font-size: clamp(28px, 3.6vw, 68px); font-weight: 800; letter-spacing: -0.045em; line-height: 0.92; text-transform: uppercase;
+  font-size: clamp(28px, 3.6vw, 68px); font-weight: var(--w-display); letter-spacing: var(--track-head); word-spacing: var(--word-head); line-height: 0.92; text-transform: uppercase;
   opacity: 0; transform: translateY(14px);
   transition: opacity 0.5s var(--ease-out), transform 0.8s var(--ease-out);
 }
@@ -329,9 +343,9 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .title {
   margin: 0;
   font-size: clamp(40px, 6.6vw, 124px);
-  font-weight: 700;
+  font-weight: var(--w-head);
   line-height: 0.92;
-  letter-spacing: -0.045em;
+  letter-spacing: var(--track-head); word-spacing: var(--word-head);
   max-width: 14ch;
 }
 .title em { font-size: 1.08em; letter-spacing: -0.02em; }
@@ -363,7 +377,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
   align-items: baseline;
   padding: 14px 4px 0;
 }
-.work__meta h3 { margin: 0; font-size: clamp(20px, 1.9vw, 34px); letter-spacing: -0.03em; line-height: 1.05; font-weight: 700; }
+.work__meta h3 { margin: 0; font-size: clamp(20px, 1.9vw, 34px); letter-spacing: var(--track-sub); line-height: 1.05; font-weight: var(--w-head); }
 .work__meta h3 em { font-size: 0.62em; display: block; margin-top: 4px; letter-spacing: 0; opacity: 0.7; }
 @media (max-width: 760px) {
   .work__grid { grid-template-columns: 1fr; }
@@ -377,8 +391,8 @@ body.menu-open .nav__logo text { fill: var(--bx); }
   margin: 0 0 clamp(56px, 7vw, 120px);
   font-size: clamp(24px, 2.7vw, 50px);
   line-height: 1.1;
-  letter-spacing: -0.03em;
-  font-weight: 600;
+  letter-spacing: var(--track-sub);
+  font-weight: var(--w-strong);
   max-width: 30ch;
 }
 .about__statement .w { opacity: 0.14; transition: opacity 0.2s linear; }
@@ -436,8 +450,8 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .svc__head h3 {
   margin: 0;
   font-size: clamp(32px, 5.4vw, 104px);
-  font-weight: 700;
-  letter-spacing: -0.045em;
+  font-weight: var(--w-head);
+  letter-spacing: var(--track-head); word-spacing: var(--word-head);
   line-height: 0.95;
   transition: transform 0.6s var(--ease-out);
 }
@@ -520,7 +534,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .process { border-top: 1.5px solid var(--bx-15); }
 .process__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 32px); }
 .step { border-top: 1.5px solid var(--bx); padding-top: 18px; }
-.step h3 { margin: 28px 0 12px; font-size: clamp(28px, 3vw, 52px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.step h3 { margin: 28px 0 12px; font-size: clamp(28px, 3vw, 52px); font-weight: var(--w-head); letter-spacing: var(--track-head); word-spacing: var(--word-head); line-height: 1; }
 .step p { margin: 0; max-width: 32ch; font-weight: 500; }
 .process__specs { margin-top: clamp(56px, 6vw, 110px); max-width: 900px; }
 .process__specs a:hover { opacity: 0.6; }
@@ -546,7 +560,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .next__label { display: block; margin-bottom: 12px; }
 .next__title {
   display: flex; justify-content: space-between; align-items: center; gap: 0.15em;
-  font-size: clamp(34px, 11vw, 220px); font-weight: 800; letter-spacing: -0.05em; line-height: 0.85;
+  font-size: clamp(34px, 11vw, 220px); font-weight: var(--w-display); letter-spacing: var(--track-head); word-spacing: var(--word-head); line-height: 0.85;
 }
 /* Lange Namen (z. B. Projekttitel) brechen um, statt über den Rand zu ragen: an Silbengrenzen (Sprache de-CH), nur im Notfall mitten im Wort */
 .next__title > span { min-width: 0; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
@@ -561,9 +575,9 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .contact__title {
   margin: 0 0 clamp(40px, 5vw, 80px);
   font-size: clamp(48px, 9.5vw, 180px);
-  font-weight: 800;
+  font-weight: var(--w-display);
   line-height: 0.88;
-  letter-spacing: -0.05em;
+  letter-spacing: var(--track-head); word-spacing: var(--word-head);
 }
 .contact__title em { font-weight: 400; letter-spacing: -0.02em; }
 
@@ -597,7 +611,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
   border-radius: 999px;
   background: var(--white);
   color: var(--bx);
-  font-weight: 700;
+  font-weight: var(--w-head);
   font-size: clamp(16px, 1.2vw, 20px);
   overflow: hidden;
 }
@@ -670,7 +684,7 @@ body.menu-open .nav__logo text { fill: var(--bx); }
 .pcover.is-full .media > img, .pcover.is-full .media > video { width: auto; max-width: 100%; height: auto; max-height: 88vh; object-fit: contain; }
 
 .pinfo__grid { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(32px, 5vw, 96px); align-items: start; }
-.pinfo__desc { margin: 0; font-size: clamp(22px, 2.2vw, 40px); line-height: 1.18; letter-spacing: -0.025em; font-weight: 600; max-width: 30ch; white-space: pre-line; }
+.pinfo__desc { margin: 0; font-size: clamp(22px, 2.2vw, 40px); line-height: 1.18; letter-spacing: var(--track-sub); font-weight: var(--w-strong); max-width: 30ch; white-space: pre-line; }
 /* Textlinks aus der Beschreibung ([Wort](https://…) im CMS) */
 .pinfo__desc a { text-decoration: underline; text-decoration-thickness: 0.06em; text-underline-offset: 0.12em; transition: opacity 0.3s; }
 .pinfo__desc a:hover { opacity: 0.6; }

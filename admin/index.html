@@ -8,9 +8,11 @@
   <base href="../" />
   <title>CMS — Alessio Rosano</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6600'/%3E%3Ctext x='16' y='21.5' text-anchor='middle' font-family='Arial' font-weight='700' font-size='14' fill='%23fff'%3EAR%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://use.typekit.net" crossorigin />
+  <link rel="stylesheet" href="https://use.typekit.net/fip2xll.css" />   <!-- Neue Haas Grotesk Display (Adobe Fonts) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bx: #000000;
@@ -20,7 +22,7 @@
       --bx-08: color-mix(in srgb, var(--bx) 8%, white);
       --bx-04: color-mix(in srgb, var(--bx) 4%, white);
       --white: #fff;
-      --sans: "Inter Tight", system-ui, sans-serif;
+      --sans: "neue-haas-grotesk-display", "Helvetica Neue", Helvetica, Arial, sans-serif;
       --mono: "JetBrains Mono", ui-monospace, monospace;
       --radius: 10px;
     }
@@ -39,7 +41,7 @@
     html, body { height: 100%; }
     body {
       margin: 0; background: var(--white); color: var(--bx);
-      font-family: var(--sans); font-weight: 500; font-size: 15px; line-height: 1.4;
+      font-family: var(--sans); font-weight: 500; font-size: 15px; line-height: 1.4; letter-spacing: 0.006em;
       -webkit-font-smoothing: antialiased;
       display: grid; grid-template-rows: auto 1fr;
     }
@@ -55,7 +57,7 @@
       padding: 12px 20px; border-bottom: 1.5px solid var(--bx);
       position: sticky; top: 0; background: var(--white); z-index: 5;
     }
-    .bar__logo { font-weight: 800; letter-spacing: -0.03em; font-size: 18px; }
+    .bar__logo { font-weight: 700; letter-spacing: -0.02em; font-size: 18px; }
     .tabs { display: flex; gap: 4px; margin-left: 12px; }
     .tabs button { padding: 8px 14px; border-radius: 999px; }
     .tabs button:hover { background: var(--bx-08); }
@@ -89,7 +91,7 @@
     .login { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--white); padding: 20px; }
     .login[hidden] { display: none; }
     .login form { width: min(380px, 100%); display: grid; gap: 14px; }
-    .login h1 { margin: 0 0 8px; font-size: 44px; letter-spacing: -0.045em; line-height: 0.95; font-weight: 800; }
+    .login h1 { margin: 0 0 8px; font-size: 44px; letter-spacing: -0.025em; word-spacing: 0.05em; line-height: 0.95; font-weight: 700; }
     .login input { padding: 12px 14px; }
     .login .btn { justify-content: center; }
     .login__error { min-height: 1.4em; margin: 0; }
@@ -115,7 +117,7 @@
     .visibility { font-size: 12px; white-space: nowrap; }
     .item__thumb { width: 44px; aspect-ratio: 4 / 5; border-radius: 5px; overflow: hidden; background: var(--bx-08); }
     .item__thumb img, .item__thumb svg { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .item__title { font-weight: 700; letter-spacing: -0.01em; }
+    .item__title { font-weight: 600; letter-spacing: 0; }
     .item__move { display: flex; flex-direction: column; opacity: 0; }
     .item:hover .item__move, .item.is-active .item__move { opacity: 1; }
     .item__move button { padding: 0 6px; font-size: 12px; line-height: 1.4; border-radius: 4px; }
@@ -125,7 +127,7 @@
     /* Editor */
     .editor { overflow-y: auto; padding: 28px clamp(20px, 3vw, 48px) 80px; }
     .editor__head { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 28px; }
-    .editor__head h1 { margin: 0; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.045em; line-height: 0.95; font-weight: 800; }
+    .editor__head h1 { margin: 0; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.025em; word-spacing: 0.05em; line-height: 0.95; font-weight: 700; }
     .editor__head .actions { margin-left: auto; display: flex; gap: 8px; }
     .form { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px 20px; max-width: 1100px; }
     .field { display: grid; gap: 6px; grid-column: span 6; }
@@ -176,10 +178,10 @@
 
     /* Disziplinen / Allgemein */
     .pane { overflow-y: auto; padding: 28px clamp(20px, 3vw, 48px) 80px; }
-    .pane h1 { margin: 0 0 6px; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.045em; line-height: 0.95; font-weight: 800; }
+    .pane h1 { margin: 0 0 6px; font-size: clamp(32px, 4vw, 56px); letter-spacing: -0.025em; word-spacing: 0.05em; line-height: 0.95; font-weight: 700; }
     .pane > p { margin: 0 0 28px; max-width: 60ch; }
     .card { border-top: 1.5px solid var(--bx); padding: 20px 0 36px; max-width: 1100px; }
-    .card h2 { margin: 0 0 16px; font-size: 28px; letter-spacing: -0.03em; }
+    .card h2 { margin: 0 0 16px; font-size: 28px; letter-spacing: -0.02em; }
 
     /* Medien */
     #view-media { grid-template-columns: minmax(0, 1fr); }   /* Raster darf die Ansicht nicht verbreitern */

@@ -112,7 +112,9 @@ const loopAttr = (p, role) => {
 const countText = (n) => `${pad(n)} ${n === 1 ? "Projekt" : "Projekte"}`;
 function yearSpan(list) {
   const years = list.map((p) => p.year).filter(Boolean);
-  return years.length ? `, ${Math.min(...years)}–${Math.max(...years)}` : "";
+  if (!years.length) return "";
+  const [from, to] = [Math.min(...years), Math.max(...years)];
+  return from === to ? `, ${from}` : `, ${from}–${to}`;   // gleiches Jahr: «2025» statt «2025–2025»
 }
 
 // Steckbrief-Zeilen [Bezeichnung, HTML] für <dl class="specs">

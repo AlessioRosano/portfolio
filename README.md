@@ -69,6 +69,7 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 - **Seiten:** Startseite mit Intro, endlosem Slider und den Bereichen Was, Wer und Kontakt. Dazu «Zeig mal» (alle Arbeiten, filterbar), je eine Disziplin-Seite (`disziplin.html?d=…`) und Projektseiten (`projekt.html?p=…`). Für vier Disziplinen gibt es eine einzige Vorlage.
 - **Bilder mit Rollen:** Das Titelbild (erstes Bild oder Loop) ist die Vorschau im Slider. Für «Zeig mal» (Querformat), die Disziplin-Seite (abwechselnd Hoch- und Querformat) und die kleinen Bilder beim Hover über eine Disziplin auf der Startseite (Hochformat) kann ich im CMS eigene Vorschaubilder setzen, sonst gilt das Titelbild.
 - **Projektseite:** zuoberst die Filme, bei Projekten ohne Film das **Keyvisual**. Dann der Text, dann die Galerie. Bilder mit einer Rolle stehen nicht noch einmal in der Galerie. Hat ein Projekt sonst nichts, springt das Titelbild ein.
+- **Typografie:** Neue Haas Grotesk Display (Adobe Fonts) als Grundschrift, für Text in Medium, für Überschriften und die grossen Namen in Bold. Dazu Instrument Serif kursiv für Akzente und JetBrains Mono für kleine Labels. Gewichte und Laufweite sind als Stufen in `style.css` festgelegt (`--w-*`, `--track-*`), von den grossen Namen (enger) bis zum Fliesstext (minimal weiter). Die Schrift kommt von Adobes Servern; dabei sieht Adobe die IP-Adresse der Besuchenden, setzt aber keine Cookies.
 - **Look:** Pro Besuch würfelt die Seite eine Farbe (Orange, Pink oder Blau), Favicon inklusive. Fotos sind farbig. Nur im Slider der Startseite und auf «Zeig mal» sind sie schwarz-weiss und werden beim Hover farbig, am Handy sind sie dort gleich farbig.
 - **Desktop vs. Handy:** Am Desktop gibt es Smooth-Scroll mit Lenis, Hover-Effekte und einen eigenen Cursor. Am Handy scrollt die Seite nativ, Bilder sind gleich farbig, und es gibt ein Burger-Menü.
 - **Videos:** Pro Projekt gehen beliebig viele Filme von YouTube oder Vimeo (bis 20). Der Player ist direkt eingebettet, ohne eigenes Overlay davor, und lädt erst, wenn er ins Bild scrollt (`youtube-nocookie.com`, Vimeo mit `dnt=1`). Das Vorschaubild für die Übersichten holt der Server einmalig und legt es selbst ab. Eigene kurze Loops (MP4/WebM) laufen stumm: am Desktop im Slider und auf «Zeig mal» beim Hover, auf den Disziplin-Seiten solange sie im Bild sind (`playInView`). Am Handy laufen sie überall immer (`playAlways`). In Übersichten erscheint nur ihr Standbild, damit die Startseite kein Video lädt.
@@ -138,6 +139,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 16. **Bilder mit Rollen:** Für «Zeig mal» und die Disziplin-Seite braucht es mal Quer-, mal Hochformate. Darum kann ich pro Projekt eigene Vorschaubilder (für «Zeig mal», die Disziplin-Seite und die Startseite) und ein Keyvisual für die Projektseite wählen. Schwarz-weiss sind Fotos nur noch im Slider und auf «Zeig mal». Und im Über-mich-Text steht kein Wort mehr allein auf der letzten Zeile: Die letzten zwei Wörter jedes Absatzes hängen mit einem geschützten Leerzeichen zusammen. Das CMS sagt mir dabei, welches Format die Disziplin-Seite an dieser Stelle braucht.
 17. **SEO und GEO:** Die Seiten kommen jetzt mit fertigem Inhalt vom Server (`render.php`), dazu mehr strukturierte Daten, eine Sitemap mit Bildern und `/llms.txt` für KI-Systeme.
 18. **Entwürfe:** Projekte lassen sich im CMS ausblenden, ohne sie zu löschen. So kann ich in Ruhe an einem Beitrag arbeiten, bevor er online geht.
+19. **Neue Typografie:** Neue Haas Grotesk Display statt Inter Tight, mit neu abgestimmten Gewichten, Laufweiten und Wortabständen. Dazu Umlaute, die in den grossen Titeln nicht mehr abgeschnitten werden.
 
 ---
 
@@ -172,6 +174,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Loops, die beim Antippen stoppten.** Am Handy liefen die Videos im Slider nur, solange ich ihn nicht berührte. Der Grund: Antippen und Wischen lösen dieselben Ereignisse aus wie das Verlassen mit der Maus, und die Hover-Logik hielt das Video an. Jetzt hört sie nur noch auf die Maus.
 
 **Umlaute mit abgeschnittenen Punkten.** Die grossen Titel fliegen Buchstabe für Buchstabe ein, jeder in einer eigenen Maske. Die war oben zu knapp: Ein «Ä» reicht bis 0,95 Schriftgrössen über die Grundlinie, die Maske nur bis 0,82. Die Punkte schwebten abgehackt über dem Buchstaben. Jetzt hat die Maske oben mehr Platz, ein negativer Rand gleicht das aus, und die Buchstaben starten tiefer, damit vor dem Einfliegen nichts herausblitzt. Am Handy hängen Kurzwörter wie «im» am nächsten Wort, und Zeilen mit Umlaut bekommen etwas mehr Abstand.
+
+**Eine Schrift, die nicht einfach auf den Server darf.** Neue Haas Grotesk war als Desktop-Schrift auf meinem Mac installiert. Die Datei erlaubt aber keine Einbettung, und in einem öffentlichen Repository hätte sie jeder herunterladen können. Die saubere Lösung ist Adobe Fonts: in meinem Creative-Cloud-Abo enthalten, mit Web-Lizenz. Dafür musste die CSP genau zwei Adobe-Adressen erlauben. Beim Umstellen zeigte sich: Inter Tight vertrug viel negative Laufweite, Neue Haas Grotesk nicht. Grosse Wörter klebten aneinander. Darum gibt es jetzt feste Stufen für Gewicht und Laufweite statt einzelner Werte.
 
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 
@@ -225,7 +229,7 @@ Website unter http://localhost:8000, CMS unter `/admin`. Das lokale CMS-Passwort
 - schema.org und Open Graph: https://schema.org/, https://ogp.me/
 - GitHub Actions und FTP-Deploy-Action: https://docs.github.com/actions, https://github.com/SamKirkland/FTP-Deploy-Action
 - Infomaniak Hilfe: https://www.infomaniak.com/de/support
-- Schriften: Inter Tight, Instrument Serif, JetBrains Mono (Google Fonts)
+- Schriften: Neue Haas Grotesk Display (Adobe Fonts), Instrument Serif und JetBrains Mono (Google Fonts)
 
 ---
 
