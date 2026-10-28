@@ -30,7 +30,7 @@ Mein Portfolio für **Video, Branding/Web, Kampagnen und Architektur**, entstand
 ```
 portfolio/
 ├── index.html, arbeiten.html, disziplin.html, projekt.html   Website (Inhalte per JS aus der API)
-├── galerie.php          Galerie-Seite für Kund:innen
+├── galerie.php          Galerie-Seite für Kund:innen (erreichbar als /galerie/<name>)
 ├── render.php           liefert die Seiten mit fertigem Inhalt für Crawler ohne JavaScript
 ├── sitemap.php          Sitemap mit Bildern aus den CMS-Inhalten (/sitemap.xml)
 ├── llms.php             Kurzfassung für KI-Systeme (/llms.txt)
@@ -81,7 +81,7 @@ Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ic
 
 ### Galerien
 
-Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die **Adresse** (`galerie.php?g=…`) entsteht aus dem Titel oder ich lege sie selbst fest. Auch später lässt sie sich ändern: Der Server verschiebt dann Ordner und Einstellungen, und das CMS warnt, dass der alte Link nicht mehr funktioniert. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
+Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die **Adresse** ist kurz, z. B. `alessiorosano.ch/galerie/hochzeit-mueller`. Sie entsteht aus dem Titel oder ich lege sie selbst fest. Ältere Links mit `galerie.php?g=…` leiten automatisch auf die kurze Form weiter. Auch später lässt sie sich ändern: Der Server verschiebt dann Ordner und Einstellungen, und das CMS warnt, dass der alte Link nicht mehr funktioniert. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
 
 ### Performance
 
@@ -179,6 +179,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Eine Schrift, die nicht einfach auf den Server darf.** Neue Haas Grotesk war als Desktop-Schrift auf meinem Mac installiert. Die Datei erlaubt aber keine Einbettung, und in einem öffentlichen Repository hätte sie jeder herunterladen können. Die saubere Lösung ist Adobe Fonts: in meinem Creative-Cloud-Abo enthalten, mit Web-Lizenz. Dafür musste die CSP genau zwei Adobe-Adressen erlauben. Beim Umstellen zeigte sich: Inter Tight vertrug viel negative Laufweite, Neue Haas Grotesk nicht. Grosse Wörter klebten aneinander. Darum gibt es jetzt feste Stufen für Gewicht und Laufweite statt einzelner Werte.
 
 **Eigene Adressen, die anderen nichts wegnehmen.** Wer selbst einen Slug wählt, kann versehentlich die Adresse eines anderen Projekts erwischen. Das andere Projekt würde dann still zu «…-2», und alle Links darauf wären kaputt. Darum warnt das CMS schon beim Tippen, und der Server lehnt das Speichern ab. Browser und Server berechnen die Adressen nach genau denselben Regeln, getestet mit Umlauten, Akzenten und doppelten Titeln.
+
+**Kurze Galerie-Adressen ohne `.php`.** `/galerie/hochzeit-mueller` gibt es als Ordner gar nicht, eine Regel in der `.htaccess` leitet intern auf `galerie.php` um. Dabei zeigten plötzlich alle relativen Pfade (Bilder, Scripts, Downloads) ins Leere, weil der Browser sie ab `/galerie/` suchte. Ein `<base href="/">` löst das. Alte Links leiten mit einer einzigen Weiterleitung direkt auf `https://` weiter, nur bei normalen Aufrufen, nie bei der Passworteingabe. Getestet habe ich die Regeln wieder mit einem echten Apache.
 
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 

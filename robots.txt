@@ -6,6 +6,7 @@ Allow: /api/data.php
 Disallow: /admin/
 Disallow: /api/
 Disallow: /galerie.php
+Disallow: /galerie/
 Disallow: /render.php
 
 Sitemap: https://alessiorosano.ch/sitemap.xml

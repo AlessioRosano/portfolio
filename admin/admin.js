@@ -926,7 +926,7 @@ const fmtBytes = (b) => {
   return `${b.toFixed(i > 1 ? 1 : 0)} ${units[i]}`;
 };
 const fmtDate = (d) => (d ? new Date(`${d}T00:00`).toLocaleDateString("de-CH") : "");
-const galleryUrl = (slug) => new URL(`galerie.php?g=${slug}`, document.baseURI).href;
+const galleryUrl = (slug) => new URL(`galerie/${slug}`, document.baseURI).href;   // kurze Adresse, siehe .htaccess
 const fileUrl = (slug, name, extra = "") => `api/file.php?g=${encodeURIComponent(slug)}&f=${encodeURIComponent(name)}${extra}`;
 
 function newPassword() {
@@ -998,7 +998,7 @@ function renderGalleryEditor() {
         <input type="date" data-gf="expires" value="${esc(g.expires)}" />
         <small>Danach ist die Galerie für Kund:innen gesperrt.</small></label>
       <label class="field"><span class="mono">Adresse (optional)</span>
-        <div class="slug"><span class="mono muted">alessiorosano.ch/galerie.php?g=</span>
+        <div class="slug"><span class="mono muted">alessiorosano.ch/galerie/</span>
           <input type="text" data-gf="newSlug" value="${esc(g.newSlug ?? g.slug ?? "")}" placeholder="${esc(slugify(g.title, 50))}" spellcheck="false" autocapitalize="off" /></div>
         <small>${g.slug
           ? "Nur Kleinbuchstaben, Zahlen und Bindestriche. Achtung: Wer die Adresse ändert, macht den bisherigen Link ungültig. Kund:innen brauchen dann den neuen Link (das Passwort bleibt)."

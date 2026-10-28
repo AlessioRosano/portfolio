@@ -1,6 +1,6 @@
 <?php
 /* ==========================================================================
-   Passwortgeschützte Galerie für Kund:innen: galerie.php?g=<name>
+   Passwortgeschützte Galerie für Kund:innen: /galerie/<name> (Rewrite in .htaccess auf galerie.php?g=<name>)
    Verwaltet im CMS unter «Galerien».
    ========================================================================== */
 
@@ -9,7 +9,8 @@ require __DIR__ . '/api/lib.php';
 ensureStorage();
 startSession();
 
-$slug = (string) ($_GET['g'] ?? '');
+// Name aus ?g= (Rewrite von /galerie/<name>); falls der Server die Adresse selbst auflöst, aus dem Pfad
+$slug = (string) ($_GET['g'] ?? trim((string) ($_SERVER['PATH_INFO'] ?? ''), '/'));
 $gallery = validSlug($slug) ? (galleries()[$slug] ?? null) : null;
 $error = '';
 
@@ -22,7 +23,7 @@ if ($gallery && $_SERVER['REQUEST_METHOD'] === 'POST') {
         clearAttempts("gallery:$slug");
         session_regenerate_id(true);
         $_SESSION['galleries'][$slug] = true;
-        header('Location: galerie.php?g=' . rawurlencode($slug), true, 303);
+        header('Location: /galerie/' . rawurlencode($slug), true, 303);
         exit;
     } else {
         failedAttempts("gallery:$slug", true);
@@ -54,9 +55,10 @@ $dateText = $gallery && $gallery['date'] ? date('d.m.Y', strtotime($gallery['dat
 header('X-Robots-Tag: noindex, nofollow');
 header('Referrer-Policy: same-origin');
 ?><!DOCTYPE html>
-<html lang="de">
+<html lang="de-CH">
 <head>
   <meta charset="utf-8" />
+  <base href="/" />   <!-- Seite läuft unter /galerie/<name>: alle relativen Pfade gelten ab dem Hauptverzeichnis -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title><?= $state === 'open' ? $h($gallery['title']) . ' — ' : '' ?>Galerie — Alessio Rosano</title>

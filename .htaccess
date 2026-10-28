@@ -12,6 +12,12 @@
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
+  # Kunden-Galerien mit kurzer Adresse: /galerie/hochzeit-mueller. Alte Links (galerie.php?g=…) leiten dorthin weiter.
+  RewriteCond %{REQUEST_METHOD} =GET
+  RewriteCond %{THE_REQUEST} \s/galerie\.php\?g=([a-z0-9-]+)[\s&]
+  RewriteRule ^galerie\.php$ https://%{HTTP_HOST}/galerie/%1? [R=301,L]
+  RewriteRule ^galerie/([a-z0-9-]+)/?$ galerie.php?g=$1 [QSA,L]
+
   # Sitemap für Suchmaschinen und Kurzfassung für KI-Systeme werden aus den CMS-Inhalten erzeugt
   RewriteRule ^sitemap\.xml$ sitemap.php [L]
   RewriteRule ^llms\.txt$ llms.php [L]

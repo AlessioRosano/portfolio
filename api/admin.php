@@ -270,7 +270,7 @@ switch ($action) {
         $title = trim((string) ($in['title'] ?? ''));
         if ($title === '') fail('Titel fehlt');
         $slug = (string) ($in['slug'] ?? '');
-        // Gewünschte Adresse (galerie.php?g=…): leer = aus dem Titel bzw. unverändert
+        // Gewünschte Adresse (/galerie/…): leer = aus dem Titel bzw. unverändert
         $wanted = trim((string) ($in['newSlug'] ?? ''));
         $wanted = $wanted !== '' ? slugify($wanted, 60) : '';
         if ($wanted !== '' && $wanted !== $slug && isset($all[$wanted])) fail("Die Adresse «{$wanted}» gehört schon zu einer anderen Galerie.");
