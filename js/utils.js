@@ -12,18 +12,19 @@ const isLoop = (src) => /\.(mp4|webm)$/i.test(src);
 const loopPoster = (src) => src.replace(/\.\w+$/, ".jpg");
 const stillOf = (src) => (isLoop(src) ? loopPoster(src) : src);   // Bild zum Anzeigen: bei Loops das Standbild
 
-function slugify(s) {
+// Text → Adressteil (wie urlSlug in api/lib.php)
+function slugify(s, max = 40) {
   return (s || "projekt").toLowerCase()
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "projekt";
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, max) || "projekt";
 }
 
-// Stabile Projekt-Adressen aus dem Titel; gleiche Titel bekommen -2, -3 …
+// Projekt-Adressen (wie projectSlugs in api/lib.php): eigener Slug aus dem CMS, sonst aus dem Titel; gleiche bekommen -2, -3 …
 function projectIds(projects) {
   const seen = {};
   return projects.map((p) => {
-    const base = slugify(p.title);
+    const base = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug || "") ? p.slug : slugify(p.title);
     let id = base, n = 2;
     while (seen[id]) id = `${base}-${n++}`;
     seen[id] = true;

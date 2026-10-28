@@ -31,6 +31,9 @@ const LOOP_TYPES = ['mp4' => 'video/mp4', 'webm' => 'video/webm'];   // kurze Vi
 const MAX_LOOP_BYTES = 60 * 1024 * 1024;
 // Pfad eines Bildes oder Loops im Portfolio (alles andere lehnt der Server ab)
 const MEDIA_PATH = '#^content/(img/[a-z0-9-]+\.(jpg|png|webp|gif)|video/[a-z0-9-]+\.(mp4|webm))$#';
+// PDF-Dokumente zu Projekten (z. B. Plakate, Broschüren, Präsentationen)
+const DOC_PATH = '#^content/docs/[a-z0-9-]+\.pdf$#';
+const MAX_DOC_BYTES = 40 * 1024 * 1024;
 const MAX_GALLERY_BYTES = 8 * 1024 * 1024 * 1024;
 const SESSION_IDLE = 8 * 3600;
 
@@ -54,12 +57,12 @@ function config(): array
 /* ── Ordner beim ersten Aufruf anlegen ──────────────────────── */
 function ensureStorage(): void
 {
-    foreach ([CONTENT . '/img', CONTENT . '/video', GALLERIES, STORAGE . '/tmp', STORAGE . '/backups'] as $dir) {
+    foreach ([CONTENT . '/img', CONTENT . '/video', CONTENT . '/docs', GALLERIES, STORAGE . '/tmp', STORAGE . '/backups'] as $dir) {
         if (!is_dir($dir)) mkdir($dir, 0755, true);
     }
     if (!is_file(STORAGE . '/.htaccess')) file_put_contents(STORAGE . '/.htaccess', "Require all denied\n");
     // Keine Ordner-Listen, auch falls der Server sie erlauben würde
-    foreach ([CONTENT, CONTENT . '/img', CONTENT . '/video', STORAGE] as $dir) if (!is_file("$dir/index.html")) touch("$dir/index.html");
+    foreach ([CONTENT, CONTENT . '/img', CONTENT . '/video', CONTENT . '/docs', STORAGE] as $dir) if (!is_file("$dir/index.html")) touch("$dir/index.html");
     // Hochgeladene Dateien dürfen nie als Script laufen
     if (!is_file(CONTENT . '/.htaccess')) {
         file_put_contents(CONTENT . '/.htaccess', "<FilesMatch \"\\.(php\\d?|phtml|phar|pl|py|cgi|sh|htaccess)$\">\n  Require all denied\n</FilesMatch>\n");
@@ -284,14 +287,22 @@ function uniqueName(string $dir, string $base, string $ext): string
 }
 
 // Projekt-Adressen wie in js/utils.js (projectIds) — muss exakt gleich rechnen, sonst stimmen die Links nicht
+// Text → Adressteil (wie slugify in js/utils.js): Umlaute ausschreiben, Akzente weg, alles andere zu «-»
+function urlSlug(string $text, int $max = 40): string
+{
+    $s = strtr(mb_strtolower($text ?: 'projekt'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']);
+    $s = class_exists('Normalizer') ? (string) preg_replace('/[\x{0300}-\x{036f}]/u', '', Normalizer::normalize($s, Normalizer::FORM_D))
+        : strtr($s, ['à' => 'a', 'á' => 'a', 'â' => 'a', 'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ç' => 'c', 'ñ' => 'n']);
+    return substr(trim((string) preg_replace('/[^a-z0-9]+/', '-', $s), '-'), 0, $max) ?: 'projekt';
+}
+
+// Adresse jedes Projekts: der im CMS gesetzte Slug, sonst aus dem Titel; gleiche bekommen -2, -3 …
 function projectSlugs(array $projects): array
 {
     $seen = [];
     return array_map(function ($p) use (&$seen) {
-        $s = strtr(mb_strtolower((string) ($p['title'] ?? '') ?: 'projekt'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']);
-        $s = class_exists('Normalizer') ? (string) preg_replace('/[\x{0300}-\x{036f}]/u', '', Normalizer::normalize($s, Normalizer::FORM_D))
-            : strtr($s, ['à' => 'a', 'á' => 'a', 'â' => 'a', 'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ç' => 'c', 'ñ' => 'n']);
-        $base = substr(trim((string) preg_replace('/[^a-z0-9]+/', '-', $s), '-'), 0, 40) ?: 'projekt';
+        $custom = (string) ($p['slug'] ?? '');
+        $base = preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $custom) ? $custom : urlSlug((string) ($p['title'] ?? ''));
         $id = $base;
         for ($n = 2; isset($seen[$id]); $n++) $id = "$base-$n";
         $seen[$id] = true;

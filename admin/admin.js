@@ -33,7 +33,7 @@ async function api(action, body) {
 const blankProject = () => ({
   title: "", cat: "branding", year: new Date().getFullYear(), hidden: false, client: "", role: "", tools: "", desc: "",
   link: "", videos: [], art: 0, images: [], full: [], wide: [],
-  previewWorks: "", previewDiscipline: "", previewHome: "", keyvisual: "",
+  previewWorks: "", previewDiscipline: "", previewHome: "", keyvisual: "", slug: "", docs: [],
 });
 
 // Bildrollen pro Projekt (je ein Bild): eigene Vorschauen und Keyvisual. Ohne Wahl gilt das Titelbild.
@@ -161,8 +161,44 @@ async function isLandscape(blob) {
   } catch { return false; }
 }
 
+const MAX_PDF_MB = 40;
+const isPdfFile = (f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+
+// PDFs zum Projekt hochladen (in Stücken, wie Loops); die Bezeichnung ist zuerst der Dateiname
+async function addDocs(files) {
+  const pdfs = [...files].filter(isPdfFile);
+  const skipped = [...files].filter((f) => !pdfs.includes(f));
+  if (skipped.length) toast(`Nur PDF-Dateien: ${skipped.map((f) => f.name).join(", ")}`);
+  if (!pdfs.length) return;
+  const p = state.PROJECTS[current];
+  const drop = $("[data-pdf-drop]");
+  drop?.classList.add("is-busy");
+  let added = 0;
+  for (const [n, f] of pdfs.entries()) {
+    const label = `PDF ${n + 1} von ${pdfs.length} wird hochgeladen`;
+    try {
+      if (f.size > MAX_PDF_MB * 1024 * 1024) throw new Error(`zu gross (max. ${MAX_PDF_MB} MB). Für das Web verkleinert exportieren.`);
+      const res = await uploadChunks("pdf-chunk", f, { name: f.name }, (x) => { if (drop) drop.querySelector("strong").textContent = `${label} … ${Math.round(x * 100)} %`; });
+      p.docs.push({ src: res.path, title: f.name.replace(/\.pdf$/i, "") });
+      added++;
+    } catch (e) {
+      toast(`«${f.name}»: ${e.message}`);
+    }
+  }
+  if (added) {
+    markDirty();
+    toast(`${added} PDF${added === 1 ? "" : "s"} hochgeladen — Speichern nicht vergessen`);
+  }
+  renderEditor();
+}
+
 async function addImages(files) {
   const all = [...files];
+  // PDFs, die ins Bilderfeld gezogen werden, landen bei den PDFs
+  const pdfs = all.filter(isPdfFile);
+  if (pdfs.length) await addDocs(pdfs);
+  all.splice(0, all.length, ...all.filter((f) => !isPdfFile(f)));
+  if (!all.length) return;
   const imgs = all.filter((f) => f.type.startsWith("image/") || isLoopFile(f));
   // Nichts stillschweigend ignorieren: sagen, welche Dateien nicht gehen
   const skipped = all.filter((f) => !imgs.includes(f));
@@ -251,6 +287,14 @@ function renderList() {
 }
 
 /* ── UI: Editor ──────────────────────────────────────────────── */
+// Hinweis unter dem Adressfeld: wie die Adresse lautet, und ob ein eigener Slug schon einem anderen Projekt gehört
+// (der Server lehnt das Speichern dann ab, wie cleanData in api/admin.php)
+function slugNote(p) {
+  const owner = p.slug && state.PROJECTS.find((q) => q !== p && (q.slug || slugify(q.title)) === p.slug);
+  if (owner) return `<b>Schon vergeben:</b> «${esc(p.slug)}» ist die Adresse von «${esc(owner.title || "Ohne Titel")}». Bitte eine andere wählen, sonst lässt sich nicht speichern.`;
+  const id = projectIds(state.PROJECTS)[state.PROJECTS.indexOf(p)];
+  return `Adresse: <b>projekt.html?p=${esc(id)}</b>. Leer = aus dem Titel. Achtung: Wer sie ändert, macht bestehende Links ungültig (z. B. bei Google oder auf LinkedIn).`;
+}
 function renderEditor() {
   const ed = $("[data-editor]");
   const p = state.PROJECTS[current];
@@ -308,6 +352,24 @@ function renderEditor() {
       <label class="field field--3"><span class="mono">Link (optional)</span>
         <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
         <small>Wird im Projekt als «Link ↗» angezeigt, z. B. Behance oder Live-Website.</small></label>
+
+      <label class="field"><span class="mono">Adresse der Projektseite (optional)</span>
+        <div class="slug"><span class="mono muted">alessiorosano.ch/projekt.html?p=</span>
+          <input type="text" data-slug value="${esc(p.slug)}" placeholder="${esc(slugify(p.title))}" spellcheck="false" autocapitalize="off" /></div>
+        <small data-slug-note>${slugNote(p)}</small></label>
+
+      <div class="field"><span class="mono">PDFs (optional)</span>
+        <div class="drop drop--sm" data-pdf-drop tabindex="0" role="button">
+          <strong>PDF hierher ziehen oder klicken</strong>
+          <span class="mono muted">z. B. Plakat, Broschüre, Präsentation · max. ${MAX_PDF_MB} MB pro Datei</span>
+        </div>
+        ${p.docs.map((d, k) => `
+          <div class="pw">
+            <input type="text" data-doc="${k}" value="${esc(d.title)}" placeholder="Bezeichnung, z. B. Broschüre" aria-label="Bezeichnung von PDF ${k + 1}" />
+            <a class="btn btn--sm" href="${esc(d.src)}" target="_blank" rel="noopener">Ansehen ↗</a>
+            <button class="btn btn--sm btn--danger" type="button" data-doc-del="${k}" title="PDF entfernen">✕</button>
+          </div>`).join("")}
+        <small>Erscheinen auf der Projektseite im Steckbrief als Links. Die Bezeichnung ist der Linktext.</small></div>
 
       <div class="field">
         <span class="mono">Bilder &amp; Loops</span>
@@ -561,7 +623,7 @@ function renderAll() {
 /* ── Medien: alle hochgeladenen Fotos und Loops auf einen Blick (nur ansehen) ── */
 let mediaFiles = null;           // Liste vom Server, wird beim Öffnen des Tabs geladen
 let mediaFilter = "";
-const MEDIA_KINDS = { image: "Fotos", loop: "Loops", film: "Film-Vorschauen" };
+const MEDIA_KINDS = { image: "Fotos", loop: "Loops", film: "Film-Vorschauen", pdf: "PDFs" };
 
 // Wo wird eine Datei verwendet? Zählt den aktuellen Stand im CMS, auch ungespeicherte Änderungen.
 function mediaUsage() {
@@ -571,6 +633,7 @@ function mediaUsage() {
     const name = p.title || "Ohne Titel";
     p.images.forEach((src, k) => add(src, `${name}${[k ? "" : "Titelbild", ...usesOf(p, src).map((u) => IMAGE_USES[u])].filter(Boolean).map((l) => ` (${l})`).join("")}`));
     (p.filmThumbs || []).forEach((src) => src && add(src, `${name} (Film)`));
+    (p.docs || []).forEach((d) => add(d.src, `${name} (PDF)`));
   });
   if (state.ABOUT.portrait) add(state.ABOUT.portrait, "Wer: Portrait");
   return use;
@@ -598,7 +661,7 @@ function renderMedia() {
     ${list.length ? `<div class="media-grid">${list.map((f) => `
       <div class="media-tile${use[f.path] ? "" : " is-unused"}">
         <a class="img" href="${esc(f.path)}" target="_blank" rel="noopener" title="Original öffnen">
-          ${f.kind === "loop" && !f.thumb ? "" : `<img src="${esc(f.thumb || f.path)}" alt="" loading="lazy" />`}
+          ${f.kind === "pdf" ? `<span class="media-tile__pdf mono">PDF</span>` : f.kind === "loop" && !f.thumb ? "" : `<img src="${esc(f.thumb || f.path)}" alt="" loading="lazy" />`}
           ${f.kind === "loop" ? `<span class="img__badge mono">▶ Loop</span>` : ""}
         </a>
         <span class="media-tile__name mono muted">${esc(f.path.split("/").pop())} · ${fmtBytes(f.size)}</span>
@@ -681,6 +744,18 @@ $("[data-new]").addEventListener("click", () => {
 
 const editor = $("[data-editor]");
 editor.addEventListener("input", (e) => {
+  const doc = e.target.dataset.doc;
+  if (doc !== undefined) {
+    state.PROJECTS[current].docs[+doc].title = e.target.value;
+    markDirty();
+    return;
+  }
+  if (e.target.matches("[data-slug]")) {
+    state.PROJECTS[current].slug = e.target.value.trim() ? slugify(e.target.value, 60) : "";
+    $("[data-slug-note]").innerHTML = slugNote(state.PROJECTS[current]);
+    markDirty();
+    return;
+  }
   const film = e.target.dataset.film;
   if (film !== undefined) {
     state.PROJECTS[current].videos[+film] = e.target.value.trim();
@@ -691,7 +766,11 @@ editor.addEventListener("input", (e) => {
   if (!f || e.target.type === "checkbox" || e.target.tagName === "SELECT") return;
   const p = state.PROJECTS[current];
   p[f] = f === "year" ? (parseInt(e.target.value, 10) || "") : e.target.value;
-  if (f === "title") $("[data-title-view]").textContent = p.title || "Ohne Titel";
+  if (f === "title") {
+    $("[data-title-view]").textContent = p.title || "Ohne Titel";
+    $("[data-slug]").placeholder = slugify(p.title);
+    $("[data-slug-note]").innerHTML = slugNote(p);
+  }
   markDirty();
   renderList();
 });
@@ -728,6 +807,9 @@ editor.addEventListener("click", async (e) => {
   const p = state.PROJECTS[current];
   const art = e.target.closest("[data-art]");
   if (art) { p.art = +art.dataset.art; markDirty(); renderEditor(); renderList(); return; }
+
+  const docDel = e.target.closest("[data-doc-del]");
+  if (docDel) { p.docs.splice(+docDel.dataset.docDel, 1); markDirty(); renderEditor(); return; }   // Datei bleibt auf dem Server
 
   if (e.target.closest("[data-film-add]")) {
     p.videos.push("");
@@ -776,6 +858,11 @@ editor.addEventListener("click", async (e) => {
   }
 });
 dropZone(editor, "[data-drop]", "[data-file]", addImages);
+dropZone(editor, "[data-pdf-drop]", "[data-pdf-file]", addDocs);
+// Eingetippter Slug wird beim Verlassen des Feldes in die bereinigte Form gebracht
+editor.addEventListener("focusout", (e) => {
+  if (e.target.matches("[data-slug]")) e.target.value = state.PROJECTS[current].slug;
+});
 // Bilder nicht versehentlich im Browser öffnen, wenn daneben fallen gelassen
 addEventListener("dragover", (e) => e.preventDefault());
 addEventListener("drop", (e) => e.preventDefault());

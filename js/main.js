@@ -617,6 +617,10 @@ function buildProject() {
   $("[data-p-desc]").innerHTML = linkify(p.desc);
   const specs = [["Kunde", esc(p.client)], ["Disziplin", esc(CATS[p.cat])], ["Jahr", esc(p.year)], ["Rolle", esc(p.role)], ["Tools", esc(p.tools)]];
   if (p.link) specs.push(["Link", `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))} ↗</a>`]);
+  // PDFs (Plakate, Broschüren …): öffnen im neuen Tab, im Browser-eigenen Betrachter
+  const docs = (p.docs || []).filter((d) => d?.src);
+  if (docs.length) specs.push([docs.length > 1 ? "PDFs" : "PDF", docs.map((d) =>
+    `<a href="${esc(d.src)}" target="_blank" rel="noopener">${esc(d.title || "PDF ansehen")} ↗</a>`).join("<br />")]);
   $("[data-p-specs]").innerHTML = specRows(specs.filter(([, v]) => v));
 
   // Galerie: Querformat = ganze Breite, Hochformat = halbe Breite, zwei nebeneinander

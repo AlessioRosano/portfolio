@@ -77,7 +77,7 @@ So überschreibt ein Deploy nie meine Inhalte, und grosse Kundenvideos landen ni
 
 ### CMS
 
-Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ich Projekte (Texte, Kunde, mehrere Film-Links, Bilder und Loops per Drag & Drop, pro Bild «Nicht beschneiden», Quer/Hoch in der Galerie und die Rollen Keyvisual, Vorschau «Zeig mal» und Vorschau Disziplin), Disziplinen, den Wer-Bereich, Social-Links und die Kunden-Galerien. In der Beschreibung lege ich mit `[Wort](https://…)` einen Link hinter ein Wort. Projekte kann ich **ausblenden** statt löschen: Neue Projekte starten als Entwurf und erscheinen erst, wenn ich sie einblende. Angemeldet sehe ich Entwürfe trotzdem über «Projekt ansehen», mit dem Hinweis «Entwurf». Der Tab **Medien** zeigt alle hochgeladenen Fotos, Loops und Film-Vorschauen auf einen Blick, mit dem Projekt, in dem sie stecken. Was nirgends mehr verwendet wird, ist markiert. **Speichern** (oder ⌘S) stellt alles sofort live. Der Server prüft dabei jedes Feld (`cleanData()`) und hebt die letzten 30 Stände als Backup auf. Grosse Dateien lädt das CMS in Stücken hoch, die Stückgrösse richtet sich nach dem Upload-Limit, das der Server meldet.
+Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ich Projekte (Texte, Kunde, mehrere Film-Links, Bilder und Loops per Drag & Drop, pro Bild «Nicht beschneiden», Quer/Hoch in der Galerie und die Rollen Keyvisual, Vorschau «Zeig mal» und Vorschau Disziplin), Disziplinen, den Wer-Bereich, Social-Links und die Kunden-Galerien. In der Beschreibung lege ich mit `[Wort](https://…)` einen Link hinter ein Wort. Pro Projekt lade ich **PDFs** hoch (Plakat, Broschüre, Präsentation), die auf der Projektseite im Steckbrief als Links erscheinen, und lege auf Wunsch die **Adresse** selbst fest (z. B. `projekt.html?p=certum-50plus` statt einer aus dem Titel). Projekte kann ich **ausblenden** statt löschen: Neue Projekte starten als Entwurf und erscheinen erst, wenn ich sie einblende. Angemeldet sehe ich Entwürfe trotzdem über «Projekt ansehen», mit dem Hinweis «Entwurf». Der Tab **Medien** zeigt alle hochgeladenen Fotos, Loops und Film-Vorschauen auf einen Blick, mit dem Projekt, in dem sie stecken. Was nirgends mehr verwendet wird, ist markiert. **Speichern** (oder ⌘S) stellt alles sofort live. Der Server prüft dabei jedes Feld (`cleanData()`) und hebt die letzten 30 Stände als Backup auf. Grosse Dateien lädt das CMS in Stücken hoch, die Stückgrösse richtet sich nach dem Upload-Limit, das der Server meldet.
 
 ### Galerien
 
@@ -101,7 +101,7 @@ Google führt JavaScript aus, die meisten KI-Crawler (ChatGPT, Claude, Perplexit
 Die Sicherheit beruht nicht darauf, dass der Code geheim ist. Darum ist das Repository öffentlich.
 
 - **Zugang:** keine Zugangsdaten in Git, auf dem Server nur ein Hash des CMS-Passworts. Nach 5 Fehlversuchen ist 15 Minuten Pause. Sichere Session-Cookies und ein CSRF-Token bei jeder Änderung.
-- **Uploads:** Geprüft wird der echte Dateiinhalt, nicht die Endung. SVG und HTML sind nie erlaubt. Ausgeliefert wird mit fester Dateiart, `nosniff` und einer Sandbox-CSP.
+- **Uploads:** Geprüft wird der echte Dateiinhalt, nicht die Endung. SVG und HTML sind nie erlaubt. PDFs müssen wirklich PDFs sein (Dateiart und die Kennung `%PDF-` am Anfang), sonst lehnt der Server sie ab. Ausgeliefert wird mit fester Dateiart, `nosniff` und einer Sandbox-CSP.
 - **Inhalte:** nur `https://`-Links und eigene Bildpfade, alle Texte werden escaped. Ausgeblendete Projekte filtert der Server heraus, bevor etwas öffentlich wird (Website, Sitemap, `llms.txt`), und die Rohdatei `content/data.json` ist von aussen gesperrt.
 - **Server:** strenge Content-Security-Policy (nur eigene Scripts, als fremde Frames nur YouTube und Vimeo), HTTPS mit HSTS, interne Dateien gesperrt, keine PHP-Fehler im Browser.
 - **Geprüft durch nachgestellte Angriffe:** SVG als Foto, HTML als Video, `javascript:`-Links, direkter Zugriff auf Galerie-Dateien, Brute Force. Alle werden abgewehrt.
@@ -140,6 +140,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 17. **SEO und GEO:** Die Seiten kommen jetzt mit fertigem Inhalt vom Server (`render.php`), dazu mehr strukturierte Daten, eine Sitemap mit Bildern und `/llms.txt` für KI-Systeme.
 18. **Entwürfe:** Projekte lassen sich im CMS ausblenden, ohne sie zu löschen. So kann ich in Ruhe an einem Beitrag arbeiten, bevor er online geht.
 19. **Neue Typografie:** Neue Haas Grotesk Display statt Inter Tight, mit neu abgestimmten Gewichten, Laufweiten und Wortabständen. Dazu Umlaute, die in den grossen Titeln nicht mehr abgeschnitten werden.
+20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten hochladen und die Adresse jeder Projektseite selbst bestimmen.
 
 ---
 
@@ -176,6 +177,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Umlaute mit abgeschnittenen Punkten.** Die grossen Titel fliegen Buchstabe für Buchstabe ein, jeder in einer eigenen Maske. Die war oben zu knapp: Ein «Ä» reicht bis 0,95 Schriftgrössen über die Grundlinie, die Maske nur bis 0,82. Die Punkte schwebten abgehackt über dem Buchstaben. Jetzt hat die Maske oben mehr Platz, ein negativer Rand gleicht das aus, und die Buchstaben starten tiefer, damit vor dem Einfliegen nichts herausblitzt. Am Handy hängen Kurzwörter wie «im» am nächsten Wort, und Zeilen mit Umlaut bekommen etwas mehr Abstand.
 
 **Eine Schrift, die nicht einfach auf den Server darf.** Neue Haas Grotesk war als Desktop-Schrift auf meinem Mac installiert. Die Datei erlaubt aber keine Einbettung, und in einem öffentlichen Repository hätte sie jeder herunterladen können. Die saubere Lösung ist Adobe Fonts: in meinem Creative-Cloud-Abo enthalten, mit Web-Lizenz. Dafür musste die CSP genau zwei Adobe-Adressen erlauben. Beim Umstellen zeigte sich: Inter Tight vertrug viel negative Laufweite, Neue Haas Grotesk nicht. Grosse Wörter klebten aneinander. Darum gibt es jetzt feste Stufen für Gewicht und Laufweite statt einzelner Werte.
+
+**Eigene Adressen, die anderen nichts wegnehmen.** Wer selbst einen Slug wählt, kann versehentlich die Adresse eines anderen Projekts erwischen. Das andere Projekt würde dann still zu «…-2», und alle Links darauf wären kaputt. Darum warnt das CMS schon beim Tippen, und der Server lehnt das Speichern ab. Browser und Server berechnen die Adressen nach genau denselben Regeln, getestet mit Umlauten, Akzenten und doppelten Titeln.
 
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 

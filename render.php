@@ -86,9 +86,11 @@ function renderPage(string $page, string $html): string
         $html = setHeading($html, 'Projekt', $title);
         $fill['<p class="reveal-up" data-p-role></p>'] = '<p class="reveal-up" data-p-role>' . h($p['role'] ?? '') . '</p>';
         $fill['<p class="pinfo__desc" data-p-desc></p>'] = '<p class="pinfo__desc" data-p-desc>' . linkify((string) ($p['desc'] ?? '')) . '</p>';
+        $docs = array_filter((array) ($p['docs'] ?? []), fn ($d) => !empty($d['src']));
+        $docLinks = implode('<br />', array_map(fn ($d) => '<a href="' . h($d['src']) . '" target="_blank" rel="noopener">' . h($d['title'] ?: 'PDF ansehen') . ' ↗</a>', $docs));
         $fill['<dl class="specs mono" data-p-specs></dl>'] = '<dl class="specs mono" data-p-specs>' . specs([
             ['Kunde', $p['client'] ?? ''], ['Disziplin', $label], ['Jahr', $p['year'] ?? ''], ['Rolle', $p['role'] ?? ''], ['Tools', $p['tools'] ?? ''],
-        ]) . '</dl>';
+        ]) . ($docs ? '<div><dt>' . (count($docs) > 1 ? 'PDFs' : 'PDF') . "</dt><dd>$docLinks</dd></div>" : '') . '</dl>';
     }
 
     foreach ($fill as $marker => $content) $html = str_replace($marker, $content, $html);

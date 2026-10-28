@@ -117,6 +117,11 @@ function cleanData(array $d): array
             if (!is_string($img) || !preg_match(MEDIA_PATH, $img)) fail('Ungültiger Bild- oder Videopfad');
         }
         $ofImages = fn ($list) => array_values(array_intersect($images, array_filter((array) $list, 'is_string')));
+        // PDF-Dokumente: nur eigene Dateien aus content/docs/, je mit Bezeichnung
+        $docs = array_values(array_filter(array_map(fn ($doc) => is_array($doc) && preg_match(DOC_PATH, (string) ($doc['src'] ?? ''))
+            ? ['src' => $doc['src'], 'title' => $text($doc['title'] ?? '', 120)] : null, (array) ($p['docs'] ?? []))));
+        if (count($docs) > 20) fail('Höchstens 20 PDFs pro Projekt');
+        $slug = trim((string) ($p['slug'] ?? ''));
         $oneOfImages = fn ($v) => is_string($v) && in_array($v, $images, true) ? $v : '';
         $year = $p['year'] ?? '';
         if ($year !== '' && (!is_int($year) || $year < 1900 || $year > 2100)) fail('Ungültiges Jahr');
@@ -125,6 +130,7 @@ function cleanData(array $d): array
             'cat' => $p['cat'],
             'year' => $year,
             'hidden' => !empty($p['hidden']),   // ausgeblendet (Entwurf): nirgends öffentlich
+            'slug' => $slug !== '' ? urlSlug($slug, 60) : '',   // eigene Adresse, leer = aus dem Titel
             'client' => $text($p['client'] ?? '', 120),
             'role' => $text($p['role'] ?? '', 200),
             'tools' => $text($p['tools'] ?? '', 300),
@@ -143,8 +149,19 @@ function cleanData(array $d): array
             'previewDiscipline' => $oneOfImages($p['previewDiscipline'] ?? ''),
             'previewHome' => $oneOfImages($p['previewHome'] ?? ''),
             'keyvisual' => $oneOfImages($p['keyvisual'] ?? ''),
+            'docs' => $docs,
         ];
     }, array_values($d['PROJECTS']));
+
+    // Eigene Adressen dürfen keinem anderen Projekt die Adresse wegnehmen (sonst würde dieses still zu «…-2»)
+    foreach ($projects as $i => $p) {
+        if ($p['slug'] === '') continue;
+        foreach ($projects as $j => $q) {
+            if ($i !== $j && ($q['slug'] !== '' ? $q['slug'] : urlSlug((string) $q['title'])) === $p['slug']) {
+                fail("Die Adresse «{$p['slug']}» gehört schon zu «{$q['title']}». Bitte eine andere wählen.");
+            }
+        }
+    }
 
     $social = [];
     foreach (array_slice(array_values((array) ($d['SOCIAL'] ?? [])), 0, 12) as $s) {
@@ -211,7 +228,7 @@ switch ($action) {
     case 'media':
         // Alle hochgeladenen Portfolio-Dateien für den Tab «Medien» (ohne WebP-Varianten und Loop-Standbilder)
         $files = [];
-        foreach (glob(CONTENT . '/{img,video}/*.{jpg,png,webp,gif,mp4,webm}', GLOB_BRACE) ?: [] as $file) {
+        foreach (glob(CONTENT . '/{img,video,docs}/*.{jpg,png,webp,gif,mp4,webm,pdf}', GLOB_BRACE) ?: [] as $file) {
             $name = basename($file);
             $dir = basename(dirname($file));
             if (preg_match('/\.w\d+\.webp$/', $name) || ($dir === 'video' && extensionOf($name) === 'jpg')) continue;
@@ -219,7 +236,7 @@ switch ($action) {
             $thumb = $dir === 'video' ? preg_replace('/\.\w+$/', '.jpg', $name) : variantFile($name, 480);
             $files[] = [
                 'path' => "content/$dir/$name",
-                'kind' => $dir === 'video' ? 'loop' : (str_starts_with($name, 'film-') ? 'film' : 'image'),
+                'kind' => $dir === 'video' ? 'loop' : ($dir === 'docs' ? 'pdf' : (str_starts_with($name, 'film-') ? 'film' : 'image')),
                 'thumb' => is_file(dirname($file) . "/$thumb") ? "content/$dir/$thumb" : null,
                 'size' => filesize($file),
                 'time' => filemtime($file),
@@ -235,7 +252,7 @@ switch ($action) {
         $zip->open($zipPath, ZipArchive::CREATE);
         $zip->addFile(CONTENT . '/data.json', 'content/data.json');
         if (is_file(STORAGE . '/galleries.json')) $zip->addFile(STORAGE . '/galleries.json', 'storage/galleries.json');
-        foreach (glob(CONTENT . '/img/*') ?: [] as $img) $zip->addFile($img, 'content/img/' . basename($img));
+        foreach (glob(CONTENT . '/{img,docs}/*', GLOB_BRACE) ?: [] as $file) $zip->addFile($file, 'content/' . basename(dirname($file)) . '/' . basename($file));
         $zip->close();
         register_shutdown_function(fn () => @unlink($zipPath));
         sendFile($zipPath, 'portfolio-backup-' . date('Y-m-d') . '.zip', true, 'application/zip');
@@ -343,6 +360,20 @@ switch ($action) {
         $name = uniqueName($dir, slugify((string) ($_POST['title'] ?? 'loop')) . '-' . bin2hex(random_bytes(3)), $ext);
         rename($part, "$dir/$name");
         respond(['ok' => true, 'path' => "content/video/$name"]);
+
+    // PDF zu einem Projekt (in Stücken) → content/docs/. Geprüft wird der echte Inhalt, nicht nur die Endung.
+    case 'pdf-chunk':
+        if (extensionOf((string) ($_POST['name'] ?? '')) !== 'pdf') fail('Nur PDF-Dateien');
+        $part = receiveChunk(MAX_DOC_BYTES);
+        if (!$part) respond(['ok' => true]);
+        if (mimeOf($part) !== 'application/pdf' || file_get_contents($part, false, null, 0, 5) !== '%PDF-') {
+            unlink($part);
+            fail('Datei ist kein PDF');
+        }
+        $dir = CONTENT . '/docs';
+        $name = uniqueName($dir, slugify(pathinfo((string) $_POST['name'], PATHINFO_FILENAME)) . '-' . bin2hex(random_bytes(3)), 'pdf');
+        rename($part, "$dir/$name");
+        respond(['ok' => true, 'path' => "content/docs/$name"]);
 
     // Standbild eines Loops (im Browser erzeugt): Vorschau in Übersichten und solange das Video lädt
     case 'loop-poster':

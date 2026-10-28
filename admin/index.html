@@ -153,6 +153,12 @@
     .drop:hover, .drop.is-over { background: var(--bx-04); border-color: var(--bx); }
     .drop strong { font-size: 17px; }
     .drop.is-busy { pointer-events: none; opacity: 0.6; }
+    .drop--sm { padding: 16px; margin-bottom: 4px; }
+    .drop--sm strong { font-size: 15px; }
+    .slug { display: flex; align-items: center; gap: 8px; }
+    .slug > span { white-space: nowrap; }
+    .slug input { flex: 1; min-width: 0; }
+    .media-tile__pdf { display: grid; place-items: center; height: 100%; font-size: 18px; letter-spacing: 0.1em; }
     .images { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
     .img { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--bx-08); aspect-ratio: 4 / 5; }
     .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -251,6 +257,7 @@
       .editor__head h1, .pane h1 { font-size: 34px; }
 
       .field--2, .field--3, .field--4 { grid-column: span 6; }
+      .slug > span { display: none; }   /* Handy: nur das Eingabefeld, die Adresse steht darunter */
       .steps { grid-template-columns: 1fr; }
       /* 16 px verhindert, dass iOS beim Antippen eines Feldes hineinzoomt */
       input[type="text"], input[type="number"], input[type="url"], input[type="email"], input[type="password"], input[type="date"], textarea, select { font-size: 16px; }
@@ -338,7 +345,8 @@
     <div class="pane" data-general></div>
   </section>
 
-  <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" multiple hidden data-file />
+  <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v,application/pdf,.pdf" multiple hidden data-file />
+  <input type="file" accept="application/pdf,.pdf" multiple hidden data-pdf-file />
   <input type="file" accept="image/*" hidden data-about-file />
   <input type="file" accept="image/*,video/*,.heic,.mov" multiple hidden data-gallery-file />
   <div class="toast" data-toast></div>
