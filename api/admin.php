@@ -330,13 +330,13 @@ switch ($action) {
         $name = (string) ($_POST['name'] ?? '');
         requireGallery($slug);
         $ext = extensionOf($name);
-        if (!isset(GALLERY_TYPES[$ext])) fail('Dateityp nicht erlaubt (Bilder: JPG, PNG, WebP, GIF, HEIC — Videos: MP4, MOV, M4V, WebM)');
+        if (!isset(GALLERY_TYPES[$ext])) fail('Dateityp nicht erlaubt (Bilder: JPG, PNG, WebP, GIF, HEIC · Videos: MP4, MOV, M4V, WebM · PDF)');
         $part = receiveChunk(MAX_GALLERY_BYTES);
         if (!$part) respond(['ok' => true]);
 
-        if (!contentAllowed($part)) {
+        if (!contentAllowed($part, $ext)) {
             unlink($part);
-            fail('Datei ist kein Bild oder Video');
+            fail($ext === 'pdf' ? 'Datei ist kein PDF' : 'Datei ist kein Bild oder Video');
         }
         $dir = galleryDir($slug);
         $final = uniqueName($dir, slugify(pathinfo($name, PATHINFO_FILENAME), 80), $ext);
@@ -366,7 +366,7 @@ switch ($action) {
         if (extensionOf((string) ($_POST['name'] ?? '')) !== 'pdf') fail('Nur PDF-Dateien');
         $part = receiveChunk(MAX_DOC_BYTES);
         if (!$part) respond(['ok' => true]);
-        if (mimeOf($part) !== 'application/pdf' || file_get_contents($part, false, null, 0, 5) !== '%PDF-') {
+        if (!isPdf($part)) {
             unlink($part);
             fail('Datei ist kein PDF');
         }

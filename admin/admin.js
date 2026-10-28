@@ -1007,15 +1007,17 @@ function renderGalleryEditor() {
           <button class="btn btn--sm btn--fill" data-g-copy="all" type="button">Link + Passwort kopieren</button>
         </div></div>
 
-      <div class="field"><span class="mono">Fotos & Videos</span>
+      <div class="field"><span class="mono">Fotos, Videos & PDFs</span>
         <div class="drop" data-g-drop tabindex="0" role="button">
           <strong>Dateien hierher ziehen oder klicken</strong>
-          <span class="mono muted">Fotos (JPG, PNG, WebP, HEIC) und Videos (MP4, MOV, WebM) — auch sehr grosse Dateien</span>
+          <span class="mono muted">Fotos (JPG, PNG, WebP, HEIC), Videos (MP4, MOV, WebM) und PDFs · auch sehr grosse Dateien</span>
         </div>
         <div class="uploads" data-g-uploads></div>
         ${files.length ? `<div class="files">${files.map((f) => `
           <div class="file">
-            ${f.thumb
+            ${f.kind === "pdf"
+              ? `<a class="file__pdf mono" href="${esc(fileUrl(g.slug, f.name))}" target="_blank" rel="noopener" title="PDF ansehen">PDF</a>`
+              : f.thumb
               ? `<img src="${esc(fileUrl(g.slug, f.name, "&thumb=1"))}" alt="" loading="lazy" />`
               : f.kind === "video"
                 ? `<video src="${esc(fileUrl(g.slug, f.name))}#t=0.5" preload="metadata" muted></video>`
@@ -1023,7 +1025,7 @@ function renderGalleryEditor() {
             <span class="file__name mono">${f.kind === "video" ? "▶ " : ""}${esc(f.name)} · ${fmtBytes(f.size)}</span>
             <button class="file__del" data-g-file-del="${esc(f.name)}" title="Datei löschen">✕</button>
           </div>`).join("")}</div>` : ""}
-      </div>` : `<p class="field muted" style="margin:0">Nach dem Anlegen kannst du Fotos und Videos hochladen.</p>`}
+      </div>` : `<p class="field muted" style="margin:0">Nach dem Anlegen kannst du Fotos, Videos und PDFs hochladen.</p>`}
     </div>`;
 }
 

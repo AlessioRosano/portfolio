@@ -81,7 +81,7 @@ Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ic
 
 ### Galerien
 
-Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
+Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
 
 ### Performance
 
@@ -101,7 +101,7 @@ Google führt JavaScript aus, die meisten KI-Crawler (ChatGPT, Claude, Perplexit
 Die Sicherheit beruht nicht darauf, dass der Code geheim ist. Darum ist das Repository öffentlich.
 
 - **Zugang:** keine Zugangsdaten in Git, auf dem Server nur ein Hash des CMS-Passworts. Nach 5 Fehlversuchen ist 15 Minuten Pause. Sichere Session-Cookies und ein CSRF-Token bei jeder Änderung.
-- **Uploads:** Geprüft wird der echte Dateiinhalt, nicht die Endung. SVG und HTML sind nie erlaubt. PDFs müssen wirklich PDFs sein (Dateiart und die Kennung `%PDF-` am Anfang), sonst lehnt der Server sie ab. Ausgeliefert wird mit fester Dateiart, `nosniff` und einer Sandbox-CSP.
+- **Uploads:** Geprüft wird der echte Dateiinhalt, nicht die Endung. SVG und HTML sind nie erlaubt. PDFs müssen wirklich PDFs sein (Dateiart und die Kennung `%PDF-` am Anfang), sonst lehnt der Server sie ab. Für PDFs gilt eine eigene CSP ohne Einbett-Verbot, sonst zeigt Chrome sie nicht an. Getestet habe ich das mit einem echten Apache, weil ein Fehler in der `.htaccess` die ganze Seite lahmlegt. Ausgeliefert wird mit fester Dateiart, `nosniff` und einer Sandbox-CSP.
 - **Inhalte:** nur `https://`-Links und eigene Bildpfade, alle Texte werden escaped. Ausgeblendete Projekte filtert der Server heraus, bevor etwas öffentlich wird (Website, Sitemap, `llms.txt`), und die Rohdatei `content/data.json` ist von aussen gesperrt.
 - **Server:** strenge Content-Security-Policy (nur eigene Scripts, als fremde Frames nur YouTube und Vimeo), HTTPS mit HSTS, interne Dateien gesperrt, keine PHP-Fehler im Browser.
 - **Geprüft durch nachgestellte Angriffe:** SVG als Foto, HTML als Video, `javascript:`-Links, direkter Zugriff auf Galerie-Dateien, Brute Force. Alle werden abgewehrt.
@@ -140,7 +140,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 17. **SEO und GEO:** Die Seiten kommen jetzt mit fertigem Inhalt vom Server (`render.php`), dazu mehr strukturierte Daten, eine Sitemap mit Bildern und `/llms.txt` für KI-Systeme.
 18. **Entwürfe:** Projekte lassen sich im CMS ausblenden, ohne sie zu löschen. So kann ich in Ruhe an einem Beitrag arbeiten, bevor er online geht.
 19. **Neue Typografie:** Neue Haas Grotesk Display statt Inter Tight, mit neu abgestimmten Gewichten, Laufweiten und Wortabständen. Dazu Umlaute, die in den grossen Titeln nicht mehr abgeschnitten werden.
-20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten hochladen und die Adresse jeder Projektseite selbst bestimmen.
+20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten und in die passwortgeschützten Galerien hochladen, und die Adresse jeder Projektseite lässt sich selbst bestimmen.
 
 ---
 

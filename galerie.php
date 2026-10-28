@@ -39,6 +39,8 @@ $state = match (true) {
 };
 $files = $state === 'open' ? galleryFiles($slug) : [];
 $totalSize = array_sum(array_column($files, 'size'));
+// Fotos und Videos öffnen in der Grossansicht (zum Durchblättern), PDFs im PDF-Betrachter des Browsers
+$media = array_values(array_filter($files, fn ($f) => $f['kind'] !== 'pdf'));
 
 $h = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $url = fn ($file, $extra = '') => 'api/file.php?g=' . rawurlencode($slug) . '&f=' . rawurlencode($file) . $extra;
@@ -134,6 +136,9 @@ header('Referrer-Policy: same-origin');
     }
     .item__media img, .item__media video { width: 100%; height: 100%; object-fit: cover; transition: transform 1s cubic-bezier(.16, 1, .3, 1); }
     .item__media:hover img, .item__media:hover video { transform: scale(1.04); }
+    .item__media--pdf { display: grid; place-items: center; text-decoration: none; color: var(--bx); cursor: pointer; }
+    .item__pdf { font-size: clamp(40px, 5vw, 72px); font-weight: 700; letter-spacing: -0.02em; transition: transform 1s cubic-bezier(.16, 1, .3, 1); }
+    .item__media--pdf:hover .item__pdf { transform: scale(1.06); }
     .item__play { position: absolute; inset: auto 12px 12px auto; background: var(--white); color: var(--bx); border-radius: 999px; padding: 6px 12px; }
     .item figcaption { display: flex; justify-content: space-between; gap: 10px; padding: 10px 2px 0; }
     .item figcaption span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .6; }
@@ -197,9 +202,15 @@ header('Referrer-Policy: same-origin');
     <?php endif; ?>
 
     <div class="grid">
-      <?php foreach ($files as $i => $f): ?>
+      <?php foreach ($files as $f): ?>
       <figure class="item">
-        <button class="item__media" type="button" data-open="<?= $i ?>" aria-label="<?= $h($f['name']) ?> gross ansehen">
+        <?php if ($f['kind'] === 'pdf'): ?>
+        <a class="item__media item__media--pdf" href="<?= $h($url($f['name'])) ?>" target="_blank" rel="noopener" aria-label="<?= $h($f['name']) ?> ansehen (PDF, neuer Tab)">
+          <span class="item__pdf">PDF</span>
+          <span class="item__play mono">Ansehen ↗</span>
+        </a>
+        <?php else: ?>
+        <button class="item__media" type="button" data-open="<?= array_search($f, $media, true) ?>" aria-label="<?= $h($f['name']) ?> gross ansehen">
           <?php if ($f['thumb']): ?>
             <img src="<?= $h($url($f['name'], '&thumb=1')) ?>" alt="" loading="lazy" decoding="async" />
           <?php elseif ($f['kind'] === 'video'): ?>
@@ -209,6 +220,7 @@ header('Referrer-Policy: same-origin');
           <?php endif; ?>
           <?php if ($f['kind'] === 'video'): ?><span class="item__play mono">▶ Video</span><?php endif; ?>
         </button>
+        <?php endif; ?>
         <figcaption class="mono">
           <span><?= $h($f['name']) ?> · <?= bytes($f['size']) ?></span>
           <a href="<?= $h($url($f['name'], '&dl=1')) ?>" download>Download ↓</a>
@@ -234,7 +246,7 @@ header('Referrer-Policy: same-origin');
         'src' => $url($f['name'], $f['kind'] === 'image' && $f['thumb'] ? '&preview=1' : ''),
         'poster' => $f['kind'] === 'video' && $f['thumb'] ? $url($f['name'], '&thumb=1') : '',
         'dl' => $url($f['name'], '&dl=1'),
-    ], $files), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+    ], $media), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
     <script src="js/galerie.js"></script>
 <?php endif; ?>
   </main>

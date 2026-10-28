@@ -21,6 +21,7 @@ const GALLERIES = STORAGE . '/galleries';
 const IMAGE_TYPES = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'];
 const GALLERY_TYPES = IMAGE_TYPES + [
     'heic' => 'image/heic', 'mp4' => 'video/mp4', 'mov' => 'video/quicktime', 'm4v' => 'video/x-m4v', 'webm' => 'video/webm',
+    'pdf' => 'application/pdf',
 ];
 const MIME_OK = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif',
@@ -274,9 +275,16 @@ function mimeOf(string $path): string
     return (string) (new finfo(FILEINFO_MIME_TYPE))->file($path);
 }
 
-function contentAllowed(string $path): bool
+// Echtes PDF: Dateiart und die Kennung «%PDF-» ganz am Anfang (eine umbenannte HTML-Datei fällt durch)
+function isPdf(string $path): bool
 {
-    return in_array(mimeOf($path), MIME_OK, true);
+    return mimeOf($path) === 'application/pdf' && file_get_contents($path, false, null, 0, 5) === '%PDF-';
+}
+
+// Galerie-Datei: Inhalt muss zur Endung passen (PDF nur als .pdf, Bilder und Videos nach MIME_OK)
+function contentAllowed(string $path, string $ext): bool
+{
+    return $ext === 'pdf' ? isPdf($path) : in_array(mimeOf($path), MIME_OK, true);
 }
 
 function uniqueName(string $dir, string $base, string $ext): string
@@ -447,7 +455,7 @@ function galleryFiles(string $slug): array
         $files[] = [
             'name' => $name,
             'size' => filesize($path),
-            'kind' => str_starts_with(GALLERY_TYPES[$ext] ?? '', 'video/') ? 'video' : 'image',
+            'kind' => $ext === 'pdf' ? 'pdf' : (str_starts_with(GALLERY_TYPES[$ext] ?? '', 'video/') ? 'video' : 'image'),
             'thumb' => isset(IMAGE_TYPES[$ext]) || is_file("$dir/thumbs/$name.jpg"),
         ];
     }
@@ -559,9 +567,11 @@ function sendFile(string $path, string $downloadName, bool $attachment, ?string 
         http_response_code(206);
         header("Content-Range: bytes $start-$end/$size");
     }
-    // Typ kommt aus der Endungsliste, nie aus dem Dateiinhalt; die Sandbox verhindert jedes Script
-    header('Content-Type: ' . ($type ?? GALLERY_TYPES[extensionOf($path)] ?? 'application/octet-stream'));
-    header("Content-Security-Policy: default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox");
+    // Typ kommt aus der Endungsliste, nie aus dem Dateiinhalt; die Sandbox verhindert jedes Script.
+    // PDFs ohne Sandbox: sonst zeigt der Browser sie nicht an (Script im PDF läuft nur im Betrachter, siehe .htaccess)
+    $type ??= GALLERY_TYPES[extensionOf($path)] ?? 'application/octet-stream';
+    header("Content-Type: $type");
+    header('Content-Security-Policy: ' . ($type === 'application/pdf' ? "frame-ancestors 'none'" : "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox"));
     header('Content-Length: ' . ($end - $start + 1));
     header('Content-Disposition: ' . ($attachment ? 'attachment' : 'inline') . "; filename*=UTF-8''" . rawurlencode($downloadName));
     header('Cache-Control: private, max-age=3600');
