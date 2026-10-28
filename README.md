@@ -81,7 +81,7 @@ Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ic
 
 ### Galerien
 
-Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
+Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die **Adresse** (`galerie.php?g=…`) entsteht aus dem Titel oder ich lege sie selbst fest. Auch später lässt sie sich ändern: Der Server verschiebt dann Ordner und Einstellungen, und das CMS warnt, dass der alte Link nicht mehr funktioniert. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
 
 ### Performance
 
@@ -140,7 +140,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 17. **SEO und GEO:** Die Seiten kommen jetzt mit fertigem Inhalt vom Server (`render.php`), dazu mehr strukturierte Daten, eine Sitemap mit Bildern und `/llms.txt` für KI-Systeme.
 18. **Entwürfe:** Projekte lassen sich im CMS ausblenden, ohne sie zu löschen. So kann ich in Ruhe an einem Beitrag arbeiten, bevor er online geht.
 19. **Neue Typografie:** Neue Haas Grotesk Display statt Inter Tight, mit neu abgestimmten Gewichten, Laufweiten und Wortabständen. Dazu Umlaute, die in den grossen Titeln nicht mehr abgeschnitten werden.
-20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten und in die passwortgeschützten Galerien hochladen, und die Adresse jeder Projektseite lässt sich selbst bestimmen.
+20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten und in die passwortgeschützten Galerien hochladen, und die Adresse jeder Projektseite und jeder Galerie lässt sich selbst bestimmen.
 
 ---
 

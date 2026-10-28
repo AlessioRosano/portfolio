@@ -997,6 +997,12 @@ function renderGalleryEditor() {
       <label class="field field--2"><span class="mono">Verfügbar bis (optional)</span>
         <input type="date" data-gf="expires" value="${esc(g.expires)}" />
         <small>Danach ist die Galerie für Kund:innen gesperrt.</small></label>
+      <label class="field"><span class="mono">Adresse (optional)</span>
+        <div class="slug"><span class="mono muted">alessiorosano.ch/galerie.php?g=</span>
+          <input type="text" data-gf="newSlug" value="${esc(g.newSlug ?? g.slug ?? "")}" placeholder="${esc(slugify(g.title, 50))}" spellcheck="false" autocapitalize="off" /></div>
+        <small>${g.slug
+          ? "Nur Kleinbuchstaben, Zahlen und Bindestriche. Achtung: Wer die Adresse ändert, macht den bisherigen Link ungültig. Kund:innen brauchen dann den neuen Link (das Passwort bleibt)."
+          : "Leer = aus dem Titel. Nur Kleinbuchstaben, Zahlen und Bindestriche."}</small></label>
       <div class="field"><div><button class="btn btn--fill" data-g-save type="button">${g.slug ? "Änderungen speichern" : "Galerie anlegen"}</button></div></div>
 
       ${g.slug ? `
@@ -1031,8 +1037,11 @@ function renderGalleryEditor() {
 
 async function saveGallery() {
   try {
-    const { slug } = await api("gallery-save", { slug: gallery.slug, title: gallery.title, date: gallery.date, password: gallery.password, expires: gallery.expires });
-    toast(gallery.slug ? "Galerie gespeichert" : "Galerie angelegt — jetzt Dateien hochladen");
+    const newSlug = (gallery.newSlug ?? "").trim();
+    if (gallery.slug && newSlug && slugify(newSlug, 60) !== gallery.slug
+      && !confirm(`Adresse ändern zu «${slugify(newSlug, 60)}»? Der bisherige Link funktioniert danach nicht mehr.`)) return;
+    const { slug } = await api("gallery-save", { slug: gallery.slug, newSlug, title: gallery.title, date: gallery.date, password: gallery.password, expires: gallery.expires });
+    toast(!gallery.slug ? "Galerie angelegt — jetzt Dateien hochladen" : slug !== gallery.slug ? `Gespeichert, neue Adresse: ${slug}` : "Galerie gespeichert");
     await loadGalleries(slug);
   } catch (e) {
     toast(e.message);

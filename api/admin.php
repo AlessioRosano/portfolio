@@ -270,14 +270,26 @@ switch ($action) {
         $title = trim((string) ($in['title'] ?? ''));
         if ($title === '') fail('Titel fehlt');
         $slug = (string) ($in['slug'] ?? '');
+        // Gewünschte Adresse (galerie.php?g=…): leer = aus dem Titel bzw. unverändert
+        $wanted = trim((string) ($in['newSlug'] ?? ''));
+        $wanted = $wanted !== '' ? slugify($wanted, 60) : '';
+        if ($wanted !== '' && $wanted !== $slug && isset($all[$wanted])) fail("Die Adresse «{$wanted}» gehört schon zu einer anderen Galerie.");
         if ($slug === '') {
-            $base = slugify($title, 50);
+            $base = $wanted ?: slugify($title, 50);
             $slug = $base;
             for ($n = 2; isset($all[$slug]); $n++) $slug = "$base-$n";
             $all[$slug] = ['created' => date('c')];
             mkdir(galleryDir($slug), 0755, true);
         } elseif (!isset($all[$slug])) {
             fail('Galerie nicht gefunden', 404);
+        } elseif ($wanted !== '' && $wanted !== $slug) {
+            // Umbenennen: Ordner und Eintrag verschieben, zwischengespeicherte ZIPs der alten Adresse weg.
+            // Der alte Link funktioniert danach nicht mehr (das CMS weist darauf hin).
+            if (!validSlug($wanted) || !rename(galleryDir($slug), galleryDir($wanted))) fail('Adresse konnte nicht geändert werden');
+            foreach (glob(STORAGE . "/tmp/zip-$slug-*.zip") ?: [] as $old) @unlink($old);
+            $all[$wanted] = $all[$slug];
+            unset($all[$slug]);
+            $slug = $wanted;
         }
         $password = trim((string) ($in['password'] ?? ''));
         if (strlen($password) < 8) fail('Passwort muss mindestens 8 Zeichen haben');
