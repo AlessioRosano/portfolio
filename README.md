@@ -141,6 +141,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 18. **Entwürfe:** Projekte lassen sich im CMS ausblenden, ohne sie zu löschen. So kann ich in Ruhe an einem Beitrag arbeiten, bevor er online geht.
 19. **Neue Typografie:** Neue Haas Grotesk Display statt Inter Tight, mit neu abgestimmten Gewichten, Laufweiten und Wortabständen. Dazu Umlaute, die in den grossen Titeln nicht mehr abgeschnitten werden.
 20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten und in die passwortgeschützten Galerien hochladen, und die Adresse jeder Projektseite und jeder Galerie lässt sich selbst bestimmen.
+21. **CMS aufgeräumt:** Der Projekt-Editor ist in Abschnitte gegliedert (Grunddaten, Text, Bilder & Loops, Vorschauen & Keyvisual, Film, Link & PDFs, Veröffentlichung), der Status ist ein Schalter «Online | Entwurf». Statt sechs Häkchen pro Bild gibt es eigene Plätze für Keyvisual und Vorschauen, lange Erklärungen sind aufklappbar. Galerie-Editor und Disziplinen sind genauso gegliedert.
 
 ---
 

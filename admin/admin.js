@@ -293,8 +293,17 @@ function slugNote(p) {
   const owner = p.slug && state.PROJECTS.find((q) => q !== p && (q.slug || slugify(q.title)) === p.slug);
   if (owner) return `<b>Schon vergeben:</b> «${esc(p.slug)}» ist die Adresse von «${esc(owner.title || "Ohne Titel")}». Bitte eine andere wählen, sonst lässt sich nicht speichern.`;
   const id = projectIds(state.PROJECTS)[state.PROJECTS.indexOf(p)];
-  return `Adresse: <b>projekt.html?p=${esc(id)}</b>. Leer = aus dem Titel. Achtung: Wer sie ändert, macht bestehende Links ungültig (z. B. bei Google oder auf LinkedIn).`;
+  return `Wird zu <b>projekt.html?p=${esc(id)}</b>. Leer = aus dem Titel. Ändern macht bestehende Links ungültig (Google, LinkedIn, verschickte Links).`;
 }
+// Abschnitt im Editor: Titel und eine Zeile Erklärung links, Felder rechts (auf schmalen Bildschirmen untereinander)
+const section = (title, intro, body) => `
+    <section class="sec">
+      <header class="sec__head"><h2>${title}</h2>${intro ? `<p>${intro}</p>` : ""}</header>
+      <div class="sec__body">${body}</div>
+    </section>`;
+// Ausführliche Erklärung, standardmässig zugeklappt
+const help = (body) => `<details class="help"><summary class="mono">Wie funktioniert das?</summary><div>${body}</div></details>`;
+
 function renderEditor() {
   const ed = $("[data-editor]");
   const p = state.PROJECTS[current];
@@ -305,122 +314,157 @@ function renderEditor() {
   const catOpts = Object.entries(state.CATS).map(([k, v]) => `<option value="${esc(k)}"${p.cat === k ? " selected" : ""}>${esc(v)}</option>`).join("");
   // Die Disziplin-Seite wechselt Hoch- und Querformat ab (wie buildWork in js/main.js): Positionen 2 und 3 von 4 sind quer
   const pos = state.PROJECTS.filter((q) => q.cat === p.cat).indexOf(p) % 4;
-  const discFormat = pos === 1 || pos === 2 ? "Querformat (5:4)" : "Hochformat (4:5)";
+  const discFormat = pos === 1 || pos === 2 ? "Querformat 5:4" : "Hochformat 4:5";
+  const hasFilm = p.videos.some(Boolean);
+
+  // Bildkachel: Verschieben, Titelbild, Entfernen; darunter Breite in der Galerie und «Nicht beschneiden»
+  const tile = (src, k) => {
+    const uses = usesOf(p, src);
+    const badges = [k === 0 ? "Titelbild" : "", ...uses.map((u) => IMAGE_USES[u])].filter(Boolean);
+    const inGallery = k > 0 && !uses.length;
+    return `
+          <div class="img-wrap">
+            <div class="img${p.full.includes(src) ? " is-full" : ""}">
+              <img src="${esc(stillOf(src))}" alt="" />
+              <span class="img__num mono" title="${isLoop(src) ? "Loop" : "Bild"} ${k + 1}">${k + 1}${isLoop(src) ? " ▶" : ""}</span>
+              ${badges.length ? `<span class="img__badge mono">${badges.join(" · ")}</span>` : ""}
+              <div class="img__tools">
+                <span>
+                  <button data-img="left" data-k="${k}" title="Nach vorne">←</button>
+                  <button data-img="right" data-k="${k}" title="Nach hinten">→</button>
+                </span>
+                <span>
+                  ${k ? `<button data-img="cover" data-k="${k}" title="Als Titelbild">★</button>` : ""}
+                  <button data-img="del" data-k="${k}" title="Entfernen">✕</button>
+                </span>
+              </div>
+            </div>
+            <div class="img__opts">
+              ${inGallery ? `<div class="seg img__layout mono" role="group" aria-label="Breite in der Galerie">
+                <button type="button" data-layout="half" data-src="${esc(src)}" class="${p.wide.includes(src) ? "" : "is-active"}" title="Halbe Breite, zwei nebeneinander">Hoch</button>
+                <button type="button" data-layout="wide" data-src="${esc(src)}" class="${p.wide.includes(src) ? "is-active" : ""}" title="Ganze Breite">Quer</button>
+              </div>` : `<span class="img__layout mono muted">Nicht in der Galerie</span>`}
+              <label class="check img__full mono"><input type="checkbox" data-full="${esc(src)}"${p.full.includes(src) ? " checked" : ""} /> Nicht beschneiden</label>
+            </div>
+          </div>`;
+  };
+
+  // Platz für eine Bildrolle: Vorschau des gewählten Bildes und Auswahl aus den Projektbildern
+  const slot = (use, label, hint, none) => {
+    const chosen = p[use] && p.images.includes(p[use]) ? p[use] : "";
+    const shown = chosen || (none ? "" : p.images[0]);
+    return `
+          <div class="slot${chosen ? "" : " is-default"}">
+            <div class="slot__img">${shown ? `<img src="${esc(stillOf(shown))}" alt="" />` : `<span class="mono muted">Keines</span>`}</div>
+            <div class="slot__text">
+              <strong>${label}</strong>
+              <small>${hint}</small>
+              <select data-use-select="${use}" aria-label="${esc(label)}">
+                <option value="">${none || "Titelbild verwenden"}</option>
+                ${p.images.map((src, k) => `<option value="${esc(src)}"${chosen === src ? " selected" : ""}>Bild ${k + 1}${k === 0 ? " (Titelbild)" : ""}${isLoop(src) ? " · Loop" : ""}</option>`).join("")}
+              </select>
+            </div>
+          </div>`;
+  };
+
   ed.innerHTML = `
     <button class="btn btn--sm editor__back" type="button" data-back>← Alle Projekte</button>
     <div class="editor__head">
       <div>
-        <p class="mono muted" style="margin:0 0 8px">Projekt ${pad(current + 1)} / ${pad(state.PROJECTS.length)} — erscheint auf ${esc(state.CATS[p.cat])}</p>
+        <p class="mono muted" style="margin:0 0 8px">Projekt ${pad(current + 1)} / ${pad(state.PROJECTS.length)} · ${esc(state.CATS[p.cat])}</p>
         <h1 data-title-view>${esc(p.title || "Ohne Titel")}</h1>
       </div>
       <div class="actions">
-        <label class="check visibility mono" title="Ausgeblendete Projekte erscheinen nirgends auf der Website, auch nicht in Sitemap und Suche">
-          <input type="checkbox" data-f="hidden"${p.hidden ? " checked" : ""} /> Ausgeblendet (Entwurf)</label>
-        <a class="btn btn--sm" href="projekt.html?p=${projectIds(state.PROJECTS)[current]}" target="_blank" rel="noopener" title="${p.hidden ? "Erst speichern, dann ansehen. Als Entwurf nur für dich sichtbar, solange du angemeldet bist." : "Erst speichern, dann ansehen"}">Projekt ansehen ↗</a>
+        <div class="seg status mono" role="group" aria-label="Sichtbarkeit" title="Entwürfe erscheinen nirgends auf der Website, auch nicht in Sitemap und Suche">
+          <button type="button" data-status="online" class="${p.hidden ? "" : "is-active"}">Online</button>
+          <button type="button" data-status="draft" class="${p.hidden ? "is-active" : ""}">Entwurf</button>
+        </div>
+        <a class="btn btn--sm" href="projekt.html?p=${projectIds(state.PROJECTS)[current]}" target="_blank" rel="noopener" title="${p.hidden ? "Erst speichern, dann ansehen. Als Entwurf nur für dich sichtbar, solange du angemeldet bist." : "Erst speichern, dann ansehen"}">Ansehen ↗</a>
         <button class="btn btn--sm btn--danger" data-delete>Löschen</button>
       </div>
     </div>
 
-    <div class="form">
-      <label class="field field--4"><span class="mono">Titel</span>
-        <input type="text" data-f="title" value="${esc(p.title)}" placeholder="z. B. Nordwand" /></label>
-      <label class="field field--2"><span class="mono">Jahr</span>
-        <input type="number" data-f="year" value="${esc(p.year)}" min="1990" max="2100" /></label>
+    ${section("Grunddaten", "Erscheinen im Steckbrief und in den Übersichten.", `
+      <div class="form">
+        <label class="field field--4"><span class="mono">Titel</span>
+          <input type="text" data-f="title" value="${esc(p.title)}" placeholder="z. B. Nordwand" /></label>
+        <label class="field field--2"><span class="mono">Jahr</span>
+          <input type="number" data-f="year" value="${esc(p.year)}" min="1990" max="2100" /></label>
+        <label class="field field--3"><span class="mono">Disziplin</span>
+          <select data-f="cat">${catOpts}</select></label>
+        <label class="field field--3"><span class="mono">Rolle / Leistung</span>
+          <input type="text" data-f="role" value="${esc(p.role)}" placeholder="z. B. Identität, Logo, Guidelines" /></label>
+        <label class="field field--3"><span class="mono">Kunde <em>optional</em></span>
+          <input type="text" data-f="client" value="${esc(p.client)}" placeholder="z. B. Bäckerei Müller" /></label>
+        <label class="field field--3"><span class="mono">Tools</span>
+          <input type="text" data-f="tools" value="${esc(p.tools)}" placeholder="z. B. Illustrator, Figma" /></label>
+      </div>`)}
 
-      <label class="field field--3"><span class="mono">Disziplin</span>
-        <select data-f="cat">${catOpts}</select></label>
-      <label class="field field--3"><span class="mono">Rolle / Leistung</span>
-        <input type="text" data-f="role" value="${esc(p.role)}" placeholder="z. B. Identität, Logo, Guidelines" /></label>
+    ${section("Text", "Der grosse Text auf der Projektseite.", `
+      <div class="form">
+        <label class="field"><span class="mono">Beschreibung</span>
+          <textarea data-f="desc" rows="5" placeholder="Worum geht es, was war deine Rolle, was ist das Besondere?">${esc(p.desc)}</textarea>
+          <small>Link hinter ein Wort: <code>[Wort](https://…)</code></small></label>
+        <div class="field">${help(`Das Wort kommt in eckige Klammern, direkt danach (ohne Leerzeichen) der Link in runden Klammern. Beispiel: <code>Die [Certum AG](https://www.certum.ch) sucht …</code>. Erlaubt sind nur https-Links. Eine Leerzeile beginnt einen neuen Absatz.`)}</div>
+      </div>`)}
 
-      <label class="field field--3"><span class="mono">Kunde</span>
-        <input type="text" data-f="client" value="${esc(p.client)}" placeholder="z. B. Bäckerei Müller (leer = nicht anzeigen)" /></label>
-      <label class="field field--3"><span class="mono">Tools</span>
-        <input type="text" data-f="tools" value="${esc(p.tools)}" placeholder="z. B. Illustrator, Figma" /></label>
-
-      <label class="field"><span class="mono">Beschreibung</span>
-        <textarea data-f="desc" rows="5" placeholder="Worum geht es, was war deine Rolle, was ist das Besondere?">${esc(p.desc)}</textarea>
-        <small>Link hinter ein Wort legen: das Wort in eckige Klammern, direkt danach (ohne Leerzeichen) der Link in runden Klammern. Beispiel: <code>Die [Certum AG](https://www.certum.ch) sucht …</code>. Nur https-Links.</small></label>
-
-      <div class="field field--3"><span class="mono">Filme (YouTube oder Vimeo, optional)</span>
-        ${p.videos.map((url, k) => `
-          <div class="pw">
-            <input type="url" data-film="${k}" value="${esc(url)}" placeholder="https://vimeo.com/123456789" aria-label="Film ${k + 1}" />
-            <button class="btn btn--sm btn--danger" type="button" data-film-del="${k}" title="Film entfernen">✕</button>
-          </div>`).join("")}
-        <div><button class="btn btn--sm" type="button" data-film-add>+ Film hinzufügen</button></div>
-        <small>Erscheinen zuoberst auf der Projektseite, in dieser Reihenfolge. Der Player ist direkt eingebettet (YouTube ohne Cookies, Vimeo ohne Tracking) und lädt, sobald er ins Bild scrollt.</small></div>
-      <label class="field field--3"><span class="mono">Link (optional)</span>
-        <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
-        <small>Wird im Projekt als «Link ↗» angezeigt, z. B. Behance oder Live-Website.</small></label>
-
-      <label class="field"><span class="mono">Adresse der Projektseite (optional)</span>
-        <div class="slug"><span class="mono muted">alessiorosano.ch/projekt.html?p=</span>
-          <input type="text" data-slug value="${esc(p.slug)}" placeholder="${esc(slugify(p.title))}" spellcheck="false" autocapitalize="off" /></div>
-        <small data-slug-note>${slugNote(p)}</small></label>
-
-      <div class="field"><span class="mono">PDFs (optional)</span>
-        <div class="drop drop--sm" data-pdf-drop tabindex="0" role="button">
-          <strong>PDF hierher ziehen oder klicken</strong>
-          <span class="mono muted">z. B. Plakat, Broschüre, Präsentation · max. ${MAX_PDF_MB} MB pro Datei</span>
-        </div>
-        ${p.docs.map((d, k) => `
-          <div class="pw">
-            <input type="text" data-doc="${k}" value="${esc(d.title)}" placeholder="Bezeichnung, z. B. Broschüre" aria-label="Bezeichnung von PDF ${k + 1}" />
-            <a class="btn btn--sm" href="${esc(d.src)}" target="_blank" rel="noopener">Ansehen ↗</a>
-            <button class="btn btn--sm btn--danger" type="button" data-doc-del="${k}" title="PDF entfernen">✕</button>
-          </div>`).join("")}
-        <small>Erscheinen auf der Projektseite im Steckbrief als Links. Die Bezeichnung ist der Linktext.</small></div>
-
-      <div class="field">
-        <span class="mono">Bilder &amp; Loops</span>
-        <div class="drop" data-drop tabindex="0" role="button">
-          <strong>Bilder hierher ziehen oder klicken</strong>
-          <span class="mono muted">Bilder (JPG, PNG, WebP, GIF) oder kurze Loops (MP4, MOV, WebM; H.264, ohne Ton, max. 60 MB)</span>
-        </div>
-        ${p.images.length ? `<div class="images">${p.images.map((src, k) => `
-          <div class="img-wrap">
-          <div class="img${p.full.includes(src) ? " is-full" : ""}">
-            <img src="${esc(stillOf(src))}" alt="" />
-            ${isLoop(src) ? `<span class="img__badge mono" style="left:auto;right:8px">▶ Loop</span>` : ""}
-            ${k === 0 || usesOf(p, src).length ? `<span class="img__badge mono">${[k === 0 ? "Titelbild" : "", ...usesOf(p, src).map((u) => IMAGE_USES[u])].filter(Boolean).join(" · ")}</span>` : ""}
-            <div class="img__tools">
-              <span>
-                <button data-img="left" data-k="${k}" title="Nach vorne">←</button>
-                <button data-img="right" data-k="${k}" title="Nach hinten">→</button>
-              </span>
-              <span>
-                ${k ? `<button data-img="cover" data-k="${k}" title="Als Titelbild">★</button>` : ""}
-                <button data-img="del" data-k="${k}" title="Entfernen">✕</button>
-              </span>
-            </div>
-          </div>
-          ${k && !usesOf(p, src).length ? `<div class="seg img__layout mono" role="group" aria-label="Breite in der Galerie">
-            <button type="button" data-layout="half" data-src="${esc(src)}" class="${p.wide.includes(src) ? "" : "is-active"}" title="Halbe Breite, zwei nebeneinander">Hoch</button>
-            <button type="button" data-layout="wide" data-src="${esc(src)}" class="${p.wide.includes(src) ? "is-active" : ""}" title="Ganze Breite">Quer</button>
-          </div>` : `<span class="img__layout mono muted">Nicht in der Galerie</span>`}
-          <label class="check img__full mono"><input type="checkbox" data-full="${esc(src)}"${p.full.includes(src) ? " checked" : ""} /> Nicht beschneiden</label>
-          ${Object.entries(IMAGE_USES).map(([u, label]) => `
-          <label class="check img__full mono"><input type="checkbox" data-use="${u}" data-src="${esc(src)}"${p[u] === src ? " checked" : ""} /> ${label}</label>`).join("")}
-          </div>`).join("")}</div>
-          <small class="muted" style="margin-top:6px">
-          <b>Titelbild</b> (★, das erste Bild): Vorschau im Slider, und überall dort, wo keine eigene Vorschau gesetzt ist.<br />
-          <b>Vorschau «Zeig mal»</b>: erscheint im Raster als Querformat (4:3). <b>Vorschau Disziplin</b>: Dieses Projekt steht auf der Disziplin-Seite im <b>${discFormat}</b>.<br />
-          <b>Vorschau Startseite</b>: kleines Hochformat (4:5) beim Hover über die Disziplin bei «Was». Dort erscheinen die ersten zwei Projekte der Disziplin (Reihenfolge wie in der Liste links)${pos < 2 ? ", dieses gehört dazu" : ", dieses gehört gerade nicht dazu"}.<br />
-          <b>Keyvisual</b>: gross zuoberst auf der Projektseite, vor dem Text${p.videos.some(Boolean) ? " (wird nicht gezeigt, solange ein Film eingetragen ist: dann steht der Film zuoberst)" : ""}.<br />
-          Bilder mit einer dieser Rollen stehen nicht noch einmal in der Galerie. Alle anderen bilden die Galerie, in dieser Reihenfolge.<br />
-          «Nicht beschneiden» für Plakate oder Bilder mit Text: Auf der Projektseite erscheint das Bild dann vollständig, ohne Zuschnitt und Zoom.</small>` : ""}
+    ${section("Bilder & Loops", "Das erste Bild (★) ist das Titelbild. Die übrigen bilden die Galerie auf der Projektseite.", `
+      <div class="drop" data-drop tabindex="0" role="button">
+        <strong>Bilder hierher ziehen oder klicken</strong>
+        <span class="mono muted">JPG, PNG, WebP, GIF · Loops: MP4, MOV, WebM (H.264, ohne Ton, max. 60 MB)</span>
       </div>
+      ${p.images.length ? `<div class="images">${p.images.map(tile).join("")}</div>
+      ${help(`<b>Hoch / Quer</b>: halbe oder ganze Breite in der Galerie. <b>Nicht beschneiden</b>: für Plakate oder Bilder mit Text, das Bild erscheint dann vollständig, ohne Zuschnitt und Zoom.
+        Bilder, die als Titelbild, Keyvisual oder Vorschau dienen, stehen nicht noch einmal in der Galerie.
+        Fotos sind überall farbig, nur im Slider der Startseite und auf «Zeig mal» schwarz-weiss, bis man mit der Maus darüberfährt (am Handy gleich farbig).`)}` : `
+      <div class="placeholder">
+        <div class="preview">${makeArt(p.cat, p.art, 400, 500, p.title)}</div>
+        <div><p class="muted" style="margin:0 0 10px">Solange keine Bilder da sind, zeigt die Website diese Grafik.</p>
+        <div class="seg"><button data-art="0" class="${p.art % 2 ? "" : "is-active"}">Variante A</button><button data-art="1" class="${p.art % 2 ? "is-active" : ""}">Variante B</button></div></div>
+      </div>`}`)}
 
-      ${p.images.length ? `
-      <p class="field muted" style="margin:0">Bilder erscheinen in Originalfarben. Nur im Slider der Startseite und auf «Zeig mal» sind sie schwarz-weiss, bis man mit der Maus darüberfährt (am Handy gleich farbig).</p>` : `
-      <div class="field">
-        <span class="mono">Platzhalter, solange keine Bilder da sind</span>
-        <div class="placeholder">
-          <div class="preview">${makeArt(p.cat, p.art, 400, 500, p.title)}</div>
-          <div class="seg"><button data-art="0" class="${p.art % 2 ? "" : "is-active"}">Variante A</button><button data-art="1" class="${p.art % 2 ? "is-active" : ""}">Variante B</button></div>
-        </div>
-      </div>`}
-    </div>`;
+    ${p.images.length ? section("Vorschauen & Keyvisual", "Welches Bild wo erscheint. Ohne eigene Wahl gilt das Titelbild.", `
+      <div class="slots">
+        ${slot("keyvisual", "Keyvisual", hasFilm ? "Zuoberst auf der Projektseite. Wird nicht gezeigt, solange ein Film eingetragen ist." : "Gross zuoberst auf der Projektseite, vor dem Text.", "Kein Keyvisual")}
+        ${slot("previewWorks", "Vorschau «Zeig mal»", "Raster auf «Zeig mal» · Querformat 4:3")}
+        ${slot("previewDiscipline", "Vorschau Disziplin", `Disziplin-Seite · hier im ${discFormat}`)}
+        ${slot("previewHome", "Vorschau Startseite", `Hover bei «Was» · Hochformat 4:5${pos < 2 ? "" : " · nur die ersten zwei Projekte der Disziplin erscheinen dort, dieses gerade nicht"}`)}
+      </div>`) : ""}
+
+    ${section("Film, Link & PDFs", "Alles optional.", `
+      <div class="form">
+        <div class="field field--3"><span class="mono">Filme · YouTube oder Vimeo</span>
+          ${p.videos.map((url, k) => `
+            <div class="pw">
+              <input type="url" data-film="${k}" value="${esc(url)}" placeholder="https://vimeo.com/123456789" aria-label="Film ${k + 1}" />
+              <button class="btn btn--sm btn--danger" type="button" data-film-del="${k}" title="Film entfernen">✕</button>
+            </div>`).join("")}
+          <div><button class="btn btn--sm" type="button" data-film-add>+ Film hinzufügen</button></div>
+          <small>Zuoberst auf der Projektseite, in dieser Reihenfolge.</small></div>
+        <label class="field field--3"><span class="mono">Link</span>
+          <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
+          <small>Erscheint als «Link ↗», z. B. Behance oder Live-Website.</small></label>
+        <div class="field"><span class="mono">PDFs</span>
+          ${p.docs.map((d, k) => `
+            <div class="pw">
+              <input type="text" data-doc="${k}" value="${esc(d.title)}" placeholder="Bezeichnung, z. B. Broschüre" aria-label="Bezeichnung von PDF ${k + 1}" />
+              <a class="btn btn--sm" href="${esc(d.src)}" target="_blank" rel="noopener">Ansehen ↗</a>
+              <button class="btn btn--sm btn--danger" type="button" data-doc-del="${k}" title="PDF entfernen">✕</button>
+            </div>`).join("")}
+          <div class="drop drop--sm" data-pdf-drop tabindex="0" role="button">
+            <strong>PDF hierher ziehen oder klicken</strong>
+            <span class="mono muted">z. B. Plakat, Broschüre · max. ${MAX_PDF_MB} MB</span>
+          </div>
+          <small>Erscheinen im Steckbrief als Links, die Bezeichnung ist der Linktext.</small></div>
+      </div>`)}
+
+    ${section("Veröffentlichung", "Sichtbarkeit (oben: Online oder Entwurf) und Adresse der Projektseite.", `
+      <div class="form">
+        <label class="field"><span class="mono">Adresse <em>optional</em></span>
+          <div class="slug"><span class="mono muted">alessiorosano.ch/projekt.html?p=</span>
+            <input type="text" data-slug value="${esc(p.slug)}" placeholder="${esc(slugify(p.title))}" spellcheck="false" autocapitalize="off" /></div>
+          <small data-slug-note>${slugNote(p)}</small></label>
+      </div>`)}`;
 }
 
 /* ── Ablagefelder: Dateien hineinziehen, anklicken oder per Tastatur öffnen ── */
@@ -458,8 +502,9 @@ function renderAbout() {
     <h1>Wer</h1>
     <p class="muted">Der Bereich «Wer» auf der Startseite: Text, Portrait und Steckbrief.</p>
     <div class="card">
+      <h2>Text</h2>
       <div class="form">
-        <label class="field"><span class="mono">Text</span>
+        <label class="field"><span class="mono">Über mich</span>
           <textarea data-a="statement" rows="5">${esc(a.statement)}</textarea>
           <small>Erscheint gross und wird beim Scrollen Wort für Wort sichtbar. Leerzeile = neuer Absatz.</small></label>
       </div>
@@ -540,13 +585,21 @@ aboutView.addEventListener("click", (e) => {
 dropZone(aboutView, "[data-about-drop]", "[data-about-file]", setPortrait);
 
 /* ── UI: Disziplinen & Allgemein ─────────────────────────────── */
+// Welche Disziplinen aufgeklappt sind (bleibt beim Neuzeichnen erhalten)
+const openDisciplines = new Set();
+document.addEventListener("toggle", (e) => {
+  const fold = e.target.closest?.("[data-fold]");
+  if (fold) fold.open ? openDisciplines.add(fold.dataset.fold) : openDisciplines.delete(fold.dataset.fold);
+}, true);
+
 function renderDisciplines() {
   $("[data-disciplines]").innerHTML = `
     <h1>Disziplinen</h1>
-    <p class="muted">Texte für die vier Disziplinen («Was» auf der Startseite) — erscheinen beim Hover und auf der jeweiligen Unterseite.</p>
+    <p class="muted">Texte für «Was» auf der Startseite (beim Hover) und für die Disziplin-Seiten. Zum Bearbeiten aufklappen.</p>
     ${state.DISCIPLINES.map((d, i) => `
-      <div class="card">
-        <h2>${pad(i + 1)} — <span data-cat-title="${esc(d.cat)}">${esc(state.CATS[d.cat])}</span></h2>
+      <details class="card card--fold"${openDisciplines.has(d.cat) ? " open" : ""} data-fold="${esc(d.cat)}">
+        <summary><h2><span class="mono muted">${pad(i + 1)}</span> <span data-cat-title="${esc(d.cat)}">${esc(state.CATS[d.cat])}</span></h2>
+          <span class="card__peek muted">${esc(d.lead)}</span></summary>
         <div class="form">
           <label class="field field--3"><span class="mono">Name</span>
             <input type="text" data-cat-label="${esc(d.cat)}" value="${esc(state.CATS[d.cat])}" />
@@ -564,7 +617,7 @@ function renderDisciplines() {
               <textarea data-di="${i}" data-ds="${s}" data-dp="1">${esc(x)}</textarea></label>`).join("")}
           </div>
         </div>
-      </div>`).join("")}`;
+      </details>`).join("")}`;
 }
 
 function renderGeneral() {
@@ -777,9 +830,9 @@ editor.addEventListener("input", (e) => {
 editor.addEventListener("change", (e) => {
   const f = e.target.dataset.f;
   const p = state.PROJECTS[current];
-  const use = e.target.dataset.use;
+  const use = e.target.dataset.useSelect;
   if (use) {   // eine Rolle gibt es pro Projekt nur einmal
-    p[use] = e.target.checked ? e.target.dataset.src : "";
+    p[use] = e.target.value;
     markDirty();
     renderEditor();
     return;
@@ -789,12 +842,6 @@ editor.addEventListener("change", (e) => {
     p.full = e.target.checked ? [...new Set([...p.full, fullSrc])] : p.full.filter((s) => s !== fullSrc);
     markDirty();
     renderEditor();
-    return;
-  }
-  if (f === "hidden") {
-    p.hidden = e.target.checked;
-    markDirty();
-    renderList();
     return;
   }
   if (f !== "cat") return;
@@ -810,6 +857,15 @@ editor.addEventListener("click", async (e) => {
 
   const docDel = e.target.closest("[data-doc-del]");
   if (docDel) { p.docs.splice(+docDel.dataset.docDel, 1); markDirty(); renderEditor(); return; }   // Datei bleibt auf dem Server
+
+  const status = e.target.closest("[data-status]");
+  if (status) {
+    p.hidden = status.dataset.status === "draft";
+    markDirty();
+    renderList();
+    renderEditor();
+    return;
+  }
 
   if (e.target.closest("[data-film-add]")) {
     p.videos.push("");
@@ -974,7 +1030,7 @@ function renderGalleryEditor() {
     <button class="btn btn--sm editor__back" type="button" data-back>← Alle Galerien</button>
     <div class="editor__head">
       <div>
-        <p class="mono muted" style="margin:0 0 8px">${g.slug ? `${files.length} Dateien · ${fmtBytes(size)}` : "Neue Galerie — noch nicht gespeichert"}</p>
+        <p class="mono muted" style="margin:0 0 8px">${g.slug ? `${files.length} Dateien · ${fmtBytes(size)}` : "Neue Galerie · noch nicht gespeichert"}</p>
         <h1>${esc(g.title || "Neue Galerie")}</h1>
       </div>
       <div class="actions">
@@ -983,56 +1039,57 @@ function renderGalleryEditor() {
       </div>
     </div>
 
-    <div class="form">
-      <label class="field field--4"><span class="mono">Titel</span>
-        <input type="text" data-gf="title" value="${esc(g.title)}" placeholder="z. B. Hochzeit Muster, 12. Juni" /></label>
-      <label class="field field--2"><span class="mono">Datum des Anlasses</span>
-        <input type="date" data-gf="date" value="${esc(g.date)}" /></label>
-      <div class="field field--4"><span class="mono">Passwort</span>
-        <div class="pw">
-          <input type="text" data-gf="password" value="${esc(g.password)}" autocomplete="off" spellcheck="false" />
-          <button class="btn btn--sm" data-g-newpw type="button">Neu erzeugen</button>
-        </div>
-        <small>Mindestens 8 Zeichen. Wird geprüft, bevor jemand die Galerie sieht.</small></div>
-      <label class="field field--2"><span class="mono">Verfügbar bis (optional)</span>
-        <input type="date" data-gf="expires" value="${esc(g.expires)}" />
-        <small>Danach ist die Galerie für Kund:innen gesperrt.</small></label>
-      <label class="field"><span class="mono">Adresse (optional)</span>
-        <div class="slug"><span class="mono muted">alessiorosano.ch/galerie/</span>
-          <input type="text" data-gf="newSlug" value="${esc(g.newSlug ?? g.slug ?? "")}" placeholder="${esc(slugify(g.title, 50))}" spellcheck="false" autocapitalize="off" /></div>
-        <small>${g.slug
-          ? "Nur Kleinbuchstaben, Zahlen und Bindestriche. Achtung: Wer die Adresse ändert, macht den bisherigen Link ungültig. Kund:innen brauchen dann den neuen Link (das Passwort bleibt)."
-          : "Leer = aus dem Titel. Nur Kleinbuchstaben, Zahlen und Bindestriche."}</small></label>
-      <div class="field"><div><button class="btn btn--fill" data-g-save type="button">${g.slug ? "Änderungen speichern" : "Galerie anlegen"}</button></div></div>
+    ${section("Galerie", "Was Kund:innen oben auf der Seite sehen.", `
+      <div class="form">
+        <label class="field field--4"><span class="mono">Titel</span>
+          <input type="text" data-gf="title" value="${esc(g.title)}" placeholder="z. B. Hochzeit Muster, 12. Juni" /></label>
+        <label class="field field--2"><span class="mono">Datum des Anlasses</span>
+          <input type="date" data-gf="date" value="${esc(g.date)}" /></label>
+      </div>`)}
 
-      ${g.slug ? `
-      <div class="field"><span class="mono">Weitergeben</span>
-        <div class="share">
-          <code>${esc(galleryUrl(g.slug))}</code>
-          <button class="btn btn--sm" data-g-copy="link" type="button">Link kopieren</button>
-          <button class="btn btn--sm btn--fill" data-g-copy="all" type="button">Link + Passwort kopieren</button>
-        </div></div>
+    ${section("Zugang", "Passwort, Ablauf und Adresse der Galerie.", `
+      <div class="form">
+        <div class="field field--4"><span class="mono">Passwort</span>
+          <div class="pw">
+            <input type="text" data-gf="password" value="${esc(g.password)}" autocomplete="off" spellcheck="false" />
+            <button class="btn btn--sm" data-g-newpw type="button">Neu erzeugen</button>
+          </div>
+          <small>Mindestens 8 Zeichen.</small></div>
+        <label class="field field--2"><span class="mono">Verfügbar bis <em>optional</em></span>
+          <input type="date" data-gf="expires" value="${esc(g.expires)}" />
+          <small>Danach gesperrt.</small></label>
+        <label class="field"><span class="mono">Adresse <em>optional</em></span>
+          <div class="slug"><span class="mono muted">alessiorosano.ch/galerie/</span>
+            <input type="text" data-gf="newSlug" value="${esc(g.newSlug ?? g.slug ?? "")}" placeholder="${esc(slugify(g.title, 50))}" spellcheck="false" autocapitalize="off" /></div>
+          <small>${g.slug ? "Ändern macht den bisherigen Link ungültig (das Passwort bleibt)." : "Leer = aus dem Titel."}</small></label>
+        <div class="field"><div><button class="btn btn--fill" data-g-save type="button">${g.slug ? "Änderungen speichern" : "Galerie anlegen"}</button></div></div>
+      </div>`)}
 
-      <div class="field"><span class="mono">Fotos, Videos & PDFs</span>
-        <div class="drop" data-g-drop tabindex="0" role="button">
-          <strong>Dateien hierher ziehen oder klicken</strong>
-          <span class="mono muted">Fotos (JPG, PNG, WebP, HEIC), Videos (MP4, MOV, WebM) und PDFs · auch sehr grosse Dateien</span>
-        </div>
-        <div class="uploads" data-g-uploads></div>
-        ${files.length ? `<div class="files">${files.map((f) => `
-          <div class="file">
-            ${f.kind === "pdf"
-              ? `<a class="file__pdf mono" href="${esc(fileUrl(g.slug, f.name))}" target="_blank" rel="noopener" title="PDF ansehen">PDF</a>`
-              : f.thumb
-              ? `<img src="${esc(fileUrl(g.slug, f.name, "&thumb=1"))}" alt="" loading="lazy" />`
-              : f.kind === "video"
-                ? `<video src="${esc(fileUrl(g.slug, f.name))}#t=0.5" preload="metadata" muted></video>`
-                : `<img src="${esc(fileUrl(g.slug, f.name))}" alt="" loading="lazy" />`}
-            <span class="file__name mono">${f.kind === "video" ? "▶ " : ""}${esc(f.name)} · ${fmtBytes(f.size)}</span>
-            <button class="file__del" data-g-file-del="${esc(f.name)}" title="Datei löschen">✕</button>
-          </div>`).join("")}</div>` : ""}
-      </div>` : `<p class="field muted" style="margin:0">Nach dem Anlegen kannst du Fotos, Videos und PDFs hochladen.</p>`}
-    </div>`;
+    ${g.slug ? section("Weitergeben", "Link und Passwort für Kund:innen.", `
+      <div class="share">
+        <code>${esc(galleryUrl(g.slug))}</code>
+        <button class="btn btn--sm" data-g-copy="link" type="button">Link kopieren</button>
+        <button class="btn btn--sm btn--fill" data-g-copy="all" type="button">Link + Passwort kopieren</button>
+      </div>`) : ""}
+
+    ${section("Dateien", g.slug ? `${files.length} ${files.length === 1 ? "Datei" : "Dateien"} · ${fmtBytes(size)}. Hochgeladenes ist sofort gespeichert.` : "Nach dem Anlegen kannst du Dateien hochladen.", g.slug ? `
+      <div class="drop" data-g-drop tabindex="0" role="button">
+        <strong>Dateien hierher ziehen oder klicken</strong>
+        <span class="mono muted">Fotos (JPG, PNG, WebP, HEIC), Videos (MP4, MOV, WebM), PDFs · auch sehr grosse Dateien</span>
+      </div>
+      <div class="uploads" data-g-uploads></div>
+      ${files.length ? `<div class="files">${files.map((f) => `
+        <div class="file">
+          ${f.kind === "pdf"
+            ? `<a class="file__pdf mono" href="${esc(fileUrl(g.slug, f.name))}" target="_blank" rel="noopener" title="PDF ansehen">PDF</a>`
+            : f.thumb
+            ? `<img src="${esc(fileUrl(g.slug, f.name, "&thumb=1"))}" alt="" loading="lazy" />`
+            : f.kind === "video"
+              ? `<video src="${esc(fileUrl(g.slug, f.name))}#t=0.5" preload="metadata" muted></video>`
+              : `<img src="${esc(fileUrl(g.slug, f.name))}" alt="" loading="lazy" />`}
+          <span class="file__name mono">${f.kind === "video" ? "▶ " : ""}${esc(f.name)} · ${fmtBytes(f.size)}</span>
+          <button class="file__del" data-g-file-del="${esc(f.name)}" title="Datei löschen">✕</button>
+        </div>`).join("")}</div>` : ""}` : "")}`;
 }
 
 async function saveGallery() {
