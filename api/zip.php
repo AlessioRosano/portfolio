@@ -1,7 +1,7 @@
 <?php
 // Ganze Galerie als ZIP. Fotos und Videos sind schon komprimiert, darum nur «gespeichert» (schnell).
 // Das ZIP wird zwischengespeichert, solange sich die Dateien nicht ändern.
-require __DIR__ . '/lib.php';
+require __DIR__ . '/stats.php';
 
 $slug = (string) ($_GET['g'] ?? '');
 $gallery = galleryOrDeny($slug);
@@ -30,4 +30,5 @@ if (!is_file($zipPath)) {
     rename($tmp, $zipPath);
 }
 
+if (!preg_match('/bytes=[1-9]/', $_SERVER['HTTP_RANGE'] ?? '')) countGallery($slug, 'zip', count($files) . ' Dateien');   // Statistik
 sendFile($zipPath, slugify($gallery['title'], 60) . '.zip', true, 'application/zip');

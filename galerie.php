@@ -4,7 +4,7 @@
    Verwaltet im CMS unter «Galerien».
    ========================================================================== */
 
-require __DIR__ . '/api/lib.php';
+require __DIR__ . '/api/stats.php';
 
 ensureStorage();
 startSession();
@@ -39,6 +39,7 @@ $state = match (true) {
     default => 'open',
 };
 $files = $state === 'open' ? galleryFiles($slug) : [];
+if ($state === 'open' && $_SERVER['REQUEST_METHOD'] === 'GET') countGallery($slug, 'view');   // Statistik: Galerie geöffnet
 $totalSize = array_sum(array_column($files, 'size'));
 // Fotos und Videos öffnen in der Grossansicht (zum Durchblättern), PDFs im PDF-Betrachter des Browsers
 $media = array_values(array_filter($files, fn ($f) => $f['kind'] !== 'pdf'));

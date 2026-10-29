@@ -958,7 +958,14 @@ initForm();
 initProgress();
 initLinks();
 
+// Eigene Statistik: Seitenaufruf melden (ohne Cookies, siehe api/stats.php). Herkunft nur von fremden Seiten.
+function track() {
+  const data = JSON.stringify({ p: location.pathname + location.search, r: document.referrer, t: navigator.maxTouchPoints > 1 });
+  navigator.sendBeacon?.("api/track.php", new Blob([data], { type: "application/json" }));
+}
+
 Promise.all([loadContent(), document.fonts.ready]).then(() => {
+  track();
   buildProject();
   buildSub();
   buildNames();

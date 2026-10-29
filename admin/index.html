@@ -71,6 +71,11 @@
       .tabs button { padding: 8px 10px; }
       .bar__right .status, .bar > .mono.muted { display: none; }
     }
+    @media (max-width: 1040px) and (min-width: 901px) {
+      .tabs button { padding: 8px 7px; }
+      .bar__right { gap: 6px; }
+      .bar .btn { padding: 8px 11px; }
+    }
     .status.is-dirty::before { content: "● "; }
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
@@ -193,7 +198,7 @@
     .help summary { cursor: pointer; opacity: 0.6; width: fit-content; }
     .help summary:hover { opacity: 1; }
     .help > div { margin-top: 8px; max-width: 72ch; line-height: 1.5; opacity: 0.75; }
-    .status button { padding: 7px 14px; }
+    .visibility button { padding: 7px 14px; }
     /* Plätze für Keyvisual und Vorschauen */
     .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
     .slot { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: start; padding: 12px; border: 1.5px solid var(--bx-15); border-radius: var(--radius); }
@@ -227,6 +232,33 @@
     .card--fold[open] .card__peek { visibility: hidden; }
     .card--fold > .form { padding-bottom: 32px; }
     @media (max-width: 900px) { .card--fold > summary { grid-template-columns: 1fr auto; } .card__peek { display: none; } }
+
+    /* Statistik */
+    #view-stats { grid-template-columns: minmax(0, 1fr); }
+    .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .kpi { padding: 16px; border: 1.5px solid var(--bx-15); border-radius: var(--radius); }
+    .kpi b { display: block; font-size: clamp(30px, 3vw, 44px); font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin: 8px 0 6px; }
+    .kpi small { opacity: 0.6; }
+    .chart { display: flex; align-items: flex-end; gap: 3px; height: 160px; padding-top: 8px; border-bottom: 1.5px solid var(--bx-15); }
+    .chart span { flex: 1; min-height: 2px; background: var(--bx-15); border-radius: 3px 3px 0 0; position: relative; }
+    .chart span:hover { background: var(--bx-35); }
+    .chart span i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bx); border-radius: 3px 3px 0 0; }
+    .chart__axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; opacity: 0.6; }
+    .legend { display: flex; gap: 16px; font-size: 12px; opacity: 0.7; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--bx); }
+    .legend i.is-light { background: var(--bx-15); }
+    .rows { display: grid; gap: 2px; }
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--bx-08); }
+    .row__bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--bx-08); overflow: hidden; }
+    .row__bar i { display: block; height: 100%; background: var(--bx); }
+    .row__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row__label small { opacity: 0.55; margin-left: 6px; }
+    .row__num { font-variant-numeric: tabular-nums; }
+    .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .tbl th { text-align: left; font-weight: 400; opacity: 0.6; padding: 6px 8px 6px 0; }
+    .tbl td { padding: 8px 8px 8px 0; border-top: 1px solid var(--bx-08); font-variant-numeric: tabular-nums; }
+    .tbl td.num, .tbl th.num { text-align: right; }
+    @media (max-width: 640px) { .kpi { padding: 10px; } .kpi b { font-size: 26px; margin: 6px 0 4px; } .kpi small { font-size: 11px; } }
 
     /* Medien */
     #view-media { grid-template-columns: minmax(0, 1fr); }   /* Raster darf die Ansicht nicht verbreitern */
@@ -317,6 +349,7 @@
       <button data-tab="disciplines">Disziplinen</button>
       <button data-tab="about">Wer</button>
       <button data-tab="media">Medien</button>
+      <button data-tab="stats">Statistik</button>
       <button data-tab="general">Allgemein</button>
       <button data-tab="galleries">Galerien</button>
     </nav>
@@ -378,6 +411,11 @@
   <!-- Medien: alle hochgeladenen Fotos und Loops (nur ansehen) -->
   <section class="view" id="view-media">
     <div class="pane" data-media></div>
+  </section>
+
+  <!-- Statistik: Besuche, Galerien, Speicher -->
+  <section class="view" id="view-stats">
+    <div class="pane" data-stats></div>
   </section>
 
   <!-- Allgemein -->

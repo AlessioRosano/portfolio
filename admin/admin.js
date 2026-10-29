@@ -375,7 +375,7 @@ function renderEditor() {
         <h1 data-title-view>${esc(p.title || "Ohne Titel")}</h1>
       </div>
       <div class="actions">
-        <div class="seg status mono" role="group" aria-label="Sichtbarkeit" title="Entwürfe erscheinen nirgends auf der Website, auch nicht in Sitemap und Suche">
+        <div class="seg visibility mono" role="group" aria-label="Sichtbarkeit" title="Entwürfe erscheinen nirgends auf der Website, auch nicht in Sitemap und Suche">
           <button type="button" data-status="online" class="${p.hidden ? "" : "is-active"}">Online</button>
           <button type="button" data-status="draft" class="${p.hidden ? "is-active" : ""}">Entwurf</button>
         </div>
@@ -729,6 +729,94 @@ $("[data-media]").addEventListener("click", (e) => {
   renderMedia();
 });
 
+/* ── Statistik: Besuche, Geräte, meistgesehene Seiten, Galerien und Speicher ── */
+let statsData = null;
+
+async function loadStats() {
+  try { statsData = await api("stats"); } catch (err) { statsData = null; toast(err.message); }
+  renderStats();
+}
+
+// Seitenadresse → lesbarer Name (Projekte und Disziplinen aus den aktuellen Inhalten)
+function pageTitle(path) {
+  if (path === "/") return "Startseite";
+  if (path === "/arbeiten.html") return "Zeig mal";
+  const [, kind, id] = path.match(/^\/(disziplin|projekt)\.html\?[dp]=(.+)$/) || [];
+  if (kind === "disziplin") return `Disziplin: ${state.CATS[id] || id}`;
+  if (kind === "projekt") {
+    const p = state.PROJECTS[projectIds(state.PROJECTS).indexOf(id)];
+    return p ? p.title || "Ohne Titel" : `${id} (Adresse existiert nicht mehr)`;
+  }
+  return path;
+}
+
+const num = (n) => Number(n || 0).toLocaleString("de-CH");
+const dateCH = (d) => new Date(d).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit" });
+
+// Liste mit Balken, z. B. meistgesehene Seiten (format: wie die Zahl rechts erscheint)
+function barRows(entries, label, emptyText, format = num) {
+  const max = Math.max(1, ...entries.map(([, n]) => n));
+  return entries.length ? `<div class="rows">${entries.map(([k, n]) => `
+    <div class="row"><span class="row__label">${label(k)}</span><span class="row__num mono">${format(n)}</span>
+      <span class="row__bar"><i style="width:${Math.round((n / max) * 100)}%"></i></span></div>`).join("")}</div>`
+    : `<p class="muted" style="margin:0">${emptyText}</p>`;
+}
+
+function renderStats() {
+  const box = $("[data-stats]");
+  const head = `<h1>Statistik</h1>
+    <p class="muted">Eigene Zählung ohne Cookies und ohne Fremddienst. Deine eigenen Besuche (angemeldet im CMS) und Bots zählen nicht.</p>`;
+  if (!statsData) { box.innerHTML = head + `<p class="muted">Lädt …</p>`; return; }
+  const { visits: v, galleries, downloads, storage } = statsData;
+  const maxDay = Math.max(1, ...v.days.map((d) => d.views));
+  const devTotal = Math.max(1, v.devices.desktop + v.devices.mobile + v.devices.tablet);
+  const pct = (n) => `${Math.round((n / devTotal) * 100)} %`;
+  const totalBytes = storage.groups.reduce((s, g) => s + g.bytes, 0);
+  const totalFiles = storage.groups.reduce((s, g) => s + g.count, 0);
+
+  box.innerHTML = head + `
+    ${section("Besuche", "Aufrufe von Seiten und Besucher:innen pro Tag. Wer an zwei Tagen kommt, zählt zweimal.", `
+      <div class="kpis">
+        ${[["Heute", v.today], ["Letzte 7 Tage", v.week], ["Letzte 30 Tage", v.month]].map(([l, t]) => `
+          <div class="kpi"><span class="mono muted">${l}</span><b>${num(t.views)}</b><small>Aufrufe · ${num(t.visitors)} Besucher:innen</small></div>`).join("")}
+      </div>
+      <div>
+        <div class="chart" role="img" aria-label="Aufrufe der letzten 30 Tage">${v.days.map((d) => `
+          <span style="height:${Math.round((d.views / maxDay) * 100)}%" title="${dateCH(d.date)}: ${num(d.views)} Aufrufe, ${num(d.visitors)} Besucher:innen"><i style="height:${d.views ? Math.round((d.visitors / d.views) * 100) : 0}%"></i></span>`).join("")}</div>
+        <div class="chart__axis mono"><span>${dateCH(v.days[0].date)}</span><span>${dateCH(v.days[15].date)}</span><span>heute</span></div>
+      </div>
+      <div class="legend mono"><span><i class="is-light"></i>Aufrufe</span><span><i></i>Besucher:innen</span></div>`)}
+
+    ${section("Geräte", "Womit die Seite in den letzten 30 Tagen angeschaut wurde.", barRows(
+      [["desktop", v.devices.desktop], ["mobile", v.devices.mobile], ["tablet", v.devices.tablet]].filter(([, n]) => n),
+      (k) => `${{ desktop: "Desktop", mobile: "Handy", tablet: "Tablet" }[k]} <small>${pct(v.devices[k])}</small>`, "Noch keine Besuche gezählt."))}
+
+    ${section("Meistgesehen", "Die beliebtesten Seiten der letzten 30 Tage.", barRows(Object.entries(v.pages), (p) => `${esc(pageTitle(p))}<small>${esc(p)}</small>`, "Noch keine Besuche gezählt."))}
+
+    ${section("Herkunft", "Von welchen Seiten Besucher:innen kamen (ohne direkte Aufrufe und Lesezeichen).", barRows(Object.entries(v.refs), (h) => esc(h), "Noch keine Besuche über andere Seiten."))}
+
+    ${section("Galerien", "Wie oft Kund:innen eine Galerie geöffnet und Dateien heruntergeladen haben.", `
+      ${galleries.length ? `<table class="tbl"><thead><tr><th>Galerie</th><th class="num">Geöffnet</th><th class="num">Dateien</th><th class="num">ZIP</th></tr></thead>
+        <tbody>${galleries.map((g) => `<tr><td>${esc(g.title)}</td><td class="num">${num(g.views)}</td><td class="num">${num(g.files)}</td><td class="num">${num(g.zips)}</td></tr>`).join("")}</tbody></table>`
+        : `<p class="muted" style="margin:0">Noch keine Galerien.</p>`}
+      <h3 class="mono muted" style="margin:18px 0 6px;font-weight:400">Letzte Downloads</h3>
+      ${downloads.length ? `<table class="tbl"><tbody>${downloads.map((d) => `
+        <tr><td class="mono">${new Date(d.t).toLocaleString("de-CH", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+          <td>${esc(d.title)}</td><td>${d.zip ? `<b>ZIP</b> · ${esc(d.f)}` : esc(d.f)}</td></tr>`).join("")}</tbody></table>`
+        : `<p class="muted" style="margin:0">Noch keine Downloads.</p>`}`)}
+
+    ${section("Speicher", `${num(totalFiles)} Dateien · ${fmtBytes(totalBytes)} auf dem Server.`, `
+      <table class="tbl"><thead><tr><th>Art</th><th class="num">Dateien</th><th class="num">Grösse</th></tr></thead>
+        <tbody>${storage.groups.map((g) => `<tr><td>${esc(g.label)}${g.note ? ` <span class="muted" style="font-size:12px">· ${esc(g.note)}</span>` : ""}</td>
+          <td class="num">${num(g.count)}</td><td class="num">${fmtBytes(g.bytes)}</td></tr>`).join("")}
+        <tr><td><b>Total</b></td><td class="num"><b>${num(totalFiles)}</b></td><td class="num"><b>${fmtBytes(totalBytes)}</b></td></tr></tbody></table>
+      ${storage.galleries.length ? `<h3 class="mono muted" style="margin:18px 0 6px;font-weight:400">Galerien nach Grösse</h3>
+        ${barRows(storage.galleries.map((g) => [g.slug, g.bytes]), (slug) => {
+          const g = storage.galleries.find((x) => x.slug === slug);
+          return `${esc(g.title)}<small>${num(g.count)} Dateien</small>`;
+        }, "", fmtBytes)}` : ""}`)}`;
+}
+
 /* ── Handy: Liste und Bearbeiten sind zwei Ansichten (auf dem Desktop nebeneinander) ── */
 function showEditor(view, on) {
   $(view).classList.toggle("is-editing", on);
@@ -746,6 +834,7 @@ $("[data-tabs]").addEventListener("click", (e) => {
   $$("[data-tab]").forEach((x) => x.classList.toggle("is-active", x === b));
   $$(".view").forEach((v) => v.classList.toggle("is-active", v.id === `view-${b.dataset.tab}`));
   if (b.dataset.tab === "media") loadMedia();   // jedes Mal frisch, damit neue Uploads dabei sind
+  if (b.dataset.tab === "stats") loadStats();
 });
 
 $("[data-save]").addEventListener("click", save);

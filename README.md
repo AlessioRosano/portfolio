@@ -47,6 +47,7 @@ portfolio/
 │   ├── lib.php          Session, CSRF, Login-Sperre, Dateien, Bildvarianten, Daten-Umstellung
 │   ├── data.php         öffentlich: Inhalte + Bildvarianten als JSON
 │   ├── seo.php          gemeinsame Helfer für render.php, Sitemap und llms.txt (Meta, schema.org)
+│   ├── stats.php, track.php   eigene Statistik: zählen (track.php) und auswerten (Tab «Statistik»)
 │   ├── admin.php        CMS-Schnittstelle (Login, Speichern, Uploads, Galerien, Backup)
 │   ├── file.php, zip.php   Galerie-Dateien, nur mit Passwort
 ├── setup/               Startinhalte für einen leeren Server
@@ -82,6 +83,18 @@ Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ic
 ### Galerien
 
 Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die **Adresse** ist kurz, z. B. `alessiorosano.ch/galerie/hochzeit-mueller`. Sie entsteht aus dem Titel oder ich lege sie selbst fest. Ältere Links mit `galerie.php?g=…` leiten automatisch auf die kurze Form weiter. Auch später lässt sie sich ändern: Der Server verschiebt dann Ordner und Einstellungen, und das CMS warnt, dass der alte Link nicht mehr funktioniert. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
+
+### Statistik
+
+Ein eigener Tab im CMS zeigt, was auf der Seite passiert, ganz ohne Google Analytics oder einen anderen Dienst:
+
+- **Besuche:** Aufrufe und Besucher:innen heute, in 7 und in 30 Tagen, dazu ein Balkendiagramm pro Tag
+- **Geräte:** Desktop, Handy oder Tablet (aus der Browser-Kennung; neuere iPads melden sich wie ein Mac und werden am Touchscreen erkannt)
+- **Meistgesehen und Herkunft:** die beliebtesten Seiten mit Projekttitel und von welchen Seiten Besucher:innen kamen (nur die Domain, z. B. linkedin.com)
+- **Galerien:** wie oft jede Galerie geöffnet wurde, wie viele Dateien und ZIPs heruntergeladen wurden, und eine Liste der letzten Downloads mit Zeitpunkt
+- **Speicher:** Anzahl und Grösse aller Dateien auf dem Server, aufgeteilt nach Art und pro Galerie
+
+**Datenschutz:** Die Website meldet jeden Seitenaufruf per `sendBeacon` an `api/track.php`. Gespeichert werden nur Zahlen pro Tag in `storage/stats/` (von aussen gesperrt). Keine Cookies, keine IP-Adressen. Besucher:innen zählt ein Code aus IP, Browser und einem täglich neuen Zufallswert, der am nächsten Tag gelöscht wird. So weiss ich, wie viele Personen heute da waren, aber niemand ist über mehrere Tage verfolgbar. Bots und meine eigenen Besuche (angemeldet im CMS) zählen nicht.
 
 ### Performance
 
@@ -142,6 +155,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 19. **Neue Typografie:** Neue Haas Grotesk Display statt Inter Tight, mit neu abgestimmten Gewichten, Laufweiten und Wortabständen. Dazu Umlaute, die in den grossen Titeln nicht mehr abgeschnitten werden.
 20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten und in die passwortgeschützten Galerien hochladen, und die Adresse jeder Projektseite und jeder Galerie lässt sich selbst bestimmen.
 21. **CMS aufgeräumt:** Der Projekt-Editor ist in Abschnitte gegliedert (Grunddaten, Text, Bilder & Loops, Vorschauen & Keyvisual, Film, Link & PDFs, Veröffentlichung), der Status ist ein Schalter «Online | Entwurf». Statt sechs Häkchen pro Bild gibt es eigene Plätze für Keyvisual und Vorschauen, lange Erklärungen sind aufklappbar. Galerie-Editor und Disziplinen sind genauso gegliedert.
+22. **Eigene Statistik:** Besuche, Geräte, meistgesehene Seiten, Herkunft, Galerie-Downloads und Speicher in einem Tab «Statistik», datensparsam und ohne Fremddienst.
 
 ---
 
@@ -182,6 +196,8 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 **Eigene Adressen, die anderen nichts wegnehmen.** Wer selbst einen Slug wählt, kann versehentlich die Adresse eines anderen Projekts erwischen. Das andere Projekt würde dann still zu «…-2», und alle Links darauf wären kaputt. Darum warnt das CMS schon beim Tippen, und der Server lehnt das Speichern ab. Browser und Server berechnen die Adressen nach genau denselben Regeln, getestet mit Umlauten, Akzenten und doppelten Titeln.
 
 **Kurze Galerie-Adressen ohne `.php`.** `/galerie/hochzeit-mueller` gibt es als Ordner gar nicht, eine Regel in der `.htaccess` leitet intern auf `galerie.php` um. Dabei zeigten plötzlich alle relativen Pfade (Bilder, Scripts, Downloads) ins Leere, weil der Browser sie ab `/galerie/` suchte. Ein `<base href="/">` löst das. Alte Links leiten mit einer einzigen Weiterleitung direkt auf `https://` weiter, nur bei normalen Aufrufen, nie bei der Passworteingabe. Getestet habe ich die Regeln wieder mit einem echten Apache.
+
+**Zählen, ohne zu überwachen.** Ein Besuchszähler braucht eigentlich ein Cookie, um wiederkehrende Personen zu erkennen. Das wollte ich nicht. Die Lösung: ein Code, der nur einen Tag gilt und aus einem Zufallswert entsteht, der jeden Tag neu gewürfelt und danach gelöscht wird. Beim Testen fiel noch auf, dass die eigene Seite als Herkunft auftauchte, weil der Server die Adresse mit Port meldet. Kleinigkeiten, die eine Statistik schnell verfälschen.
 
 **Abgeschnittene Unterlängen.** Animierte Titel blenden zeilenweise mit `overflow: hidden` ein. Das «g» der Serifenschrift ragte knapp 2 px über die Kante. Nachgemessen im Browser und mit mehr Platz unten behoben, ohne den Zeilenabstand zu ändern.
 

@@ -4,7 +4,7 @@
    braucht eine Anmeldung, jede Änderung zusätzlich das CSRF-Token.
    ========================================================================== */
 
-require __DIR__ . '/lib.php';
+require __DIR__ . '/stats.php';
 
 ensureStorage();
 startSession();
@@ -47,7 +47,7 @@ switch ($action) {
 
 requireAdmin();
 // Lesen geht per GET, jede Änderung nur per POST (mit CSRF-Token, siehe oben)
-if (!$isPost && !in_array($action, ['data', 'export', 'galleries', 'media'], true)) fail('POST erwartet', 405);
+if (!$isPost && !in_array($action, ['data', 'export', 'galleries', 'media', 'stats'], true)) fail('POST erwartet', 405);
 
 // Galerie aus dem CMS-Aufruf, sonst Abbruch
 function requireGallery(string $slug): array
@@ -224,6 +224,16 @@ switch ($action) {
         move_uploaded_file($file['tmp_name'], "$dir/$name");
         imageVariants(20);   // Proxies fürs neue Bild sofort erzeugen
         respond(['path' => "content/img/$name"]);
+
+    // Tab «Statistik»: Besuche der letzten 30 Tage, Galerien (Öffnungen, Downloads) und Speicher
+    case 'stats':
+        $g = readJson(STATS . '/galleries.json');
+        $all = galleries();
+        $totals = [];
+        foreach ($all as $slug => $info) $totals[] = ['slug' => $slug, 'title' => $info['title'] ?? $slug] + ($g['totals'][$slug] ?? ['views' => 0, 'files' => 0, 'zips' => 0]);
+        usort($totals, fn ($a, $b) => ($b['views'] + $b['files'] + $b['zips']) <=> ($a['views'] + $a['files'] + $a['zips']));
+        $log = array_map(fn ($e) => $e + ['title' => $all[$e['g']]['title'] ?? $e['g']], array_slice($g['log'] ?? [], 0, 40));
+        respond(['visits' => visitStats(30), 'galleries' => $totals, 'downloads' => $log, 'storage' => storageStats()]);
 
     case 'media':
         // Alle hochgeladenen Portfolio-Dateien für den Tab «Medien» (ohne WebP-Varianten und Loop-Standbilder)

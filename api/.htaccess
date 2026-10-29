@@ -1,4 +1,4 @@
 # Nur die Endpunkte sind aufrufbar — Passwort-Hash und Bibliothek nie
-<FilesMatch "^(config\.local\.php|lib\.php|seo\.php)$">
+<FilesMatch "^(config\.local\.php|lib\.php|seo\.php|stats\.php)$">
   Require all denied
 </FilesMatch>

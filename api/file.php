@@ -1,7 +1,7 @@
 <?php
 // Liefert eine Galerie-Datei aus — nur nach Passwort (oder im CMS).
 // ?thumb=1: Vorschau 800 px · ?preview=1: Grossansicht 2000 px · ?dl=1: Original als Download
-require __DIR__ . '/lib.php';
+require __DIR__ . '/stats.php';
 
 $slug = (string) ($_GET['g'] ?? '');
 $name = basename((string) ($_GET['f'] ?? ''));
@@ -17,4 +17,6 @@ if ($name === '' || !is_file($path)) {
 foreach (['thumb', 'preview'] as $kind) {
     if (isset($_GET[$kind]) && ($proxy = galleryProxy($path, $kind))) sendFile($proxy, $name, false, 'image/jpeg');
 }
+// Statistik: Download zählen (nur einmal pro Datei, nicht jedes Stück eines fortgesetzten Downloads)
+if (isset($_GET['dl']) && !preg_match('/bytes=[1-9]/', $_SERVER['HTTP_RANGE'] ?? '')) countGallery($slug, 'file', $name);
 sendFile($path, $name, isset($_GET['dl']));
