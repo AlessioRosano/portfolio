@@ -148,13 +148,21 @@ header('Referrer-Policy: same-origin');
     .item figcaption a:hover { opacity: .6; }
 
     /* Grossansicht */
-    dialog { border: 0; padding: 0; max-width: none; max-height: none; width: 100vw; height: 100svh; background: rgba(255,255,255,.97); color: var(--bx); }
-    dialog::backdrop { background: transparent; }
+    /* Grossansicht: Vollbild auf dunklem Grund, die Seite dahinter ist gesperrt (html.lb-open) */
+    dialog { border: 0; padding: 0; max-width: none; max-height: none; width: 100vw; height: 100dvh; background: #0b0b0b; color: #fff; overscroll-behavior: contain; touch-action: none; }   /* kein Scrollen durch die Grossansicht hindurch */
+    dialog::backdrop { background: #0b0b0b; }
+    html.lb-open, html.lb-open body { overflow: hidden; }
     .lb { height: 100%; display: grid; grid-template-rows: auto 1fr; }
-    .lb__bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px var(--pad); }
+    .lb__bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: max(14px, env(safe-area-inset-top)) var(--pad) 14px; }
     .lb__bar button, .lb__bar a { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-    .lb__stage { position: relative; display: grid; place-items: center; padding: 0 var(--pad) var(--pad); min-height: 0; }
-    .lb__stage img, .lb__stage video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+    /* Wischen übernimmt das Script; Zoomen mit zwei Fingern bleibt erlaubt */
+    .lb__stage { position: relative; display: grid; place-items: center; padding: 0 var(--pad) var(--pad); min-height: 0; overflow: hidden; touch-action: pinch-zoom; user-select: none; -webkit-user-select: none; }
+    .lb__stage img, .lb__stage video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; -webkit-user-drag: none; }
+    .lb__stage .is-snapping { transition: transform .3s cubic-bezier(.16, 1, .3, 1), opacity .3s; }
+    @media (max-width: 760px) {
+      .lb__stage { padding: 0 0 env(safe-area-inset-bottom); }
+      .lb__stage img, .lb__stage video { border-radius: 0; }
+    }
     .lb__nav { position: absolute; top: 0; bottom: 0; width: 25%; background: none; border: 0; cursor: pointer; }
     .lb__nav--prev { left: 0; cursor: w-resize; } .lb__nav--next { right: 0; cursor: e-resize; }
 
