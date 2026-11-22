@@ -363,8 +363,7 @@ switch ($action) {
         $dir = galleryDir($slug);
         $final = uniqueName($dir, slugify(pathinfo($name, PATHINFO_FILENAME), 80), $ext);
         rename($part, "$dir/$final");
-        galleryProxy("$dir/$final", 'thumb');
-        galleryProxy("$dir/$final", 'preview');
+        foreach (array_keys(GALLERY_PROXIES) as $kind) galleryProxy("$dir/$final", $kind);   // Vorschauen gleich erzeugen
         respond(['ok' => true, 'name' => $final]);
 
     // Kurzer Video-Loop fürs Portfolio (MP4/WebM, in Stücken) → content/video/

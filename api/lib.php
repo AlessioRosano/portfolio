@@ -491,14 +491,22 @@ function scaledTo(GdImage $img, int $maxSide): GdImage
     return $scale >= 1 ? $img : imagescale($img, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale)));
 }
 
-// Galerie: Vorschau für die Übersicht (800 px) bzw. die Grossansicht (2000 px), als JPG in thumbs/
+// Galerie-Vorschauen als JPG in thumbs/: Übersicht (800 px), Grossansicht am Handy (1200 px)
+// und auf grossen Bildschirmen (2000 px). Das Original lädt nur beim Download.
+const GALLERY_PROXIES = [
+    'thumb' => ['.jpg', 800, 78],
+    'medium' => ['.medium.jpg', 1200, 80],
+    'preview' => ['.preview.jpg', 2000, 82],
+];
+
 function galleryProxy(string $path, string $kind): ?string
 {
-    $dest = dirname($path) . '/thumbs/' . basename($path) . ($kind === 'preview' ? '.preview.jpg' : '.jpg');
+    [$suffix, $size, $quality] = GALLERY_PROXIES[$kind] ?? GALLERY_PROXIES['thumb'];
+    $dest = dirname($path) . '/thumbs/' . basename($path) . $suffix;
     if (is_file($dest)) return $dest;
     if (!isset(IMAGE_TYPES[extensionOf($path)]) || !($img = loadImage($path))) return null;
     if (!is_dir(dirname($dest))) mkdir(dirname($dest), 0755);
-    imagejpeg(scaledTo($img, $kind === 'preview' ? 2000 : 800), $dest, $kind === 'preview' ? 82 : 78);
+    imagejpeg(scaledTo($img, $size), $dest, $quality);
     return $dest;
 }
 

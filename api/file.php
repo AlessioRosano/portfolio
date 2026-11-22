@@ -1,6 +1,6 @@
 <?php
 // Liefert eine Galerie-Datei aus — nur nach Passwort (oder im CMS).
-// ?thumb=1: Vorschau 800 px · ?preview=1: Grossansicht 2000 px · ?dl=1: Original als Download
+// ?thumb=1: Vorschau 800 px · ?medium=1: Grossansicht 1200 px (Handy) · ?preview=1: 2000 px · ?dl=1: Original als Download
 require __DIR__ . '/stats.php';
 
 $slug = (string) ($_GET['g'] ?? '');
@@ -14,7 +14,7 @@ if ($name === '' || !is_file($path)) {
 }
 
 // Vorschauen werden beim ersten Abruf erzeugt (auch für ältere Bilder); sonst gilt das Original
-foreach (['thumb', 'preview'] as $kind) {
+foreach (array_keys(GALLERY_PROXIES) as $kind) {
     if (isset($_GET[$kind]) && ($proxy = galleryProxy($path, $kind))) sendFile($proxy, $name, false, 'image/jpeg');
 }
 // Statistik: Download zählen (nur einmal pro Datei, nicht jedes Stück eines fortgesetzten Downloads)

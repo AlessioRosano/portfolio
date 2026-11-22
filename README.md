@@ -82,7 +82,7 @@ Erreichbar unter `/admin`, mit Passwort, am Desktop und am Handy. Dort pflege ic
 
 ### Galerien
 
-Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die **Adresse** ist kurz, z. B. `alessiorosano.ch/galerie/hochzeit-mueller`. Sie entsteht aus dem Titel oder ich lege sie selbst fest. Ältere Links mit `galerie.php?g=…` leiten automatisch auf die kurze Form weiter. Auch später lässt sie sich ändern: Der Server verschiebt dann Ordner und Einstellungen, und das CMS warnt, dass der alte Link nicht mehr funktioniert. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px, die Grossansicht 2000 px, heruntergeladen wird das Original oder alles als ZIP.
+Eine Galerie hat einen Titel, ein automatisch erzeugtes Passwort und optional ein Ablaufdatum. Die **Adresse** ist kurz, z. B. `alessiorosano.ch/galerie/hochzeit-mueller`. Sie entsteht aus dem Titel oder ich lege sie selbst fest. Ältere Links mit `galerie.php?g=…` leiten automatisch auf die kurze Form weiter. Auch später lässt sie sich ändern: Der Server verschiebt dann Ordner und Einstellungen, und das CMS warnt, dass der alte Link nicht mehr funktioniert. Neben Fotos und Videos nimmt sie auch **PDFs** auf (z. B. Offerten, Druckdaten, Präsentationen): Sie erscheinen als eigene Kachel, öffnen sich im PDF-Betrachter des Browsers und landen im ZIP. Die Dateien liegen im gesperrten Ordner `storage/` und kommen nur über `api/file.php` raus, erst nach der Passwort-Prüfung. Die Übersicht zeigt Vorschauen mit 800 px. Die Grossansicht zeigt sofort diese Vorschau und tauscht sie dann gegen eine schärfere aus: am Handy 1200 px, auf grossen Bildschirmen 2000 px (der Browser wählt per `srcset`). Das Original lädt erst beim Download oder im ZIP. Beispiel mit einem 19-MB-Foto: Übersicht 180 KB, Grossansicht am Handy 480 KB, am Desktop 1,4 MB.
 
 ### Statistik
 
@@ -156,6 +156,7 @@ Die Secrets (`FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_DIR`, `ADMIN_PAS
 20. **PDFs und eigene Adressen:** Im CMS lassen sich PDFs zu Projekten und in die passwortgeschützten Galerien hochladen, und die Adresse jeder Projektseite und jeder Galerie lässt sich selbst bestimmen.
 21. **CMS aufgeräumt:** Der Projekt-Editor ist in Abschnitte gegliedert (Grunddaten, Text, Bilder & Loops, Vorschauen & Keyvisual, Film, Link & PDFs, Veröffentlichung), der Status ist ein Schalter «Online | Entwurf». Statt sechs Häkchen pro Bild gibt es eigene Plätze für Keyvisual und Vorschauen, lange Erklärungen sind aufklappbar. Galerie-Editor und Disziplinen sind genauso gegliedert.
 22. **Eigene Statistik:** Besuche, Geräte, meistgesehene Seiten, Herkunft, Galerie-Downloads und Speicher in einem Tab «Statistik», datensparsam und ohne Fremddienst.
+23. **Schnellere Galerien am Handy:** Die Grossansicht zeigt zuerst die schon geladene Vorschau und dann eine Version mit 1200 px statt 2000 px. Das ist rund dreimal leichter, das Original kommt erst beim Download.
 
 ---
 

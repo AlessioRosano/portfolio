@@ -245,8 +245,11 @@ header('Referrer-Policy: same-origin');
     <script type="application/json" id="gallery-files"><?= json_encode(array_map(fn ($f) => [
         'name' => $f['name'],
         'kind' => $f['kind'],
-        // Grossansicht: Fotos als 2000-px-Vorschau, Videos im Original; Download immer das Original
-        'src' => $url($f['name'], $f['kind'] === 'image' && $f['thumb'] ? '&preview=1' : ''),
+        // Grossansicht: Fotos zuerst als kleine Vorschau (schon geladen), dann 1200 px am Handy bzw. 2000 px
+        // auf grossen Bildschirmen (der Browser wählt per srcset). Videos im Original; Download immer das Original.
+        'thumb' => $f['kind'] === 'image' && $f['thumb'] ? $url($f['name'], '&thumb=1') : '',
+        'src' => $url($f['name'], $f['kind'] === 'image' && $f['thumb'] ? '&medium=1' : ''),
+        'srcset' => $f['kind'] === 'image' && $f['thumb'] ? $url($f['name'], '&medium=1') . ' 1200w, ' . $url($f['name'], '&preview=1') . ' 2000w' : '',
         'poster' => $f['kind'] === 'video' && $f['thumb'] ? $url($f['name'], '&thumb=1') : '',
         'dl' => $url($f['name'], '&dl=1'),
     ], $media), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
