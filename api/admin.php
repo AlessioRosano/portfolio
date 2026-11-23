@@ -330,8 +330,19 @@ switch ($action) {
         $path = galleryDir($slug) . "/$name";
         if (!is_file($path)) fail('Datei nicht gefunden', 404);
         unlink($path);
-        @unlink(galleryDir($slug) . "/thumbs/$name.jpg");
-        @unlink(galleryDir($slug) . "/thumbs/$name.preview.jpg");
+        foreach (glob(galleryDir($slug) . '/thumbs/' . glob_escape($name) . '.*') ?: [] as $proxy) @unlink($proxy);   // alle Vorschauen der Datei
+        respond(['ok' => true]);
+
+    // Vorschauen einer Galerie-Datei neu erzeugen (Knopf im CMS, z. B. nach der Umstellung auf schärfere Vorschauen)
+    case 'gallery-proxies':
+        $in = jsonBody();
+        $slug = (string) ($in['slug'] ?? '');
+        $name = basename((string) ($in['name'] ?? ''));
+        requireGallery($slug);
+        $path = galleryDir($slug) . "/$name";
+        if (!is_file($path)) fail('Datei nicht gefunden', 404);
+        set_time_limit(120);
+        foreach (array_keys(GALLERY_PROXIES) as $kind) galleryProxy($path, $kind);
         respond(['ok' => true]);
 
     // Standbild eines Videos (erzeugt im Browser beim Upload) als Vorschau speichern

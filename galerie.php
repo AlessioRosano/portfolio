@@ -156,15 +156,23 @@ header('Referrer-Policy: same-origin');
     .lb__bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: max(14px, env(safe-area-inset-top)) var(--pad) 14px; }
     .lb__bar button, .lb__bar a { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
     /* Wischen übernimmt das Script; Zoomen mit zwei Fingern bleibt erlaubt */
-    .lb__stage { position: relative; display: grid; place-items: center; padding: 0 var(--pad) var(--pad); min-height: 0; overflow: hidden; touch-action: pinch-zoom; user-select: none; -webkit-user-select: none; }
-    .lb__stage img, .lb__stage video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; -webkit-user-drag: none; }
+    /* Jedes Foto füllt die Fläche und wird darin eingepasst (object-fit), egal wie gross die Datei ist
+       und egal was srcset über ihre Breite annimmt (Hochformate sind schmaler als «1200w») */
+    .lb__stage { position: relative; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; padding: 0 calc(var(--pad) + 72px) var(--pad); min-height: 0; overflow: hidden; touch-action: pinch-zoom; user-select: none; -webkit-user-select: none; }
+    .lb__stage img, .lb__stage video { width: 100%; height: 100%; object-fit: contain; -webkit-user-drag: none; }
     .lb__stage .is-snapping { transition: transform .3s cubic-bezier(.16, 1, .3, 1), opacity .3s; }
     @media (max-width: 760px) {
       .lb__stage { padding: 0 0 env(safe-area-inset-bottom); }
-      .lb__stage img, .lb__stage video { border-radius: 0; }
+      .lb__arrow { display: none; }
     }
-    .lb__nav { position: absolute; top: 0; bottom: 0; width: 25%; background: none; border: 0; cursor: pointer; }
-    .lb__nav--prev { left: 0; cursor: w-resize; } .lb__nav--next { right: 0; cursor: e-resize; }
+    .lb__nav { position: absolute; top: 0; bottom: 0; width: 25%; display: flex; align-items: center; padding: 0 var(--pad); background: none; border: 0; color: #fff; cursor: pointer; }
+    .lb__nav--prev { left: 0; justify-content: flex-start; } .lb__nav--next { right: 0; justify-content: flex-end; }
+    /* Sichtbare Pfeile am Desktop; am Handy wird gewischt */
+    .lb__arrow { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,.1); font-size: 22px; line-height: 1; transition: background .2s, transform .2s; }
+    .lb__nav:hover .lb__arrow, .lb__nav:focus-visible .lb__arrow { background: rgba(255,255,255,.22); }
+    .lb__nav--prev:hover .lb__arrow { transform: translateX(-3px); } .lb__nav--next:hover .lb__arrow { transform: translateX(3px); }
+    .lb__nav:focus-visible { outline: none; }
+    @media (hover: none) { .lb__arrow { display: none; } }
 
     footer { display: flex; justify-content: space-between; padding: 24px var(--pad); opacity: .6; }
   </style>

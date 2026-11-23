@@ -29,7 +29,7 @@ function show(i, dir = 0) {
     big.complete ? swap() : big.addEventListener("load", swap, { once: true });
   }
   if (files.length > 1) stage.insertAdjacentHTML("beforeend",
-    `<button class="lb__nav lb__nav--prev" data-step="-1" aria-label="Vorheriges"></button><button class="lb__nav lb__nav--next" data-step="1" aria-label="Nächstes"></button>`);
+    `<button class="lb__nav lb__nav--prev" data-step="-1" aria-label="Vorheriges"><span class="lb__arrow" aria-hidden="true">←</span></button><button class="lb__nav lb__nav--next" data-step="1" aria-label="Nächstes"><span class="lb__arrow" aria-hidden="true">→</span></button>`);
   box.querySelector("[data-lb-name]").textContent = `${current + 1} / ${files.length} — ${f.name}`;
   box.querySelector("[data-lb-dl]").href = f.dl;
   if (!box.open) {

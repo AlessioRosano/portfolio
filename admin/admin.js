@@ -1167,6 +1167,8 @@ function renderGalleryEditor() {
         <span class="mono muted">Fotos (JPG, PNG, WebP, HEIC), Videos (MP4, MOV, WebM), PDFs · auch sehr grosse Dateien</span>
       </div>
       <div class="uploads" data-g-uploads></div>
+      ${files.some((f) => f.kind === "image") ? `<div class="regen"><button class="btn btn--sm" type="button" data-g-regen>Vorschauen neu erzeugen</button>
+        <small class="muted">Schärfere Vorschauen für ältere Fotos gleich jetzt erzeugen. Sonst entstehen sie beim ersten Öffnen.</small></div>` : ""}
       ${files.length ? `<div class="files">${files.map((f) => `
         <div class="file">
           ${f.kind === "pdf"
@@ -1293,6 +1295,21 @@ gEditor.addEventListener("input", (e) => {
 });
 gEditor.addEventListener("click", async (e) => {
   if (e.target.closest("[data-g-save]")) return saveGallery();
+  const regen = e.target.closest("[data-g-regen]");
+  if (regen) {   // Vorschauen Foto für Foto neu erzeugen, mit Fortschritt im Knopf
+    const slug = gallery.slug;
+    const photos = (gallery.files || []).filter((f) => f.kind === "image");
+    regen.disabled = true;
+    uploading++;
+    let failed = 0;
+    for (const [n, f] of photos.entries()) {
+      regen.textContent = `Vorschauen … ${n + 1} / ${photos.length}`;
+      await api("gallery-proxies", { slug, name: f.name }).catch(() => failed++);
+    }
+    uploading--;
+    toast(failed ? `Fertig, ${failed} Fotos konnten nicht verkleinert werden (zu gross)` : `${photos.length} Vorschauen erzeugt`);
+    return loadGalleries(slug);
+  }
   if (e.target.closest("[data-g-newpw]")) {
     gallery.password = newPassword();
     $('[data-gf="password"]').value = gallery.password;

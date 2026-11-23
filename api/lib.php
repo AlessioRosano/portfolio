@@ -483,31 +483,54 @@ function loadImage(string $path): ?GdImage
     return $rotate ? imagerotate($img, $rotate, 0) : $img;
 }
 
+// Dateiname sicher in einem glob()-Muster verwenden (Sonderzeichen * ? [ ] maskieren)
+function glob_escape(string $s): string
+{
+    return (string) preg_replace('/[\\*?\[\]]/', '\\\\$0', $s);
+}
+
+// Verkleinern mit gutem Resampling (statt des weichen, flimmernden bilinearen imagescale)
+// und danach leicht nachschärfen, wie es Bildprogramme beim Verkleinern tun. Transparenz bleibt erhalten.
+function resampled(GdImage $img, int $w, int $h): GdImage
+{
+    $out = imagecreatetruecolor($w, $h);
+    imagealphablending($out, false);
+    imagesavealpha($out, true);
+    imagecopyresampled($out, $img, 0, 0, 0, 0, $w, $h, imagesx($img), imagesy($img));
+    if ($w < imagesx($img) * 0.75) imageconvolution($out, [[0, -1, 0], [-1, 12, -1], [0, -1, 0]], 8, 0);
+    return $out;
+}
+
 function scaledTo(GdImage $img, int $maxSide): GdImage
 {
     $w = imagesx($img);
     $h = imagesy($img);
     $scale = $maxSide / max($w, $h);
-    return $scale >= 1 ? $img : imagescale($img, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale)));
+    return $scale >= 1 ? $img : resampled($img, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale)));
 }
 
 // Galerie-Vorschauen als JPG in thumbs/: Übersicht (800 px), Grossansicht am Handy (1200 px)
 // und auf grossen Bildschirmen (2000 px). Das Original lädt nur beim Download.
+// Die «2» im Namen ist die Version: schärfere Vorschauen (Resampling, Nachschärfen, höhere Qualität).
+// Ältere Vorschauen werden ersetzt, sobald die neue entsteht.
 const GALLERY_PROXIES = [
-    'thumb' => ['.jpg', 800, 78],
-    'medium' => ['.medium.jpg', 1200, 80],
-    'preview' => ['.preview.jpg', 2000, 82],
+    'thumb' => ['.t2.jpg', 800, 84, '.jpg'],
+    'medium' => ['.m2.jpg', 1200, 85, '.medium.jpg'],
+    'preview' => ['.p2.jpg', 2000, 86, '.preview.jpg'],
 ];
 
 function galleryProxy(string $path, string $kind): ?string
 {
-    [$suffix, $size, $quality] = GALLERY_PROXIES[$kind] ?? GALLERY_PROXIES['thumb'];
-    $dest = dirname($path) . '/thumbs/' . basename($path) . $suffix;
-    if (is_file($dest)) return $dest;
-    if (!isset(IMAGE_TYPES[extensionOf($path)]) || !($img = loadImage($path))) return null;
-    if (!is_dir(dirname($dest))) mkdir(dirname($dest), 0755);
-    imagejpeg(scaledTo($img, $size), $dest, $quality);
-    return $dest;
+    [$suffix, $size, $quality, $old] = GALLERY_PROXIES[$kind] ?? GALLERY_PROXIES['thumb'];
+    $thumbs = dirname($path) . '/thumbs/' . basename($path);
+    // Videos: Standbild aus dem Browser (beim Upload), liegt als <name>.jpg
+    if (!isset(IMAGE_TYPES[extensionOf($path)])) return $kind === 'thumb' && is_file("$thumbs.jpg") ? "$thumbs.jpg" : null;
+    if (is_file($thumbs . $suffix)) return $thumbs . $suffix;
+    if (!($img = loadImage($path))) return null;
+    if (!is_dir(dirname($thumbs))) mkdir(dirname($thumbs), 0755);
+    imagejpeg(scaledTo($img, $size), $thumbs . $suffix, $quality);
+    @unlink($thumbs . $old);
+    return $thumbs . $suffix;
 }
 
 // Portfolio: WebP-Varianten neben dem Original, z. B. bild.jpg → bild.w480.webp, bild.w960.webp …
@@ -523,7 +546,7 @@ function makeVariants(string $path): ?array
     $h = imagesy($img);
     $widths = array_values(array_unique([...array_filter(VARIANT_WIDTHS, fn ($x) => $x < $w), min($w, max(VARIANT_WIDTHS))]));
     foreach ($widths as $width) {
-        $out = $width === $w ? $img : imagescale($img, $width, max(1, (int) round($h * $width / $w)));
+        $out = $width === $w ? $img : resampled($img, $width, max(1, (int) round($h * $width / $w)));
         imagesavealpha($out, true);
         imagewebp($out, dirname($path) . '/' . variantFile(basename($path), $width), 80);
     }
