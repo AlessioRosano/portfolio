@@ -65,6 +65,9 @@ const LINK_RE = /\[([^\]\n]+)\]\((https:\/\/[^\s()<>"]+)\)/g;
 const linkify = (s = "") => esc(s).replace(LINK_RE, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 const plainText = (s = "") => s.replace(LINK_RE, "$1");   // für Meta-Beschreibung und strukturierte Daten
 
+// Spiel: nur eigene Ordner unter spiele/ (liegen im Code, nicht im CMS)
+const gamePath = (s) => (/^spiele\/[a-z0-9-]+\/$/.test(s || "") ? s : "");
+
 // Film-Link (YouTube/Vimeo) → Adresse des eingebetteten Players, datensparsam (nocookie / dnt)
 function filmEmbed(url) {
   try {
@@ -596,16 +599,24 @@ function buildProject() {
   // Bilder, die im CMS auf «Nicht beschneiden» stehen, erscheinen vollständig (Plakate, Bilder mit Text)
   const full = new Set(p.full || []);
   const films = projectFilms(p).map(filmEmbed).filter(Boolean);
+  const game = gamePath(p.game);
   const images = p.images || [];
   const roles = new Set([images[0], ...ROLES.map((r) => p[r])]);
   const gallery = images.filter((src) => !roles.has(src));
   const keyvisual = p.keyvisual && images.includes(p.keyvisual) ? p.keyvisual : "";
   // Ohne Film und Keyvisual: Hat das Projekt sonst nichts, springt das Titelbild (bzw. die Grafik) ein
-  cover.hidden = films.length > 0 || (!keyvisual && gallery.length > 0);
+  cover.hidden = films.length > 0 || !!game || (!keyvisual && gallery.length > 0);
   if (!cover.hidden) {
     cover.classList.toggle("is-full", full.has(keyvisual || images[0]));
     cover.innerHTML = `<div class="media${mediaClass(p)}">${media(p, W, H, "100vw", { eager: true, play: true, role: "keyvisual" })}</div>`;
   }
+
+  // Spiel: direkt spielbar im Hochformat, dazu ein Link fürs Vollbild (v. a. am Handy angenehmer)
+  const gameBox = $("[data-p-game]");
+  gameBox.hidden = !game;
+  gameBox.innerHTML = game ? `
+    <div class="pgame__frame"><iframe src="${esc(game)}" title="${esc(p.title)} (Spiel)" loading="lazy" allow="autoplay; fullscreen"></iframe></div>
+    <a class="mono" href="${esc(game)}" target="_blank" rel="noopener">Im Vollbild spielen ↗</a>` : "";
 
   // Filme: Player von YouTube/Vimeo direkt eingebettet, datensparsam (nocookie / dnt).
   // Er lädt erst, wenn er ins Bild scrollt.

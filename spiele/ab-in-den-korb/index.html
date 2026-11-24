@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Ab in den Korb!</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #f3efe6;
+      overscroll-behavior: none;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
+      display: block;
+      width: min(100vw, calc(100vh * 0.5625));
+      width: min(100vw, calc(100dvh * 0.5625));
+      height: auto;
+      aspect-ratio: 9 / 16;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" aria-label="Ab in den Korb! – Einkaufsspiel"></canvas>
+  <script src="js/levels.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

@@ -32,7 +32,7 @@ async function api(action, body) {
 // Leeres Projekt: Standardwerte für neue Projekte und für Felder, die ältere Projekte noch nicht haben
 const blankProject = () => ({
   title: "", cat: "branding", year: new Date().getFullYear(), hidden: false, client: "", role: "", tools: "", desc: "",
-  link: "", videos: [], art: 0, images: [], full: [], wide: [],
+  link: "", videos: [], game: "", art: 0, images: [], full: [], wide: [],
   previewWorks: "", previewDiscipline: "", previewHome: "", keyvisual: "", slug: "", docs: [],
 });
 
@@ -431,7 +431,7 @@ function renderEditor() {
         ${slot("previewHome", "Vorschau Startseite", `Hover bei «Was» · Hochformat 4:5${pos < 2 ? "" : " · nur die ersten zwei Projekte der Disziplin erscheinen dort, dieses gerade nicht"}`)}
       </div>`) : ""}
 
-    ${section("Film, Link & PDFs", "Alles optional.", `
+    ${section("Film, Spiel, Link & PDFs", "Alles optional.", `
       <div class="form">
         <div class="field field--3"><span class="mono">Filme · YouTube oder Vimeo</span>
           ${p.videos.map((url, k) => `
@@ -441,6 +441,9 @@ function renderEditor() {
             </div>`).join("")}
           <div><button class="btn btn--sm" type="button" data-film-add>+ Film hinzufügen</button></div>
           <small>Zuoberst auf der Projektseite, in dieser Reihenfolge.</small></div>
+        <label class="field field--3"><span class="mono">Spiel</span>
+          <input type="text" data-f="game" value="${esc(p.game)}" placeholder="spiele/ab-in-den-korb/" spellcheck="false" autocapitalize="off" />
+          <small>Ordner eines eigenen Spiels unter spiele/ (kommt mit dem Code, nicht übers CMS). Erscheint zuoberst auf der Projektseite, im Hochformat.</small></label>
         <label class="field field--3"><span class="mono">Link</span>
           <input type="url" data-f="link" value="${esc(p.link)}" placeholder="https://…" />
           <small>Erscheint als «Link ↗», z. B. Behance oder Live-Website.</small></label>

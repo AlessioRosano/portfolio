@@ -112,6 +112,11 @@ function cleanData(array $d): array
             }
         }
         if ($link !== '' && !preg_match('#^https?://[^\s"<>]+$#i', $link)) fail('Links müssen mit https:// beginnen');
+        // Spiel: nur ein vorhandener Ordner unter spiele/ (der Code dazu kommt per Deploy, nicht übers CMS)
+        $game = trim((string) ($p['game'] ?? ''));
+        if ($game !== '' && (!preg_match('#^spiele/[a-z0-9-]+/$#', $game) || !is_file(ROOT . '/' . $game . 'index.html'))) {
+            fail('Spiel: bitte einen vorhandenen Ordner angeben, z. B. spiele/ab-in-den-korb/');
+        }
         $images = array_values((array) ($p['images'] ?? []));
         foreach ($images as $img) {
             if (!is_string($img) || !preg_match(MEDIA_PATH, $img)) fail('Ungültiger Bild- oder Videopfad');
@@ -137,6 +142,7 @@ function cleanData(array $d): array
             'desc' => $text($p['desc'] ?? ''),
             'link' => $link,
             'videos' => $videos,
+            'game' => $game,
             'art' => (int) ($p['art'] ?? 0) % 2,
             'images' => $images,
             // Bilder, die nicht beschnitten werden dürfen (nur solche, die auch im Projekt sind)
