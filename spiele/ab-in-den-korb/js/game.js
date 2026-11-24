@@ -340,14 +340,14 @@
     const r = state.result;
     const lines = [];
     r.rows.forEach((row) => {
-      const name = PRODUCTS[row.id].name;
+      const name = displayName(row.id);
       const right = row.status === 'ok' ? `${row.got}/${row.qty}` : row.status === 'missing' ? `${row.got}/${row.qty} fehlt` : `${row.got}/${row.qty} zu viel`;
       lines.push({ kind: 'item', id: row.id, icon: row.status === 'ok' ? 'richtig' : row.status === 'missing' ? 'fehlt' : 'falsch', label: `${row.qty}× ${name}`, right });
     });
     if (r.wrong.length) {
       lines.push({ kind: 'heading', label: 'Nicht auf dem Zettel' });
       const shown = r.wrong.slice(0, 5);
-      shown.forEach((w) => lines.push({ kind: 'item', id: w.id, icon: 'falsch', label: `${w.n}× ${PRODUCTS[w.id].name}`, right: `−${w.n * WRONG_PENALTY}` }));
+      shown.forEach((w) => lines.push({ kind: 'item', id: w.id, icon: 'falsch', label: `${w.n}× ${displayName(w.id)}`, right: `−${w.n * WRONG_PENALTY}` }));
       if (r.wrong.length > shown.length) {
         const rest = r.wrong.slice(shown.length).reduce((s, w) => s + w.n, 0);
         lines.push({ kind: 'note', label: `+ ${rest} weitere falsche Produkte` });
@@ -455,6 +455,7 @@
       state.fx.push({ type: 'spark', x: BASKET_X + rand(-60, 60), y: FIG_TOP + 30, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, t: 0, life: rand(0.35, 0.6), color: level().palette.accent });
     }
     state.fx.push({ type: 'hudpop', t: 0, life: 0.3 });
+    if (IMG.fang_funke) state.fx.push({ type: 'funke', x: BASKET_X, y: FIG_TOP + 20, t: 0, life: 0.4 });
   }
 
   function updateFx(dt) {
@@ -558,7 +559,35 @@
       roundRect(-82, 8, 164, 72, 8); ctx.fill(); ctx.stroke();
       ctx.fillStyle = p.accent; ctx.fillRect(-79, 30, 158, 22);
     },
+    can(p) {
+      ctx.fillStyle = '#c9ced3';
+      roundRect(-34, -84, 68, 16, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.color;
+      roundRect(-40, -70, 80, 158, 12); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.accent; ctx.fillRect(-37, -20, 74, 30);
+    },
   };
+
+  // Angezeigter Name: Marke/Linie + Produkt, z. B. «M-Budget Kochbutter»
+  const displayName = (id) => {
+    const p = PRODUCTS[id];
+    return p.brand ? `${p.brand} ${p.name}` : p.name;
+  };
+
+  // Text, der in eine Breite passen muss: wird bis auf minScale verkleinert, danach mit «…» gekürzt
+  function fitText(str, x, y, size, maxWidth, opts = {}) {
+    const weight = opts.weight || 'bold';
+    let s = size;
+    const minSize = size * (opts.minScale || 0.62);
+    ctx.font = `${weight} ${s}px ${FONT}`;
+    while (ctx.measureText(str).width > maxWidth && s > minSize) {
+      s -= 1;
+      ctx.font = `${weight} ${s}px ${FONT}`;
+    }
+    let out = str;
+    while (ctx.measureText(out).width > maxWidth && out.length > 2) out = `${out.slice(0, -2)}…`;
+    text(out, x, y, s, opts);
+  }
 
   function drawProduct(id, x, y, size, rot = 0, alpha = 1, withLabel = true) {
     ctx.save();
@@ -585,15 +614,20 @@
       text(p.mark, 52, -50, p.mark.length > 2 ? 22 : 30, { align: 'center', color: '#fff' });
     }
     if (withLabel) {
+      // Etikett: Marke klein oben, Produkt darunter (nur Platzhalter, die Zeichnungen tragen das selbst)
+      const hasBrand = !!p.brand;
+      const top = hasBrand ? 22 : 40;
+      const h = hasBrand ? 56 : 34;
       ctx.font = `bold 24px ${FONT}`;
-      const w = Math.min(ctx.measureText(p.name).width + 18, 190);
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      roundRect(-w / 2, 40, w, 34, 10); ctx.fill();
+      const nameW = ctx.measureText(p.name).width;
+      ctx.font = `bold 18px ${FONT}`;
+      const brandW = hasBrand ? ctx.measureText(p.brand).width : 0;
+      const w = Math.min(Math.max(nameW, brandW) + 18, 196);
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      roundRect(-w / 2, top, w, h, 10); ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
-      ctx.save();
-      ctx.beginPath(); ctx.rect(-w / 2 + 4, 40, w - 8, 34); ctx.clip();
-      text(p.name, 0, 58, 24, { align: 'center' });
-      ctx.restore();
+      if (hasBrand) fitText(p.brand, 0, top + 15, 18, w - 12, { align: 'center', color: '#555' });
+      fitText(p.name, 0, top + h - 17, 24, w - 12, { align: 'center' });
     }
     ctx.restore();
   }
@@ -726,7 +760,7 @@
       const ry = 260 + i * rowH + rowH / 2;
       drawProduct(item.id, 200, ry, rowH * 0.95, 0, 1, false);
       text(`${item.qty}×`, 290, ry, 46);
-      text(PRODUCTS[item.id].name, 370, ry, 46, { weight: 'normal' });
+      fitText(displayName(item.id), 370, ry, 46, 430, { weight: 'normal' });
     });
     ctx.restore();
   }
@@ -807,7 +841,7 @@
     state.items.forEach((it) => drawProduct(it.id, it.x, it.y, it.size, it.rot));
     state.fx.filter((f) => f.type === 'ripple').forEach(drawFx);
     if (IMG[`fg_${lvl.id}`]) ctx.drawImage(IMG[`fg_${lvl.id}`], 0, 0, W, H);
-    state.fx.filter((f) => f.type === 'spark' || f.type === 'plus').forEach(drawFx);
+    state.fx.filter((f) => f.type === 'funke' || f.type === 'spark' || f.type === 'plus').forEach(drawFx);
 
     drawHud();
 
@@ -837,6 +871,11 @@
       ctx.globalAlpha = 1 - k;
       ctx.fillStyle = f.color;
       ctx.beginPath(); ctx.arc(f.x, f.y, 10 * (1 - k) + 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (f.type === 'funke') {
+      const s = 200 * (0.6 + 0.6 * k);
+      ctx.globalAlpha = 1 - k;
+      ctx.drawImage(IMG.fang_funke, f.x - s / 2, f.y - s / 2, s, s);
       ctx.globalAlpha = 1;
     } else if (f.type === 'plus') {
       text('+1', f.x, f.y - k * 90, 54, { align: 'center', color: INK });
@@ -958,7 +997,9 @@
         drawStatusIcon(ln.icon, 0, 0);
         ctx.restore();
         drawProduct(ln.id, L + 100 * f, cy, 68 * f, 0, 1, false);
-        text(ln.label, L + 150 * f, cy, 42 * f, { weight: 'normal' });
+        ctx.font = `bold ${38 * f}px ${FONT}`;
+        const rightW = ctx.measureText(ln.right).width;
+        fitText(ln.label, L + 150 * f, cy, 42 * f, R - rightW - 24 - (L + 150 * f), { weight: 'normal' });
         text(ln.right, R, cy, 38 * f, { align: 'right', color: ln.icon === 'richtig' ? '#1f8a4c' : ln.icon === 'fehlt' ? '#b45309' : '#c81e3a' });
       }
       y += lh;
@@ -1046,7 +1087,7 @@
 
   // Test-Zugang: index.html?debug
   if (new URLSearchParams(location.search).has('debug')) {
-    window.__korb = { state, step, beginPlay, goCheckout, showList };
+    window.__korb = { state, step, beginPlay, goCheckout, showList, drawProduct, ctx };
   }
 
   // Online liegt neben den Grafiken eine Liste der vorhandenen Dateien (assets/manifest.json).
